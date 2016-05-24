@@ -213,7 +213,6 @@ bool CoreSolver::check(Theory::Effort e) {
 void CoreSolver::buildModel()
 {
   Debug("bv-core") << "CoreSolver::buildModel() \n";
-  NodeManager* nm = NodeManager::currentNM();
   d_modelValues.clear();
   TNodeSet constants;
   TNodeSet constants_in_eq_engine;
@@ -290,30 +289,10 @@ void CoreSolver::buildModel()
           representatives.push_back(it->first);
         }
         std::vector<Node> equalities;
-        for (unsigned i = 0; i < representatives.size(); ++i)
-        {
-          for (unsigned j = i + 1; j < representatives.size(); ++j)
-          {
-            TNode a = representatives[i];
-            TNode b = representatives[j];
-            if (a.getKind() == kind::CONST_BITVECTOR
-                && b.getKind() == kind::CONST_BITVECTOR)
-            {
-              Assert(a != b);
-              continue;
-            }
-            if (utils::getSize(a) == utils::getSize(b))
-            {
-              equalities.push_back(nm->mkNode(kind::EQUAL, a, b));
-            }
-          }
-        }
-        // better off letting the SAT solver split on values
-        if (equalities.size() > d_lemmaThreshold)
-        {
-          d_isComplete = false;
-          return;
-        }
+
+        // ---------------------------------------------------------------------
+        // TODO: Compute `equalities` for the theory lemma below.
+        // ---------------------------------------------------------------------
 
         if (equalities.size() == 0)
         {

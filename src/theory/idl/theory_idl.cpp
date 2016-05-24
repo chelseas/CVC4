@@ -22,7 +22,7 @@
 
 #include "options/idl_options.h"
 #include "theory/rewriter.h"
-
+#include "theory/theory_model.h"
 
 using namespace std;
 
@@ -30,124 +30,203 @@ namespace CVC4 {
 namespace theory {
 namespace idl {
 
-TheoryIdl::TheoryIdl(context::Context* c, context::UserContext* u,
-                     OutputChannel& out, Valuation valuation,
+TheoryIdl::TheoryIdl(context::Context* c,
+                     context::UserContext* u,
+                     OutputChannel& out,
+                     Valuation valuation,
                      const LogicInfo& logicInfo)
-    : Theory(THEORY_ARITH, c, u, out, valuation, logicInfo)
-    , d_model(c)
-    , d_assertionsDB(c)
+    : Theory(THEORY_ARITH, c, u, out, valuation, logicInfo),
+      d_varMap(c),
+      d_varList(c),
+      d_numVars(0)
 {}
 
-Node TheoryIdl::ppRewrite(TNode atom) {
-  if (atom.getKind() == kind::EQUAL  && options::idlRewriteEq()) {
-    // If the option is turned on, each equality into two inequalities. This in
-    // effect removes equalities, and theorefore dis-equalities too.
-    Node leq = NodeBuilder<2>(kind::LEQ) << atom[0] << atom[1];
-    Node geq = NodeBuilder<2>(kind::GEQ) << atom[0] << atom[1];
-    Node rewritten = Rewriter::rewrite(leq.andNode(geq));
-    return rewritten;
-  } else {
-    return atom;
+void TheoryIdl::preRegisterTerm(TNode node)
+{
+  Assert(d_numVars == 0);
+  if (node.isVar())
+  {
+    Debug("theory::idl::vars")
+        << "TheoryIdl::preRegisterTerm(): processing var " << node << std::endl;
+    unsigned size = d_varMap.size();
+    d_varMap[node] = size;
+    d_varList.push_back(node);
   }
 }
 
+void TheoryIdl::presolve()
+{
+  d_numVars = d_varMap.size();
+  Debug("theory::idl") << "TheoryIdl::preSolve(): d_numVars = " << d_numVars
+                       << std::endl;
+
+  // Initialize adjacency matrix.
+  for (size_t i = 0; i < d_numVars; ++i)
+  {
+    d_matrix.emplace_back(std::vector<Rational>(d_numVars));
+    d_valid.emplace_back(std::vector<bool>(d_numVars, false));
+  }
+}
+
+void TheoryIdl::postsolve()
+{
+  Debug("theory::idl") << "TheoryIdl::postSolve()" << std::endl;
+}
+
+Node TheoryIdl::ppRewrite(TNode atom) {
+  Debug("theory::idl::rewrite")
+      << "TheoryIdl::ppRewrite(): processing " << atom << std::endl;
+  NodeManager* nm = NodeManager::currentNM();
+  switch (atom.getKind())
+  {
+    case kind::EQUAL:
+    {
+      Node l_le_r = nm->mkNode(kind::LEQ, atom[0], atom[1]);
+      Assert(atom[0].getKind() == kind::MINUS);
+      Node negated_left = nm->mkNode(kind::MINUS, atom[0][1], atom[0][0]);
+      const Rational& right = atom[1].getConst<Rational>();
+      Node negated_right = nm->mkConst(-right);
+      Node r_le_l = nm->mkNode(kind::LEQ, negated_left, negated_right);
+      return nm->mkNode(kind::AND, l_le_r, r_le_l);
+    }
+
+    // -------------------------------------------------------------------------
+    // TODO: Handle these cases.
+    // -------------------------------------------------------------------------
+    case kind::LT:
+    case kind::LEQ:
+    case kind::GT:
+    case kind::GEQ:
+    case kind::NOT:
+    // -------------------------------------------------------------------------
+
+    default: break;
+  }
+  return atom;
+}
+
 void TheoryIdl::check(Effort level) {
-  if (done() && !fullEffort(level)) {
+  if (!fullEffort(level)) {
     return;
   }
 
   TimerStat::CodeTimer checkTimer(d_checkTime);
 
-  while(!done()) {
-
-    // Get the next assertion
-    Assertion assertion = get();
-    Debug("theory::idl") << "TheoryIdl::check(): processing " << assertion.assertion << std::endl;
-
-    // Convert the assertion into the internal representation
-    IDLAssertion idlAssertion(assertion.assertion);
-    Debug("theory::idl") << "TheoryIdl::check(): got " << idlAssertion << std::endl;
-
-    if (idlAssertion.ok()) {
-      if (idlAssertion.getOp() == kind::DISTINCT) {
-        // We don't handle dis-equalities
-        d_out->setIncomplete();
-      } else {
-        // Process the convex assertions immediately
-        bool ok = processAssertion(idlAssertion);
-        if (!ok) {
-          // In conflict, we're done
-          return;
-        }
-      }
-    } else {
-      // Not an IDL assertion, set incomplete
-      d_out->setIncomplete();
+  // Reset the graph
+  for (size_t i = 0; i < d_numVars; i++)
+  {
+    for (size_t j = 0; j < d_numVars; j++)
+    {
+      d_valid[i][j] = false;
     }
   }
 
+  for (assertions_iterator i = facts_begin(); i != facts_end(); ++i)
+  {
+    // For simplicity, we reprocess all the literals that have been asserted to
+    // this theory solver. A better implementation would use `Theory::get()` to
+    // only get new assertions.
+    Assertion assertion = (*i);
+    Debug("theory::idl") << "TheoryIdl::check(): processing "
+                         << assertion.assertion << std::endl;
+    processAssertion(assertion.assertion);
+  }
+
+  if (negativeCycle())
+  {
+    // Return a conflict that includes all the literals that have been asserted
+    // to this theory solver. A better implementation would only include the
+    // literals involved in the conflict here.
+    NodeBuilder<> conjunction(kind::AND);
+    for (assertions_iterator i = facts_begin(); i != facts_end(); ++i)
+    {
+      conjunction << (*i).assertion;
+    }
+    Node conflict = conjunction;
+    d_out->conflict(conflict);
+    return;
+  }
 }
 
-bool TheoryIdl::processAssertion(const IDLAssertion& assertion) {
+bool TheoryIdl::collectModelInfo(TheoryModel* m)
+{
+  std::vector<Rational> distance(d_numVars, Rational(0));
 
-  Debug("theory::idl") << "TheoryIdl::processAssertion(" << assertion << ")" << std::endl;
+  // ---------------------------------------------------------------------------
+  // TODO: implement model generation by computing the single-source shortest
+  // path from a node that has distance zero to all other nodes
+  // ---------------------------------------------------------------------------
 
-  // Add the constraint (x - y op c) to the list assertions of x
-  d_assertionsDB.add(assertion, assertion.getX());
-
-  // Update the model, if forced by the assertion
-  bool y_updated = assertion.propagate(d_model);
-
-  // If the value of y was updated, we might need to update further
-  if (y_updated) {
-
-    std::queue<TNode> queue; // Queue of variables to consider
-    std::set<TNode> inQueue; // Current elements of the queue
-
-    // Add the first updated variable to the queue
-    queue.push(assertion.getY());
-    inQueue.insert(assertion.getY());
-
-    while (!queue.empty()) {
-      // Pop a new variable x off the queue
-      TNode x = queue.front();
-      queue.pop();
-      inQueue.erase(x);
-
-      // Go through the constraint (x - y op c), and update values of y
-      IDLAssertionDB::iterator it(d_assertionsDB, x);
-      while (!it.done()) {
-        // Get the assertion and update y
-        IDLAssertion x_y_assertion = it.get();
-        y_updated = x_y_assertion.propagate(d_model);
-        // If updated add to the queue
-        if (y_updated) {
-          // If the variable that we updated is the same as the first
-          // variable that we updated, it's a cycle of updates => conflict
-          if (x_y_assertion.getY() == assertion.getX()) {
-            std::vector<TNode> reasons;
-            d_model.getReasonCycle(x_y_assertion.getY(), reasons);
-            // Construct the reason of the conflict
-            Node conflict = NodeManager::currentNM()->mkNode(kind::AND, reasons);
-            d_out->conflict(conflict);
-            return false;
-          } else {
-            // No cycle, just a model update, so we add to the queue
-            TNode y = x_y_assertion.getY();
-            if (inQueue.count(y) == 0) {
-              queue.push(y);
-              inQueue.insert(x_y_assertion.getY());
-            }
-          }
-        }
-        // Go to the next constraint
-        it.next();
-      }
-    }
+  NodeManager* nm = NodeManager::currentNM();
+  for (size_t i = 0; i < d_numVars; i++)
+  {
+    // Assert that the variable's value is equal to its distance in the model
+    m->assertEquality(d_varList[i], nm->mkConst(distance[i]), true);
   }
 
-  // Everything fine, no conflict
   return true;
+}
+
+void TheoryIdl::processAssertion(TNode assertion)
+{
+  bool polarity = assertion.getKind() != kind::NOT;
+  TNode atom = polarity ? assertion : assertion[0];
+  Assert(atom.getKind() == kind::LEQ);
+  Assert(atom[0].getKind() == kind::MINUS);
+  TNode var1 = atom[0][0];
+  TNode var2 = atom[0][1];
+
+  Rational value = (atom[1].getKind() == kind::UMINUS)
+                       ? -atom[1][0].getConst<Rational>()
+                       : atom[1].getConst<Rational>();
+
+  if (!polarity)
+  {
+    std::swap(var1, var2);
+    value = -value - Rational(1);
+  }
+
+  size_t index1 = d_varMap[var1];
+  size_t index2 = d_varMap[var2];
+
+  d_valid[index1][index2] = true;
+  d_matrix[index1][index2] = value;
+}
+
+bool TheoryIdl::negativeCycle()
+{
+  // --------------------------------------------------------------------------
+  // TODO: write the code to detect a negative cycle.
+  // --------------------------------------------------------------------------
+
+  return false;
+}
+
+void TheoryIdl::printMatrix(const std::vector<std::vector<Rational>>& matrix,
+                            const std::vector<std::vector<bool>>& valid)
+{
+  cout << "      ";
+  for (size_t j = 0; j < d_numVars; ++j)
+  {
+    cout << setw(6) << d_varList[j];
+  }
+  cout << endl;
+  for (size_t i = 0; i < d_numVars; ++i)
+  {
+    cout << setw(6) << d_varList[i];
+    for (size_t j = 0; j < d_numVars; ++j)
+    {
+      if (valid[i][j])
+      {
+        cout << setw(6) << matrix[i][j];
+      }
+      else
+      {
+        cout << setw(6) << "oo";
+      }
+    }
+    cout << endl;
+  }
 }
 
 } /* namepsace CVC4::theory::idl */

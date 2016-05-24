@@ -912,6 +912,8 @@ void SmtEngine::finishInit()
                                     const_cast<const LogicInfo&>(d_logic),
                                     d_channels);
 
+  d_private->addUseTheoryListListener(d_theoryEngine);
+
   // Add the theories
   for(TheoryId id = theory::THEORY_FIRST; id < theory::THEORY_LAST; ++id) {
     TheoryConstructor::addTheory(d_theoryEngine, id);
@@ -920,8 +922,6 @@ void SmtEngine::finishInit()
     ProofManager::currentPM()->getTheoryProofEngine()->registerTheory(d_theoryEngine->theoryOf(id));
 #endif
   }
-
-  d_private->addUseTheoryListListener(d_theoryEngine);
 
   // global push/pop around everything, to ensure proper destruction
   // of context-dependent data structures
@@ -1488,8 +1488,10 @@ void SmtEngine::setDefaults() {
       // simplification=none works better for SMT LIB benchmarks with
       // quantifiers, not others options::simplificationMode.set(qf_sat ||
       // quantifiers ? SIMPLIFICATION_MODE_NONE : SIMPLIFICATION_MODE_BATCH);
-      options::simplificationMode.set(qf_sat ? SIMPLIFICATION_MODE_NONE
-                                             : SIMPLIFICATION_MODE_BATCH);
+      if (qf_sat || d_theoryEngine->useTheoryAlternative("idl"))
+      {
+        options::simplificationMode.set(SIMPLIFICATION_MODE_NONE);
+      }
     }
   }
 

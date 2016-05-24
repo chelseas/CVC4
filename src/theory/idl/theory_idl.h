@@ -20,8 +20,6 @@
 #include "cvc4_private.h"
 
 #include "theory/theory.h"
-#include "theory/idl/idl_model.h"
-#include "theory/idl/idl_assertion_db.h"
 
 namespace CVC4 {
 namespace theory {
@@ -31,21 +29,19 @@ namespace idl {
  * Handles integer difference logic (IDL) constraints.
  */
 class TheoryIdl : public Theory {
-
-  /** The current model */
-  IDLModel d_model;
-
-  /** The asserted constraints, organized by variable */
-  IDLAssertionDB d_assertionsDB;
-
-  /** Process a new assertion, returns false if in conflict */
-  bool processAssertion(const IDLAssertion& assertion);
-
-public:
-
+ public:
   /** Theory constructor. */
   TheoryIdl(context::Context* c, context::UserContext* u, OutputChannel& out,
             Valuation valuation, const LogicInfo& logicInfo);
+
+  /** Register a term that is in the formula */
+  void preRegisterTerm(TNode) override;
+
+  /** Set up the solving data structures */
+  void presolve() override;
+
+  /** Clean up the solving data structures */
+  void postsolve() override;
 
   /** Pre-processing of input atoms */
   Node ppRewrite(TNode atom) override;
@@ -56,6 +52,35 @@ public:
   /** Identity string */
   std::string identify() const override { return "THEORY_IDL"; }
 
+  bool collectModelInfo(TheoryModel* m) override;
+
+ private:
+  /** Process a new assertion */
+  void processAssertion(TNode assertion);
+
+  /** Return true iff the graph has a negative cycle */
+  bool negativeCycle();
+
+  /** Print the matrix */
+  void printMatrix(const std::vector<std::vector<Rational>>& matrix, const std::vector<std::vector<bool>>& valid);
+
+  typedef context::CDHashMap<TNode, size_t, TNodeHashFunction>
+      TNodeToUnsignedCDMap;
+
+  /** Map from variables to the first element of their list */
+  TNodeToUnsignedCDMap d_varMap;
+
+  /** Context-dependent vector of variables */
+  context::CDList<TNode> d_varList;
+
+  /** i,jth entry is true iff there is an edge from i to j. */
+  std::vector<std::vector<bool>> d_valid;
+
+  /** i,jth entry stores weight for edge from i to j. */
+  std::vector<std::vector<Rational>> d_matrix;
+
+  /** Number of variables in the graph */
+  size_t d_numVars;
 };/* class TheoryIdl */
 
 }/* CVC4::theory::idl namespace */

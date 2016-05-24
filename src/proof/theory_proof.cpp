@@ -125,7 +125,7 @@ void TheoryProofEngine::registerTheory(theory::Theory* th) {
       }
 
       if (id == theory::THEORY_ARITH) {
-        d_theoryProofTable[id] = new LFSCArithProof((theory::arith::TheoryArith*)th, this);
+        // d_theoryProofTable[id] = new LFSCArithProof((theory::arith::TheoryArith*)th, this);
         return;
       }
 
@@ -1021,9 +1021,11 @@ void TheoryProof::printTheoryLemmaProof(std::vector<Expr>& lemma,
   Trace("pf::tp") << ";; Print theory lemma proof, theory id = " << d_theory->getId() << std::endl;
 
   if (d_theory->getId()==theory::THEORY_UF) {
+    /*
     th = new theory::uf::TheoryUF(&fakeContext, &fakeContext, oc, v,
                                   ProofManager::currentPM()->getLogicInfo(),
                                   "replay::");
+    */
   } else if (d_theory->getId()==theory::THEORY_ARRAYS) {
     th = new theory::arrays::TheoryArrays(&fakeContext, &fakeContext, oc, v,
                                           ProofManager::currentPM()->getLogicInfo(),

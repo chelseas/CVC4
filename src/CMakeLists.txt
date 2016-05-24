@@ -430,12 +430,6 @@ libcvc4_add_sources(
   theory/fp/theory_fp_rewriter.h
   theory/fp/theory_fp_type_rules.h
   theory/fp/type_enumerator.h
-  theory/idl/idl_assertion.cpp
-  theory/idl/idl_assertion.h
-  theory/idl/idl_assertion_db.cpp
-  theory/idl/idl_assertion_db.h
-  theory/idl/idl_model.cpp
-  theory/idl/idl_model.h
   theory/idl/theory_idl.cpp
   theory/idl/theory_idl.h
   theory/interrupted.h

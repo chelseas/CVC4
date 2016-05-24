@@ -630,6 +630,12 @@ RewriteResponse ArithRewriter::preRewriteAtom(TNode atom){
 }
 
 RewriteResponse ArithRewriter::postRewrite(TNode t){
+  NodeManager* nm = NodeManager::currentNM();
+  const Options& options = nm->getOptions();
+  if (options.getUseTheoryString() == "idl")
+  {
+    return RewriteResponse(REWRITE_DONE, t);
+  }
   if(isTerm(t)){
     RewriteResponse response = postRewriteTerm(t);
     if(Debug.isOn("arith::rewriter") && response.status == REWRITE_DONE) {
@@ -648,6 +654,12 @@ RewriteResponse ArithRewriter::postRewrite(TNode t){
 }
 
 RewriteResponse ArithRewriter::preRewrite(TNode t){
+  NodeManager* nm = NodeManager::currentNM();
+  const Options& options = nm->getOptions();
+  if (options.getUseTheoryString() == "idl")
+  {
+    return RewriteResponse(REWRITE_DONE, t);
+  }
   if(isTerm(t)){
     return preRewriteTerm(t);
   }else if(isAtom(t)){

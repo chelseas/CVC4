@@ -28,12 +28,13 @@
 #include "options/base_options.h"
 #include "options/language.h"
 #include "options/main_options.h"
+#include "options/option_exception.h"
 #include "options/parser_options.h"
 #include "options/printer_modes.h"
 #include "options/printer_options.h"
-#include "options/option_exception.h"
-#include "options/smt_options.h"
 #include "options/quantifiers_options.h"
+#include "options/smt_options.h"
+#include "options/theory_options.h"
 
 namespace CVC4 {
 
@@ -168,6 +169,11 @@ bool Options::getWaitToJoin() const{
 
 const std::string& Options::getForceLogicString() const{
   return (*this)[options::forceLogicString];
+}
+
+std::string Options::getUseTheoryString() const
+{
+  return options::useTheoryList();
 }
 
 int Options::getVerbosity() const{
