@@ -12,7 +12,7 @@ public:
 template <>
 Trie<int>::Cleaner *Trie<int>::cleaner = new Simple;
 
-void unit_test_trie() {
+int main() {
   Trie<int> t;
   t.insert("a", 1);
   t.insert("b", 2);

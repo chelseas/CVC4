@@ -19,10 +19,42 @@
 #pragma once
 
 #include "expr/node.h"
+#include "smt/smt_engine_scope.h"
+#include "smt/smt_statistics_registry.h"
+#include "theory/theory.h"
+#include "util/resource_manager.h"
 #include "util/unsafe_interrupt_exception.h"
+
+using namespace std;
 
 namespace CVC4 {
 namespace theory {
+
+static inline Node mkCommutativeNode(Kind k, const std::vector<Node>& children) {
+  NodeManager *nm = NodeManager::currentNM();
+
+  if (children.size() == 0) {
+    switch (k) {
+      case kind::AND:
+        return nm->mkConst(true);
+        break;
+      case kind::OR:
+        return nm->mkConst(false);
+        break;
+      default:
+        abort();
+        break;
+    }
+  } else if (children.size() == 1) {
+    return children[0];
+  } else {
+    return nm->mkNode(k, children);
+  }
+}
+
+static inline TheoryId theoryOf(TNode node) {
+  return Theory::theoryOf(THEORY_OF_TYPE_BASED, node);
+}
 
 /**
  * Theory rewriters signal whether more rewriting is needed (or not)
@@ -44,6 +76,7 @@ enum RewriteStatus {
 struct RewriteResponse {
   const RewriteStatus status;
   const Node node;
+
   RewriteResponse(RewriteStatus status, Node node) :
     status(status), node(node) {}
 };/* struct RewriteResponse */
@@ -78,7 +111,8 @@ class Rewriter {
   /**
    * Rewrites the node using the given theory rewriter.
    */
-  static Node rewriteTo(theory::TheoryId theoryId, Node node);
+  template<bool Proof>
+  static Node rewriteTo(theory::TheoryId theoryId, Node node, RewriteProof* rp);
 
   /** Calls the pre-rewriter for the given theory */
   static RewriteResponse callPreRewrite(theory::TheoryId theoryId, TNode node);
@@ -108,6 +142,12 @@ public:
    * use on the node.
    */
   static Node rewrite(TNode node);
+
+  /**
+   * Rewrites the node using theoryOf() to determine which rewriter to
+   * use on the node and generates a proof.
+   */
+  static Node rewriteWithProof(TNode node, RewriteProof* rp) throw (UnsafeInterruptException);
 
   /**
    * Garbage collects the rewrite caches.

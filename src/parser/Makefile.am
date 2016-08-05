@@ -29,7 +29,7 @@ libcvc4parser_la_LIBADD = \
 	@builddir@/smt2/libparsersmt2.la \
 	@builddir@/tptp/libparsertptp.la \
 	@builddir@/cvc/libparsercvc.la \
-	@builddir@/../libcvc4.la \
+	@builddir@/../libcvc4.la
 	@builddir@/../lib/libreplacements.la
 
 libcvc4parser_la_SOURCES = \

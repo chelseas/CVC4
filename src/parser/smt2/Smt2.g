@@ -63,6 +63,8 @@ options {
 
 #include "parser/antlr_tracing.h"
 
+#define _empty NULL
+
 }/* @lexer::includes */
 
 @lexer::postinclude {

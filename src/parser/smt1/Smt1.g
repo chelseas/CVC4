@@ -62,6 +62,8 @@ options {
 #endif /* CVC4_COMPETITION_MODE && !CVC4_SMTCOMP_APPLICATION_TRACK */
 
 #include "parser/antlr_tracing.h"
+
+#define _empty NULL
 }/* @lexer::includes */
 
 @parser::includes {

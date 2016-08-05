@@ -37,10 +37,10 @@
 (declare bvc (! b bit (! v bv bv)))
 
 ; calculate the length of a bitvector
-;; (program bv_len ((v bv)) mpz
-;;   (match v
-;;     (bvn 0)
-;;     ((bvc b v') (mp_add (bv_len v') 1))))
+(program bv_len ((v bv)) mpz
+  (match v
+    (bvn 0)
+    ((bvc b v') (mp_add (bv_len v') 1))))
 
 
 ; a bv constant term
@@ -190,3 +190,285 @@
 (declare bvsle bvpred)
 (declare bvsgt bvpred)
 (declare bvsge bvpred)
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Rewrite support                                                            ;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; check whether a constant bitvector is zero
+(program bv_is_constant_zero ((x bv)) formula
+  (match x
+    (bvn (true))
+    ((bvc bx x')
+      (match bx
+        (b0 (bv_is_constant_zero x'))
+        (b1 (fail formula))
+      )
+    )
+  )
+)
+
+; check whether a constant bitvector is all ones
+(program bv_is_constant_all_ones ((x bv)) formula
+  (match x
+    (bvn (true))
+    ((bvc bx x')
+      (match bx
+        (b0 (fail formula))
+        (b1 (bv_is_constant_all_ones x'))
+      )
+    )
+  )
+)
+
+; check whether a constant bitvector is a power of two
+(program bv_is_constant_pow2 ((x bv)) formula
+  (match x
+    (bvn (fail formula))
+    ((bvc bx x')
+      (match bx
+        (b0 (bv_is_constant_pow2 x'))
+        (b1 (bv_is_constant_zero x'))
+      )
+    )
+  )
+)
+
+; compute 2**len
+; TODO: add native mp_pow to lfsc more efficiency?
+(program pow2len ((x bv)) mpz
+  (match x
+    (bvn (fail mpz))
+    ((bvc bx x')
+      (match x'
+        (bvn 1)
+        ((bvc bx' x'') (mp_mul 2 (pow2len x')))
+      )
+    )
+  )
+)
+
+; convert bitvector constant to size
+(program bv_const_to_size ((x bv)) mpz
+  (match x
+    (bvn 0)
+    ((bvc bx x')
+      (match bx
+        (b0 (bv_const_to_size x'))
+        (b1 (mp_add (pow2len x) (bv_const_to_size x')))
+      )
+    )
+  )
+)
+
+; computes log2 of a bitvector constant and returns the result as a size
+; NOTE: requires the bitvector to be a power of two
+(program bv_const_log2 ((x bv)) mpz
+  (match x
+    (bvn (fail mpz))
+    ((bvc bx x')
+      (match bx
+        (b0 (bv_const_log2 x'))
+        (b1 (bv_len x'))
+      )
+    )
+  )
+)
+
+(program swap_op2_ ((op formula_op2) (x formula) (other formula) (n mpz)) formula
+  (mp_ifzero n
+    (match x
+      ((op l r) (op l (op other r)))
+      (default  (op x other))
+    )
+    (match x
+      ((op l r)
+        (match (swap_op2_ op r other (mp_add n (~1)))
+          ((op e new_r) (op e (op l new_r)))
+          (x (fail formula))
+        )
+      )
+      (default (fail formula))
+    )
+  )
+)
+
+(program swap_op2 ((op formula_op2) (x formula) (n mpz) (m mpz)) formula
+  (mp_ifzero n
+    (match x
+      ((op l r) (swap_op2_ op r l (mp_add m (~1))))
+      (default (fail formula))
+    )
+    (match x
+      ((op l r) (op l (swap_op2 op r (mp_add n (~1)) (mp_add m (~1)))))
+      (default (fail formula))
+    )
+  )
+)
+
+(declare do_swap_op2
+  (! op formula_op2
+  (! n mpz
+  (! m mpz
+  (! p formula
+  (! q formula
+  (! r formula
+  (! x (th_holds (iff p q))
+  (! c (^ (swap_op2 op q n m) r)
+    (th_holds (iff p r)))))))))))
+
+(program get_op2 ((op formula_op2) (x formula) (n mpz)) formula
+  (mp_ifzero n
+    (match x
+      ((op l r) l)
+      (default x)
+    )
+    (match x
+      ((op l r) (get_op2 op r (mp_add n (~1))))
+      (default (fail formula))
+    )
+  )
+)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Test helpers                                                               ;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(declare test_bv_is_constant_zero
+  (! x bv
+  (! c (^ (bv_is_constant_zero x) true)
+    (th_holds true))))
+
+(declare test_bv_is_constant_all_ones
+  (! x bv
+  (! c (^ (bv_is_constant_all_ones x) true)
+    (th_holds true))))
+
+(declare test_bv_is_constant_pow2
+  (! x bv
+  (! c (^ (bv_is_constant_pow2 x) true)
+    (th_holds true))))
+
+(declare test_pow2len
+  (! n mpz
+  (! x bv
+  (! c (^ (pow2len x) n)
+    (th_holds true)))))
+
+(declare test_bv_const_to_size
+  (! n mpz
+  (! x bv
+  (! c (^ (bv_const_to_size x) n)
+    (th_holds true)))))
+
+(declare test_bv_const_log2
+  (! n mpz
+  (! x bv
+  (! c (^ (bv_const_log2 x) n)
+    (th_holds true)))))
+
+(declare test_swap_op2
+  (! x formula
+  (! y formula
+  (! op formula_op2
+  (! n mpz
+  (! m mpz
+  (! c (^ (swap_op2 op x n m) y)
+    (th_holds y))))))))
+
+(declare test_get_op2
+  (! x formula
+  (! op formula_op2
+  (! n mpz
+  (! c (^ (get_op2 op x n) (iff true false))
+    (th_holds true))))))))))
+
+(declare test_nested_get_op2
+  (! x formula
+  (! op formula_op2
+  (! n mpz
+  (! c (^ (get_op2 op x n) (iff true false))
+    (th_holds true))))))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+; EXAMPLES
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; XXX: remove
+; (declare shl_by_const_zero
+;   (! n mpz
+;   (! x (term (BitVec n))
+;   (! y bv
+;   (! o (term (BitVec n))
+;   (! u1 (th_holds (= _ o (bvshl n x (a_bv n y))))
+;   (! u2 (^ (bv_is_constant_zero y) true)
+;     (th_holds (= _ o x)))))))))
+
+(declare shl_by_const_zero
+	(! n10 mpz
+	(! x (term (BitVec n10))
+	(! XXXv0 bv
+	(! o (term (BitVec n10))
+	(! u (th_holds (= _ o (bvshl _ x (a_bv _ XXXv0))))
+	(! u (^ (bv_is_constant_zero XXXv0) true)
+		(th_holds (= _ o x)))))))))
+
+; XXX: remove
+; (declare shl_by_const_more_than_len
+;   (! n mpz
+;   (! x (term (BitVec n))
+;   (! y bv
+;   (! o (term (BitVec n))
+;   (! r bv
+;   (! u1 (th_holds (= _ o (bvshl n x (a_bv n y))))
+;   (! u2 (^ (mpz_lte n (bv_const_to_size y)) true)
+;   (! u3 (^ (bv_is_constant_zero r) true)
+;     (th_holds (= _ o (a_bv n r))))))))))))
+
+(declare shl_by_const_more_than_len
+  (! n26 mpz
+  (! x (term (BitVec n26))
+  (! y bv
+  (! o (term (BitVec n26))
+  (! XXXv1 bv
+  (! u (th_holds (= _ o (bvshl _ x (a_bv _ y))))
+  (! u (^ (mpz_lte (n26) (bv_const_to_size y)) true)
+  (! u (^ (bv_is_constant_zero XXXv1) true)
+    (th_holds (= _ o (a_bv _ XXXv1))))))))))))
+
+; Name: SHL_BY_CONST
+; Precond: const_bv(#y)
+; (bvshl #x #y) --> (concat (extract #x (size(#x) - 1 - to_unsigned_int(#y)) 0) (bvconst(to_unsigned_int(#y), 0)))
+; 
+; (declare shl_by_const
+;   (! n mpz
+;   (! x (term (BitVec n))
+;   (! y bv
+;   (! o (term (BitVec n))
+;   (! n1 mpz
+;   (! n2 mpz
+;   (! r bv
+;   (! u (th_holds (= _ o (bvshl x (a_bv y))))
+;   (! u (^ (mpz_sub (mpz_sub n 1) (bv_const_to_size y)) n1)
+;   (! u (^ (bv_is_constant_zero r) true)
+;     (th_holds (= _ o (concat (extract n2 n1 0 _ x) (a_bv r)))))))))))))
+
+
+(declare lshr_by_const_zero (! n48 mpz (! x (term (BitVec n48)) (! XXXv3 bv (! o (term (BitVec n48)) (! u (^ (bv_is_constant_zero XXXv3) true) (! u (th_holds (= _ o (bvlshr _ x (a_bv _ XXXv3)))) (th_holds (= _ o x)))))))))
+(declare lshr_by_const_more_than_len (! n63 mpz (! y bv (! x (term (BitVec n63)) (! XXXv4 bv (! o (term (BitVec n63)) (! u (^ (mpz_lte (n63) (bv_const_to_size y)) true) (! u (^ (bv_is_constant_zero XXXv4) true) (! u (th_holds (= _ o (bvlshr _ x (a_bv _ y)))) (th_holds (= _ o (a_bv _ XXXv4))))))))))))
+(declare bitwise_idemp_and (! n68 mpz (! x (term (BitVec n68)) (! o (term (BitVec n68)) (! u (th_holds (= _ o (bvand n68 x x))) (th_holds (= _ o x)))))))
+(declare bitwise_idemp_or (! n73 mpz (! x (term (BitVec n73)) (! o (term (BitVec n73)) (! u (th_holds (= _ o (bvor _ x x))) (th_holds (= _ o x)))))))
+(declare and_zero_r (! n88 mpz (! XXXv6 bv (! x (term (BitVec n88)) (! XXXv5 bv (! o (term (BitVec n88)) (! u (^ (bv_is_constant_zero XXXv6) true) (! u (^ (bv_is_constant_zero XXXv5) true) (! u (th_holds (= _ o (bvand n88 x (a_bv _ XXXv5)))) (th_holds (= _ o (a_bv _ XXXv6))))))))))))
+(declare and_zero_l (! n103 mpz (! XXXv8 bv (! x (term (BitVec n103)) (! XXXv7 bv (! o (term (BitVec n103)) (! u (^ (bv_is_constant_zero XXXv8) true) (! u (^ (bv_is_constant_zero XXXv7) true) (! u (th_holds (= _ o (bvand n103 (a_bv _ XXXv7) x))) (th_holds (= _ o (a_bv _ XXXv8))))))))))))
+(declare bitwise_not_and_r (! n114 mpz (! x (term (BitVec n114)) (! XXXv9 bv (! o (term (BitVec n114)) (! u (^ (bv_is_constant_zero XXXv9) true) (! u (th_holds (= _ o (bvand n114 x (bvnot _ x)))) (th_holds (= _ o (a_bv _ XXXv9))))))))))
+(declare bitwise_not_and_l (! n125 mpz (! x (term (BitVec n125)) (! XXXv10 bv (! o (term (BitVec n125)) (! u (^ (bv_is_constant_zero XXXv10) true) (! u (th_holds (= _ o (bvand n125 (bvnot _ x) x))) (th_holds (= _ o (a_bv _ XXXv10))))))))))
+(declare not_idemp (! n130 mpz (! x (term (BitVec n130)) (! o (term (BitVec n130)) (! u (th_holds (= _ o (bvnot _ (bvnot _ x)))) (th_holds (= _ o x)))))))
+(declare lt_self_ult (! n135 mpz (! x (term (BitVec n135)) (! o formula (! u (th_holds (iff o (bvult _ x x))) (th_holds (iff o (false))))))))
+(declare lt_self_slt (! n139 mpz (! x (term (BitVec n139)) (! o formula (! u (th_holds (iff o (bvslt _ x x))) (th_holds (iff o (false))))))))
+(declare lte_self_ule (! n143 mpz (! x (term (BitVec n143)) (! o formula (! u (th_holds (iff o (bvule _ x x))) (th_holds (iff o (true))))))))
+(declare lte_self_sle (! n147 mpz (! x (term (BitVec n147)) (! o formula (! u (th_holds (iff o (bvsle _ x x))) (th_holds (iff o (true))))))))
+(declare ugt_eliminate (! n155 mpz (! y (term (BitVec n155)) (! x (term (BitVec n155)) (! o formula (! u (th_holds (iff o (bvugt _ x y))) (th_holds (iff o (bvult _ y x)))))))))
+(declare uge_eliminate (! n163 mpz (! y (term (BitVec n163)) (! x (term (BitVec n163)) (! o formula (! u (th_holds (iff o (bvuge _ x y))) (th_holds (iff o (bvule _ y x)))))))))
+(declare sgt_eliminate (! n171 mpz (! y (term (BitVec n171)) (! x (term (BitVec n171)) (! o formula (! u (th_holds (iff o (bvsgt _ x y))) (th_holds (iff o (bvslt _ y x)))))))))
+(declare sge_eliminate (! n179 mpz (! y (term (BitVec n179)) (! x (term (BitVec n179)) (! o formula (! u (th_holds (iff o (bvsge _ x y))) (th_holds (iff o (bvsle _ y x)))))))))

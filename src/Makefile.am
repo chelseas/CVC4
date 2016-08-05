@@ -94,6 +94,10 @@ libcvc4_la_SOURCES = \
 	proof/proof_output_channel.h \
 	proof/proof_utils.cpp \
 	proof/proof_utils.h \
+	proof/rewrite_proof.cpp \
+	proof/rewrite_proof.h \
+	proof/rewrite_proof_dispatcher.cpp \
+	proof/rewrite_proof_dispatcher.h \
 	proof/sat_proof.h \
 	proof/sat_proof_implementation.h \
 	proof/simplify_boolean_node.cpp \

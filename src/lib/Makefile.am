@@ -7,7 +7,6 @@ AM_CXXFLAGS = -Wall -Wno-unknown-pragmas $(FLAG_VISIBILITY_HIDDEN)
 noinst_LTLIBRARIES = libreplacements.la
 
 libreplacements_la_SOURCES =
-
 libreplacements_la_LIBADD = \
 	$(LTLIBOBJS)
 

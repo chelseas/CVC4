@@ -20,6 +20,7 @@
 #ifndef __CVC4__THEORY__BOOLEANS__THEORY_BOOL_REWRITER_H
 #define __CVC4__THEORY__BOOLEANS__THEORY_BOOL_REWRITER_H
 
+#include "theory/booleans/bool.h"
 #include "theory/rewriter.h"
 
 namespace CVC4 {
@@ -27,15 +28,26 @@ namespace theory {
 namespace booleans {
 
 class TheoryBoolRewriter {
-
 public:
+  enum BoolRewrites {
+    NOT_TRUE = LAST_SHARED,
+    TRUE_IMPLIES_FALSE,
+  };
 
   static RewriteResponse preRewrite(TNode node);
+  template<bool Proof>
+  static RewriteResponse preRewriteEx(TNode node, RewriteProof* proof);
   static RewriteResponse postRewrite(TNode node);
+  template<bool Proof>
+  static RewriteResponse postRewriteEx(TNode node, RewriteProof* proof);
+  static void printRewriteProof(bool use_cache,
+                                TheoryProofEngine* tp,
+                                const Rewrite* rewrite,
+                                std::ostream& os,
+                                ProofLetMap& globalLetMap);
 
   static void init() {}
   static void shutdown() {}
-
 };/* class TheoryBoolRewriter */
 
 }/* CVC4::theory::booleans namespace */

@@ -31,7 +31,7 @@
 #include "theory/logic_info.h"
 #include "theory/substitutions.h"
 #include "util/proof.h"
-
+#include "proof/rewrite_proof.h"
 
 namespace CVC4 {
 
@@ -68,6 +68,7 @@ class UFProof;
 class ArithProof;
 class ArrayProof;
 class BitVectorProof;
+class RewriteProof;
 
 template <class Solver> class LFSCSatProof;
 typedef LFSCSatProof< CVC4::Minisat::Solver> LFSCCoreSatProof;

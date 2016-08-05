@@ -2861,6 +2861,8 @@ bool SmtEnginePrivate::nonClausalSimplify() {
   Trace("simplify") << "SmtEnginePrivate::nonClausalSimplify(): "
                     << "asserting to propagator" << endl;
   for (unsigned i = 0; i < d_assertions.size(); ++ i) {
+    //std::cout << Rewriter::rewrite(d_assertions[i]) << std::endl;
+    //std::cout << d_assertions[i] << std::endl;
     Assert(Rewriter::rewrite(d_assertions[i]) == d_assertions[i]);
     // Don't reprocess substitutions
     if (d_substitutionsIndex > 0 && i == d_substitutionsIndex) {

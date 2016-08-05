@@ -50,7 +50,10 @@ TESTS =	\
 	constarr3.cvc \
 	parsing_ringer.cvc \
 	bug637.delta.smt2 \
-	bool-array.smt2
+	bool-array.smt2 \
+	simple_rewrite_proof.smt2 \
+	simple_rewrite_proof2.smt2 \
+	rewrite_proof_cache.smt2
 
 EXTRA_DIST = $(TESTS)
 

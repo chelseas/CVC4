@@ -26,7 +26,7 @@ libcvc4compat_la_LDFLAGS = \
 
 libcvc4compat_la_LIBADD = \
 	@builddir@/../libcvc4.la \
-	@builddir@/../parser/libcvc4parser.la \
+	@builddir@/../parser/libcvc4parser.la
 	@builddir@/../lib/libreplacements.la
 
 libcvc4compat_la_SOURCES = \

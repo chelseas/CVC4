@@ -508,7 +508,7 @@ Node QuantifiersRewriter::computeProcessTerms( Node body, std::vector< Node >& n
     Assert( !h.isNull() );
     // if it is a function definition, rewrite the body independently
     Node fbody = TermDb::getFunDefBody( q );
-    Assert( !body.isNull() );
+    Assert( !fbody.isNull() );
     Trace("quantifiers-rewrite-debug") << "Decompose " << h << " / " << fbody << " as function definition for " << q << "." << std::endl;
     Node r = computeProcessTerms2( fbody, true, true, curr_cond, 0, cache, icache, new_vars, new_conds, false );
     Assert( new_vars.size()==h.getNumChildren() );

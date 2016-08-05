@@ -522,6 +522,8 @@ Expr addNots(ExprManager* em, size_t n, Expr e) {
 #include "parser/parser.h"
 #include "util/integer.h"
 
+#define _empty NULL
+
 }/* @lexer::includes */
 
 @parser::includes {

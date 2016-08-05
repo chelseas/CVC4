@@ -15,15 +15,70 @@
  ** \todo document this file
  **/
 
-#include <algorithm>
 #include "theory/booleans/theory_bool_rewriter.h"
+
+#include <algorithm>
+
+#include "proof/rewrite_proof_dispatcher.h"
 
 namespace CVC4 {
 namespace theory {
 namespace booleans {
 
 RewriteResponse TheoryBoolRewriter::postRewrite(TNode node) {
-  return preRewrite(node);
+  return preRewriteEx<false>(node, NULL);
+}
+
+Node flattenIfNeeded(TNode n) {
+  Kind k = n.getKind();
+  if (k != kind::AND && k != kind::OR) {
+    return n;
+  }
+
+  bool needed = false;
+  for (size_t i = 0; i < n.getNumChildren(); i++) {
+    if (n[i].getKind() == k) {
+      needed = true;
+      break;
+    }
+  }
+  if (!needed) {
+    return n;
+  }
+
+  std::vector<TNode> toProcess;
+  toProcess.push_back(n);
+
+  typedef std::vector<TNode> ChildList;
+  ChildList childList;
+
+  for (unsigned i = 0; i < toProcess.size(); ++ i) {
+    TNode current = toProcess[i];
+    for(unsigned j = 0, j_end = current.getNumChildren(); j < j_end; ++ j) {
+      TNode child = current[j];
+      if(child.getKind() == k) {
+        toProcess.push_back(child);
+      } else {
+        childList.push_back(child);
+      }
+    }
+  }
+
+  NodeManager* nm = NodeManager::currentNM();
+  return nm->mkNode(k, childList);
+}
+
+
+template<bool Proof>
+RewriteResponse TheoryBoolRewriter::postRewriteEx(TNode node_, RewriteProof* proof) {
+  Node node = flattenIfNeeded(node_);
+  RewriteResponse r = bool_applyRules<Proof>(node, proof);
+  if (r.node != preRewrite(node).node) {
+    std::cout << node << " --> " << r.node << std::endl;
+    std::cout << preRewrite(node).node << std::endl;
+  }
+  return r;
+
 }
 
 /**
@@ -286,21 +341,21 @@ RewriteResponse TheoryBoolRewriter::preRewrite(TNode n) {
       if (n[0] == tt) {
         // ITE true x y
 
-        Debug("bool-ite") << "n[0] ==tt " << n << ": " << n[1] << std::endl;
+        Debug("bool-ite") << "n[0] == tt " << n << ": " << n[1] << std::endl;
         return RewriteResponse(REWRITE_AGAIN, n[1]);
       } else {
         Assert(n[0] == ff);
         // ITE false x y
-        Debug("bool-ite") << "n[0] ==ff " << n << ": " << n[1] << std::endl;
+        Debug("bool-ite") << "n[0] == ff " << n << ": " << n[1] << std::endl;
         return RewriteResponse(REWRITE_AGAIN, n[2]);
       }
     } else if (n[1].isConst()) {
       if (n[1] == tt && n[2] == ff) {
-        Debug("bool-ite") << "n[1] ==tt && n[2] == ff " << n << ": " << n[0] << std::endl;
+        Debug("bool-ite") << "n[1] == tt && n[2] == ff " << n << ": " << n[0] << std::endl;
         return RewriteResponse(REWRITE_AGAIN, n[0]);
       }
       else if (n[1] == ff && n[2] == tt) {
-        Debug("bool-ite") << "n[1] ==ff && n[2] == tt " << n << ": " << n[0].notNode() << std::endl;
+        Debug("bool-ite") << "n[1] == ff && n[2] == tt " << n << ": " << n[0].notNode() << std::endl;
         return RewriteResponse(REWRITE_AGAIN, makeNegation(n[0]));
       }
       // else if(n[1] == ff){
@@ -366,6 +421,109 @@ RewriteResponse TheoryBoolRewriter::preRewrite(TNode n) {
   }
   return RewriteResponse(REWRITE_DONE, n);
 }
+
+template<bool Proof>
+RewriteResponse TheoryBoolRewriter::preRewriteEx(TNode node_, RewriteProof* proof) {
+  Node node = flattenIfNeeded(node_);
+  RewriteResponse r = bool_applyRules<Proof>(node, NULL);
+  if (r.node != preRewrite(node).node) {
+    std::cout << node << " --> " << r.node << std::endl;
+    std::cout << preRewrite(node).node << std::endl;
+  }
+  return r;
+}
+
+void TheoryBoolRewriter::printRewriteProof(bool use_cache,
+                                           TheoryProofEngine* tp,
+                                           const Rewrite* rewrite,
+                                           std::ostream& os,
+                                           ProofLetMap& globalLetMap) {
+  if (rewrite->d_tag == ORIGINAL_OP) {
+    if (rewrite->d_children.size() == 0) {
+      os << "(iff_symm ";
+      tp->printTheoryTerm(rewrite->d_original.toExpr(), os, globalLetMap);
+      os << ")";
+    } else {
+      // XXX: we only need one of those options for each arity
+      switch (rewrite->d_original.getKind()) {
+        case kind::NOT:
+          os << "(symm_formula_op1 not _ _ ";
+          callPrintRewriteProof(use_cache, tp, rewrite->d_children[0], os, globalLetMap);
+          os << ")";
+          break;
+        case kind::IMPLIES:
+          os << "(symm_formula_op2 impl _ _ _ _ ";
+          callPrintRewriteProof(use_cache, tp, rewrite->d_children[0], os, globalLetMap);
+          os << " ";
+          callPrintRewriteProof(use_cache, tp, rewrite->d_children[1], os, globalLetMap);
+          os << ")";
+          break;
+        case kind::AND:
+          os << "(symm_formula_op2 and _ _ _ _ ";
+          callPrintRewriteProof(use_cache, tp, rewrite->d_children[0], os, globalLetMap);
+          os << " ";
+          callPrintRewriteProof(use_cache, tp, rewrite->d_children[1], os, globalLetMap);
+          os << ")";
+          break;
+        // XXX: CHECK THIS
+        case kind::EQUAL:
+          os << "(symm_formula_op2 iff _ _ _ _ ";
+          callPrintRewriteProof(use_cache, tp, rewrite->d_children[0], os, globalLetMap);
+          os << " ";
+          callPrintRewriteProof(use_cache, tp, rewrite->d_children[1], os, globalLetMap);
+          os << ")";
+          break;
+        default:
+          std::cout << "IMPLEMENTATION MISSING " << rewrite->d_original.getKind() << std::endl;
+          Unreachable();
+      }
+    }
+  } else if (rewrite->d_tag == SWAP) {
+    os << "(do_swap_op2 ";
+    switch (rewrite->d_original.getKind()) {
+      case kind::EQUAL:
+        os << "iff ";
+        break;
+      case kind::AND:
+        os << "and ";
+        break;
+      case kind::OR:
+        os << "or ";
+        break;
+      case kind::XOR:
+        os << "xor ";
+        break;
+      default:
+        std::cout << "IMPLEMENTATION MISSING " << rewrite->d_original.getKind() << std::endl;
+        Unreachable();
+    }
+    os << rewrite->swap_id1 << " ";
+    os << rewrite->swap_id2 << " ";
+    os << "_ _ _ ";
+    callPrintRewriteProof(use_cache, tp, rewrite->d_children[0], os, globalLetMap);
+    os << ")";
+  } else {
+    bool_printProof(use_cache, tp, rewrite, os, globalLetMap);
+  }
+  /*
+  if (rewrite->d_tag == NOT_TRUE) {
+    os << "(not_t _ ";
+    callPrintRewriteProof(use_cache, tp, rewrite->d_children[0], os, globalLetMap);
+    os << ")";
+  } else if (rewrite->d_tag == TRUE_IMPLIES_FALSE) {
+    os << "(t_impl_f _ ";
+    callPrintRewriteProof(use_cache, tp, rewrite->d_children[0], os, globalLetMap);
+    os << ")";
+  } else {
+    std::cout << "ERROR" << std::endl;
+    Unreachable();
+  }*/
+}
+
+template RewriteResponse TheoryBoolRewriter::preRewriteEx<true>(TNode node, RewriteProof* proof);
+template RewriteResponse TheoryBoolRewriter::preRewriteEx<false>(TNode node, RewriteProof* proof);
+template RewriteResponse TheoryBoolRewriter::postRewriteEx<true>(TNode node, RewriteProof* proof);
+template RewriteResponse TheoryBoolRewriter::postRewriteEx<false>(TNode node, RewriteProof* proof);
 
 }/* CVC4::theory::booleans namespace */
 }/* CVC4::theory namespace */
