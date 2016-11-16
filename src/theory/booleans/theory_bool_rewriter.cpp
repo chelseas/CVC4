@@ -133,7 +133,7 @@ RewriteResponse TheoryBoolRewriter::preRewrite(TNode n) {
 
   switch(n.getKind()) {
   case kind::NOT: {
-    if (n[0] == tt) return RewriteResponse(REWRITE_DONE, ff);
+    //if (n[0] == tt) return RewriteResponse(REWRITE_DONE, ff);
     if (n[0] == ff) return RewriteResponse(REWRITE_DONE, tt);
     if (n[0].getKind() == kind::NOT) return RewriteResponse(REWRITE_AGAIN, n[0][0]);
     break;

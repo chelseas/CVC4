@@ -1,0 +1,6 @@
+(set-logic QF_AX)
+(set-info :smt-lib-version 2.0)
+(set-info :status unsat)
+(assert (not true))
+(check-sat)
+(exit)
