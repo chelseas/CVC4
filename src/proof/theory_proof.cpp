@@ -308,8 +308,10 @@ void LFSCTheoryProofEngine::treatBoolsAsFormulas(bool value) {
 }
 
 void LFSCTheoryProofEngine::registerTermsFromAssertions() {
-  ProofManager::assertions_iterator it = ProofManager::currentPM()->begin_assertions();
-  ProofManager::assertions_iterator end = ProofManager::currentPM()->end_assertions();
+  ProofManager::assertions_iterator it =
+      ProofManager::currentPM()->begin_input_core_assertions();
+  ProofManager::assertions_iterator end =
+      ProofManager::currentPM()->end_input_core_assertions();
 
   for(; it != end; ++it) {
     registerTerm(*it);
@@ -321,14 +323,17 @@ void LFSCTheoryProofEngine::registerTermsFromAssertions() {
 void LFSCTheoryProofEngine::printAssertions(std::ostream& os, std::ostream& paren) {
   Debug("pf::tp") << "LFSCTheoryProofEngine::printAssertions called" << std::endl << std::endl;
 
-  ProofManager::assertions_iterator it = ProofManager::currentPM()->begin_assertions();
-  ProofManager::assertions_iterator end = ProofManager::currentPM()->end_assertions();
+  ProofManager::assertions_iterator it =
+      ProofManager::currentPM()->begin_input_core_assertions();
+  ProofManager::assertions_iterator end =
+      ProofManager::currentPM()->end_input_core_assertions();
 
   for (; it != end; ++it) {
     Debug("pf::tp") << "printAssertions: assertion is: " << *it << std::endl;
     os << "(% " << ProofManager::currentPM()->getInputFormulaName(*it) << " (th_holds ";
 
-    // Assertions appear before the global let map, so we use a dummpMap to avoid letification here.
+    // Assertions appear before the global let map, so we use a dummyMap to
+    // avoid letification here.
     ProofLetMap dummyMap;
     printBoundTerm(*it, os, dummyMap);
 

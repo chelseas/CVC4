@@ -144,8 +144,7 @@ class ProofManager {
   TheoryProofEngine* d_theoryProof;
 
   // information that will need to be shared across proofs
-  ExprSet    d_inputFormulas;
-  std::map<Expr, std::string> d_inputFormulaToName;
+  std::map<Expr, std::string> d_inputCoreFormulaToName;
   ExprSet    d_inputCoreFormulas;
   ExprSet    d_outputCoreFormulas;
 
@@ -197,13 +196,14 @@ public:
   typedef ExprSet::const_iterator assertions_iterator;
 
   // iterate over the assertions (these are arbitrary boolean formulas)
-  assertions_iterator begin_assertions() const {
-    return d_inputFormulas.begin();
+  assertions_iterator begin_input_core_assertions() const {
+    return d_inputCoreFormulas.begin();
   }
-  assertions_iterator end_assertions() const { return d_inputFormulas.end(); }
-  size_t num_assertions() const { return d_inputFormulas.size(); }
-  bool have_input_assertion(const Expr& assertion) {
-    return d_inputFormulas.find(assertion) != d_inputFormulas.end();
+  assertions_iterator end_input_core_assertions() const {
+    return d_inputCoreFormulas.end();
+  }
+  bool have_input_core_assertion(const Expr& assertion) const {
+    return d_inputCoreFormulas.find(assertion) != d_inputCoreFormulas.end();
   }
 
 //---from Morgan---
@@ -233,9 +233,6 @@ public:
 
   // for SMT variable names that have spaces and other things
   static std::string sanitize(TNode var);
-
-  /** Add proof assertion - unlike addCoreAssertion this is post definition expansion **/
-  void addAssertion(Expr formula);
 
   /** Public unsat core methods **/
   void addCoreAssertion(Expr formula);

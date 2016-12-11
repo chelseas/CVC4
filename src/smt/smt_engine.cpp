@@ -3835,6 +3835,8 @@ void SmtEnginePrivate::processAssertions() {
 
   // Add dummy assertion in last position - to be used as a
   // placeholder for any new assertions to get added
+  PROOF(ProofManager::currentPM()->addCoreAssertion(
+      NodeManager::currentNM()->mkConst<bool>(true).toExpr()));
   d_assertions.push_back(NodeManager::currentNM()->mkConst<bool>(true));
   // any assertions added beyond realAssertionsEnd must NOT affect the
   // equisatisfiability
@@ -3855,14 +3857,6 @@ void SmtEnginePrivate::processAssertions() {
   }
   Trace("smt-proc") << "SmtEnginePrivate::processAssertions() : post-definition-expansion" << endl;
   dumpAssertions("post-definition-expansion", d_assertions);
-
-  // save the assertions now
-  THEORY_PROOF
-    (
-     for (unsigned i = 0; i < d_assertions.size(); ++i) {
-       ProofManager::currentPM()->addAssertion(d_assertions[i].toExpr());
-     }
-     );
 
   Debug("smt") << " d_assertions     : " << d_assertions.size() << endl;
 

@@ -60,7 +60,6 @@ ProofManager::ProofManager(ProofFormat format):
   d_satProof(NULL),
   d_cnfProof(NULL),
   d_theoryProof(NULL),
-  d_inputFormulas(),
   d_inputCoreFormulas(),
   d_outputCoreFormulas(),
   d_nextId(0),
@@ -223,7 +222,7 @@ std::string ProofManager::getAssertionName(Node node,
   return append(prefix+".A", node.getId());
 }
 std::string ProofManager::getInputFormulaName(const Expr& expr) {
-  return currentPM()->d_inputFormulaToName[expr];
+  return currentPM()->d_inputCoreFormulaToName[expr];
 }
 
 std::string ProofManager::getAtomName(TNode atom,
@@ -452,18 +451,13 @@ Node ProofManager::getWeakestImplicantInUnsatCore(Node lemma) {
   return builder;
 }
 
-void ProofManager::addAssertion(Expr formula) {
-  Debug("proof:pm") << "assert: " << formula << std::endl;
-  d_inputFormulas.insert(formula);
-  std::ostringstream name;
-  name << "A" << d_inputFormulaToName.size();
-  d_inputFormulaToName[formula] = name.str();
-}
-
 void ProofManager::addCoreAssertion(Expr formula) {
   Debug("cores") << "assert: " << formula << std::endl;
   d_deps[Node::fromExpr(formula)]; // empty vector of deps
   d_inputCoreFormulas.insert(formula);
+  std::ostringstream name;
+  name << "A" << d_inputCoreFormulaToName.size();
+  d_inputCoreFormulaToName[formula] = name.str();
 }
 
 void ProofManager::addDependence(TNode n, TNode dep) {
@@ -707,7 +701,8 @@ void LFSCProof::printPreprocessedAssertions(const NodeSet& assertions,
     // For the remaining assertions, bind them to input assertions.
     for (; it != end; ++it) {
       // Rewrite preprocessing step if it cannot be eliminated
-      if (!ProofManager::currentPM()->have_input_assertion((*it).toExpr())) {
+      if (!ProofManager::currentPM()->have_input_core_assertion(
+              (*it).toExpr())) {
         os << "(th_let_pf _ (trust_f (iff ";
 
         Expr inputAssertion;
@@ -730,20 +725,14 @@ void LFSCProof::printPreprocessedAssertions(const NodeSet& assertions,
           if (inputAssertions.size() == 0) {
             Debug("pf::pm") << "LFSCProof::printPreprocessedAssertions: Count NOT find the assertion that caused this PA. Picking an arbitrary one..." << std::endl;
             // For now just use the first assertion...
-            inputAssertion = *(ProofManager::currentPM()->begin_assertions());
+            inputAssertion =
+                *(ProofManager::currentPM()->begin_input_core_assertions());
           } else {
             if (inputAssertions.size() != 1) {
               Debug("pf::pm") << "LFSCProof::printPreprocessedAssertions: Attention: more than one original assertion was found. Picking just one." << std::endl;
             }
             inputAssertion = *inputAssertions.begin();
           }
-        }
-
-        if (!ProofManager::currentPM()->have_input_assertion(inputAssertion)) {
-          // The thing returned by traceDeps does not appear in the input assertions...
-          Debug("pf::pm") << "LFSCProof::printPreprocessedAssertions: Count NOT find the assertion that caused this PA. Picking an arbitrary one..." << std::endl;
-          // For now just use the first assertion...
-          inputAssertion = *(ProofManager::currentPM()->begin_assertions());
         }
 
         Debug("pf::pm") << "Original assertion for " << *it
@@ -796,8 +785,10 @@ void LFSCProof::checkUnrewrittenAssertion(const NodeSet& rewrites) {
   NodeSet::const_iterator rewrite;
   for (rewrite = rewrites.begin(); rewrite != rewrites.end(); ++rewrite) {
     Debug("pf::pm") << "LFSCProof::checkUnrewrittenAssertion: handling " << *rewrite << std::endl;
-    if (ProofManager::currentPM()->have_input_assertion((*rewrite).toExpr())) {
-      Assert(ProofManager::currentPM()->have_input_assertion((*rewrite).toExpr()));
+    if (ProofManager::currentPM()->have_input_core_assertion(
+            (*rewrite).toExpr())) {
+      Assert(ProofManager::currentPM()->have_input_core_assertion(
+          (*rewrite).toExpr()));
       Debug("pf::pm") << "LFSCProof::checkUnrewrittenAssertion: this assertion was NOT rewritten!" << std::endl
                       << "\tAdding filter: "
                       << ProofManager::getPreprocessedAssertionName(*rewrite, "")
