@@ -22,7 +22,8 @@ SUBDIRS = smt1 smt2 cvc tptp
 lib_LTLIBRARIES = libcvc4parser.la
 
 libcvc4parser_la_LDFLAGS = $(ANTLR_LDFLAGS) \
-	-version-info $(LIBCVC4PARSER_VERSION)
+	-version-info $(LIBCVC4PARSER_VERSION) \
+	-no-undefined
 
 libcvc4parser_la_LIBADD = \
 	@builddir@/smt1/libparsersmt1.la \
