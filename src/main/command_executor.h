@@ -69,6 +69,12 @@ public:
     d_stats.flushInformation(out);
   }
 
+  void safeFlushStatistics(int fd) const {
+    d_exprMgr.safeFlushStatistics(fd);
+    d_smtEngine->safeFlushStatistics(fd);
+    d_stats.safeFlushInformation(fd);
+  }
+
   static void printStatsFilterZeros(std::ostream& out,
                                     const std::string& statsString);
 

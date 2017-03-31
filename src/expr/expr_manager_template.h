@@ -557,6 +557,9 @@ public:
   /** Get a reference to the statistics registry for this ExprManager */
   SExpr getStatistic(const std::string& name) const throw();
 
+  /** Flushes statistics for this ExprManager */
+  void safeFlushStatistics(int fd) const;
+
   /** Export an expr to a different ExprManager */
   //static Expr exportExpr(const Expr& e, ExprManager* em);
   /** Export a type to a different ExprManager */

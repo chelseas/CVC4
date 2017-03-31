@@ -84,6 +84,9 @@ public:
   /** Flush all statistics to the given output stream. */
   void flushInformation(std::ostream& out) const;
 
+  /** Flush all statistics to the given file descriptor. */
+  void safeFlushInformation(int fd) const;
+
   /** Get the value of a named statistic. */
   SExpr getStatistic(std::string name) const;
 
