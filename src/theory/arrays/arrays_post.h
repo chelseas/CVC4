@@ -88,7 +88,7 @@ inline RewriteResponse arrays_post_rewrite4(TNode node, RewriteProof *proof) {
 template <bool Proof>
 inline RewriteResponse arrays_post_rewrite5(TNode node, RewriteProof *proof) {
   NodeManager *nm = NodeManager::currentNM();
-  return RewriteResponse(REWRITE_DONE, node);
+  return RewriteResponse(REWRITE_AGAIN, node);
 }
 
 template <bool Proof>
