@@ -136,6 +136,31 @@ template <bool Proof>
 inline RewriteResponse arrays_post_rewrite8(TNode node, RewriteProof *proof) {
   NodeManager *nm = NodeManager::currentNM();
   if ((node).getKind() == kind::SELECT) {
+    if (((node[0]).getKind() == kind::STORE) && (true) &&
+        (node[0][1] == node[1])) {
+      if (Proof) {
+        proof->registerRewrite(arrays_post_SELECT_STORE_I_I);
+      };
+      Node rewritten_node = node[0][2];
+      return arrays_post_rewrite7<Proof>(rewritten_node, proof);
+    };
+    if (((node[0]).getKind() == kind::STORE) &&
+        (Rewriter::rewrite(nm->mkNode(kind::EQUAL, node[0][1], node[1])) ==
+         nm->mkConst(true))) {
+      if (Proof) {
+        proof->registerRewrite(arrays_post_SELECT_STORE_I_J);
+      };
+      Node rewritten_node = node[0][2];
+      return arrays_post_rewrite7<Proof>(rewritten_node, proof);
+    };
+    if (((node[0]).getKind() == kind::STORE_ALL) && (true)) {
+      if (Proof) {
+        proof->registerRewrite(arrays_post_SELECT_STORE_ALL);
+      };
+      Node rewritten_node =
+          Node::fromExpr(node[0].getConst<ArrayStoreAll>().getExpr());
+      return arrays_post_rewrite7<Proof>(rewritten_node, proof);
+    };
     if (((node[0]).getKind() == kind::STORE) &&
         (Rewriter::rewrite(nm->mkNode(kind::EQUAL, node[0][1], node[1])) ==
          nm->mkConst(false))) {
@@ -159,48 +184,9 @@ inline RewriteResponse arrays_post_rewrite8(TNode node, RewriteProof *proof) {
 }
 
 template <bool Proof>
-inline RewriteResponse arrays_post_rewrite9(TNode node, RewriteProof *proof) {
-  NodeManager *nm = NodeManager::currentNM();
-  return RewriteResponse(REWRITE_DONE, node);
-}
-
-template <bool Proof>
-inline RewriteResponse arrays_post_rewrite10(TNode node, RewriteProof *proof) {
-  NodeManager *nm = NodeManager::currentNM();
-  if ((node).getKind() == kind::SELECT) {
-    if (((node[0]).getKind() == kind::STORE) && (true) &&
-        (node[0][1] == node[1])) {
-      if (Proof) {
-        proof->registerRewrite(arrays_post_SELECT_STORE_I_I);
-      };
-      Node rewritten_node = node[0][2];
-      return arrays_post_rewrite9<Proof>(rewritten_node, proof);
-    };
-    if (((node[0]).getKind() == kind::STORE) &&
-        (Rewriter::rewrite(nm->mkNode(kind::EQUAL, node[0][1], node[1])) ==
-         nm->mkConst(true))) {
-      if (Proof) {
-        proof->registerRewrite(arrays_post_SELECT_STORE_I_J);
-      };
-      Node rewritten_node = node[0][2];
-      return arrays_post_rewrite9<Proof>(rewritten_node, proof);
-    };
-    if (((node[0]).getKind() == kind::STORE_ALL) && (true)) {
-      if (Proof) {
-        proof->registerRewrite(arrays_post_SELECT_STORE_ALL);
-      };
-      Node rewritten_node =
-          Node::fromExpr(node[0].getConst<ArrayStoreAll>().getExpr());
-      return arrays_post_rewrite9<Proof>(rewritten_node, proof);
-    }
-  };
-  return arrays_post_rewrite8<Proof>(node, proof);
-}
-
-template <bool Proof>
 inline RewriteResponse arrays_post_applyRules(TNode node, RewriteProof *proof) {
 
-  return arrays_post_rewrite10<Proof>(node, proof);
+  return arrays_post_rewrite8<Proof>(node, proof);
 }
 
 inline void arrays_post_printProof(bool use_cache, TheoryProofEngine *tp,
