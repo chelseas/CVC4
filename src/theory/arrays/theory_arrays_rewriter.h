@@ -22,6 +22,8 @@
 
 #include "theory/rewriter.h"
 #include "theory/type_enumerator.h"
+#include "theory/arrays/arrays_pre.h"
+#include "theory/arrays/arrays_post.h"
 
 namespace CVC4 {
 namespace theory {
@@ -236,12 +238,6 @@ public:
 public:
 
   static inline RewriteResponse postRewrite(TNode node) {
-    return postRewriteEx<false>(node, NULL);
-  }
-
-  template<bool Proof>
-  static RewriteResponse postRewriteEx(TNode node, RewriteProof* proof) {
-    Assert(!Proof || proof != NULL);
     Trace("arrays-postrewrite") << "Arrays::postRewrite start " << node << std::endl;
     switch (node.getKind()) {
       case kind::SELECT: {
@@ -294,9 +290,6 @@ public:
             value[0] == store &&
             value[1] == node[1]) {
           Trace("arrays-postrewrite") << "Arrays::postRewrite returning " << store << std::endl;
-          if (Proof) {
-            proof->registerRewrite(WOR);
-          }
           return RewriteResponse(REWRITE_DONE, store);
         }
         TNode index = node[1];
@@ -396,9 +389,6 @@ public:
       case kind::EQUAL:{
         if(node[0] == node[1]) {
           Trace("arrays-postrewrite") << "Arrays::postRewrite returning true" << std::endl;
-          if (Proof) {
-            proof->registerRewrite(EQ);
-          }
           return RewriteResponse(REWRITE_DONE, NodeManager::currentNM()->mkConst(true));
         }
         else if (node[0].isConst() && node[1].isConst()) {
@@ -419,13 +409,12 @@ public:
     return RewriteResponse(REWRITE_DONE, node);
   }
 
-  static inline RewriteResponse preRewrite(TNode node) {
-    return preRewriteEx<false>(node, NULL);
+  template<bool Proof>
+  static RewriteResponse postRewriteEx(TNode node, RewriteProof* proof) {
+    return arrays_post_applyRules<Proof>(node, NULL);
   }
 
-  template<bool Proof>
-  static inline RewriteResponse preRewriteEx(TNode node, RewriteProof* proof) {
-    Assert(!Proof || proof != NULL);
+  static inline RewriteResponse preRewrite(TNode node) {
     Trace("arrays-prerewrite") << "Arrays::preRewrite start " << node << std::endl;
     switch (node.getKind()) {
       case kind::SELECT: {
@@ -478,9 +467,6 @@ public:
             value[0] == store &&
             value[1] == node[1]) {
           Trace("arrays-prerewrite") << "Arrays::preRewrite returning " << store << std::endl;
-          if (Proof) {
-            proof->registerRewrite(WOR);
-          }
           return RewriteResponse(REWRITE_AGAIN, store);
         }
         if (store.getKind() == kind::STORE) {
@@ -505,9 +491,6 @@ public:
             // store(store(a,i,v),i,w) = store(a,i,w)
             Node newNode = nm->mkNode(kind::STORE, store[0], index, value);
             Trace("arrays-prerewrite") << "Arrays::preRewrite returning " << newNode << std::endl;
-            if (Proof) {
-              proof->registerRewrite(WOW);
-            }
             return RewriteResponse(REWRITE_DONE, newNode);
           }
         }
@@ -516,9 +499,6 @@ public:
       case kind::EQUAL:{
         if(node[0] == node[1]) {
           Trace("arrays-prerewrite") << "Arrays::preRewrite returning true" << std::endl;
-          if (Proof) {
-            proof->registerRewrite(EQ);
-          }
           return RewriteResponse(REWRITE_DONE, NodeManager::currentNM()->mkConst(true));
         }
         break;
@@ -529,6 +509,11 @@ public:
 
     Trace("arrays-prerewrite") << "Arrays::preRewrite returning " << node << std::endl;
     return RewriteResponse(REWRITE_DONE, node);
+  }
+
+  template<bool Proof>
+  static inline RewriteResponse preRewriteEx(TNode node, RewriteProof* proof) {
+    return arrays_pre_applyRules<Proof>(node, NULL);
   }
 
   static void printRewriteProof(bool use_cache,
