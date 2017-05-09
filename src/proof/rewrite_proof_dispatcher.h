@@ -21,6 +21,12 @@ theory::RewriteResponse callPostRewriteWithProof(theory::TheoryId theory,
                                                  TNode node,
                                                  RewriteProof *proof);
 
+theory::RewriteResponse callPreRewriteWithoutProof(theory::TheoryId theory,
+                                                TNode node);
+
+theory::RewriteResponse callPostRewriteWithoutProof(theory::TheoryId theory,
+                                                 TNode node);
+
 void callPrintRewriteProof(bool use_cache, TheoryProofEngine *tp,
                            const Rewrite *rewrite, std::ostream &os,
                            ProofLetMap &globalLetMap);

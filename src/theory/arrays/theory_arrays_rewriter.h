@@ -238,6 +238,10 @@ public:
 public:
 
   static inline RewriteResponse postRewrite(TNode node) {
+    return postRewriteEx<false>(node, NULL);
+  }
+
+  static inline RewriteResponse postRewrite_(TNode node) {
     Trace("arrays-postrewrite") << "Arrays::postRewrite start " << node << std::endl;
     switch (node.getKind()) {
       case kind::SELECT: {
@@ -411,10 +415,18 @@ public:
 
   template<bool Proof>
   static RewriteResponse postRewriteEx(TNode node, RewriteProof* proof) {
-    return arrays_post_applyRules<Proof>(node, NULL);
+    RewriteResponse r = arrays_post_applyRules<Proof>(node, NULL);
+    /*if (r.node != node) {
+      std::cout << node << " --> " << r.node << std::endl;
+    }*/
+    return postRewrite_(node);
   }
 
   static inline RewriteResponse preRewrite(TNode node) {
+    return preRewriteEx<false>(node, NULL);
+  }
+
+  static inline RewriteResponse preRewrite_(TNode node) {
     Trace("arrays-prerewrite") << "Arrays::preRewrite start " << node << std::endl;
     switch (node.getKind()) {
       case kind::SELECT: {
@@ -513,7 +525,11 @@ public:
 
   template<bool Proof>
   static inline RewriteResponse preRewriteEx(TNode node, RewriteProof* proof) {
-    return arrays_pre_applyRules<Proof>(node, NULL);
+    RewriteResponse r = arrays_pre_applyRules<Proof>(node, NULL);
+    /*if (r.node != node) {
+      std::cout << node << " --> " << r.node << std::endl;
+    }*/
+    return preRewrite_(node);
   }
 
   static void printRewriteProof(bool use_cache,

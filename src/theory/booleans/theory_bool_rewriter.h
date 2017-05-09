@@ -34,9 +34,11 @@ public:
     TRUE_IMPLIES_FALSE,
   };
 
+  static RewriteResponse preRewrite_(TNode node);
   static RewriteResponse preRewrite(TNode node);
   template<bool Proof>
   static RewriteResponse preRewriteEx(TNode node, RewriteProof* proof);
+  static RewriteResponse postRewrite_(TNode node);
   static RewriteResponse postRewrite(TNode node);
   template<bool Proof>
   static RewriteResponse postRewriteEx(TNode node, RewriteProof* proof);

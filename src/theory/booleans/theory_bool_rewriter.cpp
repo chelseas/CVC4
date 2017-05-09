@@ -29,6 +29,10 @@ RewriteResponse TheoryBoolRewriter::postRewrite(TNode node) {
   return preRewriteEx<false>(node, NULL);
 }
 
+RewriteResponse TheoryBoolRewriter::postRewrite_(TNode node) {
+  return preRewrite(node);
+}
+
 Node flattenIfNeeded(TNode n) {
   Kind k = n.getKind();
   if (k != kind::AND && k != kind::OR) {
@@ -73,10 +77,10 @@ template<bool Proof>
 RewriteResponse TheoryBoolRewriter::postRewriteEx(TNode node_, RewriteProof* proof) {
   Node node = flattenIfNeeded(node_);
   RewriteResponse r = bool_applyRules<Proof>(node, proof);
-  if (r.node != preRewrite(node).node) {
+  /*if (r.node != preRewrite(node).node) {
     std::cout << node << " --> " << r.node << std::endl;
     std::cout << preRewrite(node).node << std::endl;
-  }
+  }*/
   return r;
 
 }
@@ -181,7 +185,11 @@ inline Node makeNegation(TNode n){
   }
 }
 
-RewriteResponse TheoryBoolRewriter::preRewrite(TNode n) {
+RewriteResponse TheoryBoolRewriter::preRewrite(TNode node) {
+  return preRewriteEx<false>(node, NULL);
+}
+
+RewriteResponse TheoryBoolRewriter::preRewrite_(TNode n) {
   NodeManager* nodeManager = NodeManager::currentNM();
   Node tt = nodeManager->mkConst(true);
   Node ff = nodeManager->mkConst(false);
@@ -426,11 +434,11 @@ template<bool Proof>
 RewriteResponse TheoryBoolRewriter::preRewriteEx(TNode node_, RewriteProof* proof) {
   Node node = flattenIfNeeded(node_);
   RewriteResponse r = bool_applyRules<Proof>(node, NULL);
-  if (r.node != preRewrite(node).node) {
+  /*if (r.node != preRewrite_(node).node) {
     std::cout << node << " --> " << r.node << std::endl;
-    std::cout << preRewrite(node).node << std::endl;
-  }
-  return r;
+    std::cout << preRewrite_(node).node << std::endl;
+  }*/
+  return preRewrite_(node_);
 }
 
 void TheoryBoolRewriter::printRewriteProof(bool use_cache,
