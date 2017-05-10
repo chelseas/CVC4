@@ -235,6 +235,10 @@ Node Rewriter::rewriteTo(theory::TheoryId theoryId, Node node, RewriteProof* rp)
         } else if (response.status == REWRITE_DONE) {
 #ifdef CVC4_ASSERTIONS
     RewriteResponse r2 = Rewriter::callPostRewrite(newTheoryId, response.node);
+    if (r2.node != response.node) {
+      std::cout << rewriteStackTop.node << std::endl;
+      std::cout << r2.node << " IS NOT EQUAL TO " << response.node << std::endl;
+    }
     Assert(r2.node == response.node);
 #endif
           rewriteStackTop.node = response.node;

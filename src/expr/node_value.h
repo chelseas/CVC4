@@ -494,7 +494,9 @@ inline NodeValue* NodeValue::getChild(int i) const {
     ++i;
   }
 
-  Assert(i >= 0 && unsigned(i) < d_nchildren);
+  if (!(i >= 0 && unsigned(i) < d_nchildren))  {
+    Assert(i >= 0 && unsigned(i) < d_nchildren);
+  }
   return d_children[i];
 }
 

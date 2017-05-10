@@ -415,11 +415,20 @@ public:
 
   template<bool Proof>
   static RewriteResponse postRewriteEx(TNode node, RewriteProof* proof) {
+    if (node.getKind() == kind::STORE) {
+      if (node[0].isConst() && node[1].isConst() && node[2].isConst()) {
+        // normalize constant
+        Node n = normalizeConstant(node);
+        Assert(n.isConst());
+        Trace("arrays-postrewrite") << "Arrays::postRewrite returning " << n << std::endl;
+        return RewriteResponse(REWRITE_DONE, n);
+      }
+    }
     RewriteResponse r = arrays_post_applyRules<Proof>(node, NULL);
     /*if (r.node != node) {
       std::cout << node << " --> " << r.node << std::endl;
     }*/
-    return postRewrite_(node);
+    return r;
   }
 
   static inline RewriteResponse preRewrite(TNode node) {
@@ -529,7 +538,7 @@ public:
     /*if (r.node != node) {
       std::cout << node << " --> " << r.node << std::endl;
     }*/
-    return preRewrite_(node);
+    return r;
   }
 
   static void printRewriteProof(bool use_cache,
