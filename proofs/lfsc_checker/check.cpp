@@ -1089,7 +1089,13 @@ void check_file(const char *_filename, args a, sccwriter* scw, libwriter* lw) {
       for( int a=0; a<(int)local_sym_names.size(); a++ ){
 #ifdef USE_HASH_MAPS
 #else
-        symbols->insert( local_sym_names[a].first.c_str(), local_sym_names[a].second );
+        pair<Expr *, Expr *> prevpr = symbols->insert( local_sym_names[a].first.c_str(), local_sym_names[a].second );
+        if (prevpr.first) {
+          prevpr.first->dec();
+        }
+        if (prevpr.second) {
+          prevpr.second->dec();
+        }
 #endif
       }
       local_sym_names.clear();
@@ -1207,7 +1213,13 @@ void check_file(const char *_filename, args a, sccwriter* scw, libwriter* lw) {
 	        symbols[varstr] = var;
 	        symbol_types[varstr] = tp;
 #else
-	        symbols->insert(varstr.c_str(), pair<Expr *, Expr *>(var,tp));
+                pair<Expr *, Expr *> prevp = symbols->insert(varstr.c_str(), pair<Expr *, Expr *>(var,tp));
+                if (prevp.first) {
+                  prevp.first->dec();
+                }
+                if (prevp.second) {
+                  prevp.second->dec();
+                }
 #endif
         }
 
@@ -1252,7 +1264,7 @@ void check_file(const char *_filename, args a, sccwriter* scw, libwriter* lw) {
 	        symbols[s] = NULL;
 	        symbol_types[s] = NULL;
 #else
-	        symbols->insert(s.c_str(), pair<Expr*,Expr*>(NULL,NULL));
+                symbols->insert(s.c_str(), pair<Expr*,Expr*>(NULL,NULL));
 #endif
         }
 

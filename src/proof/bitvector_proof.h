@@ -88,6 +88,7 @@ protected:
   context::Context d_fakeContext;
 public:
   BitVectorProof(theory::bv::TheoryBV* bv, TheoryProofEngine* proofEngine);
+  ~BitVectorProof();
 
   void initSatProof(CVC4::BVMinisat::Solver* solver);
   void initCnfProof(prop::CnfStream* cnfStream, context::Context* ctx);

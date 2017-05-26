@@ -328,6 +328,7 @@ class TSatProof {
    * memory of the ResChain* it contains.
    */
   IdResMap d_resolutionChains;
+  std::set<ResolutionChain*> d_existingResolutionChains;
 
    /*
    * Stack containting current ResChain* we are working on. d_resStack

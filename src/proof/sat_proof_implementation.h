@@ -212,6 +212,7 @@ TSatProof<Solver>::TSatProof(Solver* solver, context::Context* context,
       d_assumptionConflicts(),
       d_assumptionConflictsDebug(),
       d_resolutionChains(d_context),
+      d_existingResolutionChains(),
       d_resStack(),
       d_checkRes(checkRes),
       d_emptyClauseId(ClauseIdEmpty),
@@ -261,12 +262,10 @@ TSatProof<Solver>::~TSatProof() {
     delete seen_input_it->second;
   }
 
-  typedef typename IdResMap::const_iterator ResolutionChainIterator;
-  ResolutionChainIterator resolution_it = d_resolutionChains.begin();
-  ResolutionChainIterator resolution_it_end = d_resolutionChains.end();
+  typename std::set<ResolutionChain*>::iterator resolution_it = d_existingResolutionChains.begin();
+  typename std::set<ResolutionChain*>::iterator resolution_it_end = d_existingResolutionChains.end();
   for (; resolution_it != resolution_it_end; ++resolution_it) {
-    ResChain<Solver>* current = (*resolution_it).second;
-    delete current;
+    delete *resolution_it;
   }
 
   // It could be the case that d_resStack is not empty at destruction time
@@ -547,9 +546,13 @@ ClauseId TSatProof<Solver>::registerClause(typename Solver::TCRef clause,
     if (kind == THEORY_LEMMA) {
       Assert(d_lemmaClauses.find(newId) == d_lemmaClauses.end());
       d_lemmaClauses.insert(newId);
+      prop::SatClause* clause = buildClause(newId);
       Debug("pf::sat") << "TSatProof::registerClause registering a new lemma clause: "
-                       << newId << " = " << *buildClause(newId)
+                       << newId << " = " << *clause
                        << std::endl;
+      if (!isDeleted(newId)) {
+        delete clause;
+      }
     }
   }
 
@@ -725,10 +728,10 @@ void TSatProof<Solver>::registerResolution(ClauseId id, ResChain<Solver>* res) {
   // could be the case that a resolution chain for this clause already
   // exists (e.g. when removing units in addClause).
   if (hasResolutionChain(id)) {
-    ResChain<Solver>* current = (*d_resolutionChains.find(id)).second;
+    ResolutionChain* current = (*d_resolutionChains.find(id)).second;
+    d_existingResolutionChains.erase(current);
     delete current;
   }
-
   d_resolutionChains.insert(id, res);
 
   if (Debug.isOn("proof:sat")) {
@@ -751,6 +754,7 @@ void TSatProof<Solver>::startResChain(typename Solver::TCRef start) {
   ClauseId id = getClauseIdForCRef(start);
   ResolutionChain* res = new ResolutionChain(id);
   d_resStack.push_back(res);
+  d_existingResolutionChains.insert(res);
 }
 
 template <class Solver>
@@ -758,6 +762,7 @@ void TSatProof<Solver>::startResChain(typename Solver::TLit start) {
   ClauseId id = getUnitId(start);
   ResolutionChain* res = new ResolutionChain(id);
   d_resStack.push_back(res);
+  d_existingResolutionChains.insert(res);
 }
 
 template <class Solver>
@@ -839,7 +844,8 @@ ClauseId TSatProof<Solver>::resolveUnit(typename Solver::TLit lit) {
 
   ClauseId reason_id = registerClause(reason_ref, LEARNT);
 
-  ResChain<Solver>* res = new ResChain<Solver>(reason_id);
+  ResolutionChain* res = new ResolutionChain(reason_id);
+  d_existingResolutionChains.insert(res);
   // Here, the call to resolveUnit() can reallocate memory in the
   // clause allocator.  So reload reason ptr each time.
   const typename Solver::TClause& initial_reason = getClause(reason_ref);
@@ -884,7 +890,8 @@ void TSatProof<Solver>::finalizeProof(typename Solver::TCRef conflict_ref) {
     Assert(d_storedUnitConflict);
     conflict_id = d_unitConflictId;
 
-    ResChain<Solver>* res = new ResChain<Solver>(conflict_id);
+    ResolutionChain* res = new ResolutionChain(conflict_id);
+    d_existingResolutionChains.insert(res);
     typename Solver::TLit lit = d_idUnit[conflict_id];
     ClauseId res_id = resolveUnit(~lit);
     res->addStep(lit, res_id, !sign(lit));
@@ -902,7 +909,8 @@ void TSatProof<Solver>::finalizeProof(typename Solver::TCRef conflict_ref) {
     Debug("proof:sat") << std::endl;
   }
 
-  ResChain<Solver>* res = new ResChain<Solver>(conflict_id);
+  ResolutionChain* res = new ResolutionChain(conflict_id);
+  d_existingResolutionChains.insert(res);
   // Here, the call to resolveUnit() can reallocate memory in the
   // clause allocator.  So reload conflict ptr each time.
   size_t conflict_size = getClause(conflict_ref).size();

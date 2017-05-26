@@ -41,9 +41,19 @@ BitVectorProof::BitVectorProof(theory::bv::TheoryBV* bv, TheoryProofEngine* proo
   , d_bbAtoms()
   , d_resolutionProof(NULL)
   , d_cnfProof(NULL)
+  , d_isAssumptionConflict(false)
   , d_bitblaster(NULL)
   , d_useConstantLetification(false)
 {}
+
+BitVectorProof::~BitVectorProof() {
+  if (d_cnfProof != NULL) {
+    delete d_cnfProof;
+  }
+  if (d_resolutionProof != NULL) {
+    delete d_resolutionProof;
+  }
+}
 
 void BitVectorProof::initSatProof(CVC4::BVMinisat::Solver* solver) {
   Assert (d_resolutionProof == NULL);

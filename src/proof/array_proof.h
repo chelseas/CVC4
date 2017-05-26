@@ -70,7 +70,7 @@ private:
 
   ArrayProofPrinter d_proofPrinter;
 public:
-  ProofArray(theory::eq::EqProof* pf) : d_proof(pf) {}
+  ProofArray(theory::eq::EqProof* pf) : d_reasonRow(0), d_reasonRow1(0), d_reasonExt(0), d_proofPrinter(), d_proof(pf)  {}
   //it is simply an equality engine proof
   theory::eq::EqProof *d_proof;
   void toStream(std::ostream& out);

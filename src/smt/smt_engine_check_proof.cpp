@@ -109,7 +109,9 @@ void SmtEngine::checkProof() {
   a.compile_lib = false;
   init();
   check_file(pfFile, a);
+  cleanup();
   close(fd);
+  free(pfFile);
 
 #else /* IS_PROOFS_BUILD */
 
