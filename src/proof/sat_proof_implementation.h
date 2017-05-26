@@ -236,6 +236,12 @@ template <class Solver>
 TSatProof<Solver>::~TSatProof() {
   delete d_proxy;
 
+  typename IdToConflicts::const_iterator debug_it = d_assumptionConflictsDebug.begin();
+  typename IdToConflicts::const_iterator debug_end = d_assumptionConflictsDebug.end();
+  for (; debug_it != debug_end; ++debug_it) {
+    delete debug_it->second;
+  }
+
   // FIXME: double free if deleted clause also appears in d_seenLemmas?
   IdToSatClause::const_iterator it = d_deletedTheoryLemmas.begin();
   IdToSatClause::const_iterator end = d_deletedTheoryLemmas.end();
@@ -266,16 +272,6 @@ TSatProof<Solver>::~TSatProof() {
   typename std::set<ResolutionChain*>::iterator resolution_it_end = d_existingResolutionChains.end();
   for (; resolution_it != resolution_it_end; ++resolution_it) {
     delete *resolution_it;
-  }
-
-  // It could be the case that d_resStack is not empty at destruction time
-  // (for example in the SAT case).
-  typename ResStack::const_iterator resolution_stack_it = d_resStack.begin();
-  typename ResStack::const_iterator resolution_stack_it_end = d_resStack.end();
-  for (; resolution_stack_it != resolution_stack_it_end;
-       ++resolution_stack_it) {
-    ResChain<Solver>* current = *resolution_stack_it;
-    delete current;
   }
 }
 
@@ -807,6 +803,7 @@ template <class Solver>
 void TSatProof<Solver>::cancelResChain() {
   Assert(d_resStack.size() > 0);
   ResolutionChain* back = d_resStack.back();
+  d_existingResolutionChains.erase(back);
   delete back;
   d_resStack.pop_back();
 }

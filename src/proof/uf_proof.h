@@ -31,6 +31,8 @@ private:
   static Node toStreamRecLFSC(std::ostream& out, TheoryProof * tp, theory::eq::EqProof * pf, unsigned tb, const ProofLetMap& map);
 public:
   ProofUF( theory::eq::EqProof * pf ) : d_proof( pf ) {}
+  ~ProofUF();
+
   //it is simply an equality engine proof
   theory::eq::EqProof * d_proof;
   void toStream(std::ostream& out);

@@ -963,41 +963,41 @@ void EqualityEngine::explainEquality(TNode t1, TNode t2, bool polarity, std::vec
         if (eqpc->d_id == eq::MERGED_THROUGH_TRANS) {
           std::vector<EqProof *> orderedChildren;
           bool nullCongruenceFound = false;
-          for (unsigned i = 0; i < eqpc->d_children.size(); ++i) {
-            if (eqpc->d_children[i]->d_id==eq::MERGED_THROUGH_CONGRUENCE &&
-                eqpc->d_children[i]->d_node.isNull()) {
+          for (unsigned i = 0; i < eqpc->num_children(); ++i) {
+            if (eqpc->get_child(i)->d_id==eq::MERGED_THROUGH_CONGRUENCE &&
+                eqpc->get_child(i)->d_node.isNull()) {
               nullCongruenceFound = true;
               Debug("pf::ee") << "Have congruence with empty d_node. Splitting..." << std::endl;
-              orderedChildren.insert(orderedChildren.begin(), eqpc->d_children[i]->d_children[0]);
-              orderedChildren.push_back(eqpc->d_children[i]->d_children[1]);
+              orderedChildren.insert(orderedChildren.begin(), eqpc->get_child(i)->get_child(0));
+              orderedChildren.push_back(eqpc->get_child(i)->get_child(1));
             } else {
-              orderedChildren.push_back(eqpc->d_children[i]);
+              orderedChildren.push_back(eqpc->get_child(i));
             }
           }
 
           if (nullCongruenceFound) {
-            eqpc->d_children = orderedChildren;
+            eqpc->add_children(orderedChildren);
             Debug("pf::ee") << "Child proof's children have been reordered. It is now:" << std::endl;
             eqpc->debug_print("pf::ee", 1);
           }
         }
 
-        eqp->d_children.push_back(eqpc);
+        eqp->add_child(eqpc);
       }
     }
 
     if (eqp) {
-      if (eqp->d_children.size() == 0) {
+      if (eqp->num_children() == 0) {
         // Corner case where this is actually a disequality between two constants
         Debug("pf::ee") << "Encountered a constant disequality (not a transitivity proof): "
                         << eqp->d_node << std::endl;
         Assert(eqp->d_node[0][0].isConst());
         Assert(eqp->d_node[0][1].isConst());
         eqp->d_id = MERGED_THROUGH_CONSTANTS;
-      } else if (eqp->d_children.size() == 1) {
+      } else if (eqp->num_children() == 1) {
         // The transitivity proof has just one child. Simplify.
-        EqProof* temp = eqp->d_children[0];
-        eqp->d_children.clear();
+        EqProof* temp = eqp->get_child(0);
+        eqp->remove_all_children();
         *eqp = *temp;
         delete temp;
       }
@@ -1126,8 +1126,8 @@ void EqualityEngine::getExplanation(EqualityNodeId t1Id, EqualityNodeId t2Id, st
               EqProof * eqpc2 = eqpc ? new EqProof : NULL;
               getExplanation(f1.b, f2.b, equalities, eqpc2);
               if( eqpc ){
-                eqpc->d_children.push_back( eqpc1 );
-                eqpc->d_children.push_back( eqpc2 );
+                eqpc->add_child( eqpc1 );
+                eqpc->add_child( eqpc2 );
                 if( d_nodes[currentNode].getKind()==kind::EQUAL ){
                   //leave node null for now
                   eqpc->d_node = Node::null();
@@ -1141,10 +1141,10 @@ void EqualityEngine::getExplanation(EqualityNodeId t1Id, EqualityNodeId t2Id, st
                       eqpc->d_node = NodeManager::currentNM()->mkNode(kind::PARTIAL_SELECT_1, d_nodes[f1.b]);
                       // The first child is a PARTIAL_SELECT_0.
                       // Give it a child so that we know what kind of (read) it is, when we dump to LFSC.
-                      Assert(eqpc->d_children[0]->d_node.getKind() == kind::PARTIAL_SELECT_0);
-                      Assert(eqpc->d_children[0]->d_children.size() == 0);
+                      Assert(eqpc->get_child(0)->d_node.getKind() == kind::PARTIAL_SELECT_0);
+                      Assert(eqpc->get_child(0)->num_children() == 0);
 
-                      eqpc->d_children[0]->d_node = NodeManager::currentNM()->mkNode(kind::PARTIAL_SELECT_0,
+                      eqpc->get_child(0)->d_node = NodeManager::currentNM()->mkNode(kind::PARTIAL_SELECT_0,
                                                                                      d_nodes[f1.b]);
                     } else {
                       eqpc->d_node = NodeManager::currentNM()->mkNode(kind::PARTIAL_APPLY_UF,
@@ -1170,7 +1170,7 @@ void EqualityEngine::getExplanation(EqualityNodeId t1Id, EqualityNodeId t2Id, st
               EqProof * eqpc1 = eqpc ? new EqProof : NULL;
               getExplanation(eq.a, eq.b, equalities, eqpc1);
               if( eqpc ){
-                eqpc->d_children.push_back( eqpc1 );
+                eqpc->add_child( eqpc1 );
               }
               Debug("equality") << pop;
 
@@ -1195,7 +1195,7 @@ void EqualityEngine::getExplanation(EqualityNodeId t1Id, EqualityNodeId t2Id, st
                 EqProof * eqpcc = eqpc ? new EqProof : NULL;
                 getExplanation(childId, getEqualityNode(childId).getFind(), equalities, eqpcc);
                 if( eqpc ) {
-                  eqpc->d_children.push_back( eqpcc );
+                  eqpc->add_child( eqpcc );
 
                   Debug("pf::ee") << "MERGED_THROUGH_CONSTANTS. Dumping the child proof" << std::endl;
                   eqpc->debug_print("pf::ee", 1);
@@ -1248,12 +1248,13 @@ void EqualityEngine::getExplanation(EqualityNodeId t1Id, EqualityNodeId t2Id, st
             //---from Morgan---
             if (eqpc != NULL && eqpc->d_id == MERGED_THROUGH_REFLEXIVITY) {
               if(eqpc->d_node.isNull()) {
-                Assert(eqpc->d_children.size() == 1);
+                Assert(eqpc->num_children() == 1);
                 EqProof *p = eqpc;
-                eqpc = p->d_children[0];
+                eqpc = p->take_child(0);
+                p->discard_children();
                 delete p;
               } else {
-                Assert(eqpc->d_children.empty());
+                Assert(eqpc->num_children() == 0);
               }
             }
             //---end from Morgan---
@@ -1264,10 +1265,11 @@ void EqualityEngine::getExplanation(EqualityNodeId t1Id, EqualityNodeId t2Id, st
           if (eqp) {
             if(eqp_trans.size() == 1) {
               *eqp = *eqp_trans[0];
+              eqp_trans[0]->discard_children();
               delete eqp_trans[0];
             } else {
               eqp->d_id = MERGED_THROUGH_TRANS;
-              eqp->d_children.insert( eqp->d_children.end(), eqp_trans.begin(), eqp_trans.end() );
+              eqp->add_children(eqp_trans);
               eqp->d_node = NodeManager::currentNM()->mkNode(kind::EQUAL, d_nodes[t1Id], d_nodes[t2Id]);
             }
 
@@ -2217,6 +2219,11 @@ bool EqClassIterator::isFinished() const {
   return d_current == null_id;
 }
 
+EqProof::~EqProof() {
+Assert(this->refs == 0);
+this->remove_all_children();
+}
+
 void EqProof::debug_print(const char* c, unsigned tb, PrettyPrinter* prettyPrinter) const {
   for(unsigned i=0; i<tb; i++) { Debug( c ) << "  "; }
 
@@ -2232,10 +2239,10 @@ void EqProof::debug_print(const char* c, unsigned tb, PrettyPrinter* prettyPrint
       for( unsigned i=0; i<tb+1; i++ ) { Debug( c ) << "  "; }
       Debug( c ) << d_node;
     }
-    for( unsigned i=0; i<d_children.size(); i++ ){
+    for( unsigned i=0; i<num_children(); i++ ){
       if( i>0 || !d_node.isNull() ) Debug( c ) << ",";
       Debug( c ) << std::endl;
-      d_children[i]->debug_print( c, tb+1, prettyPrinter );
+      get_child(i)->debug_print( c, tb+1, prettyPrinter );
     }
   }
   Debug( c ) << ")" << std::endl;

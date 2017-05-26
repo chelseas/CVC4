@@ -50,7 +50,7 @@ void ArrayProofReconstruction::notify(unsigned reasonType, Node reason, Node a, 
       // recursively, to explain this.
       eq::EqProof* childProof = new eq::EqProof;
       childProof->d_node = reason;
-      proof->d_children.push_back(childProof);
+      proof->add_child(childProof);
     }
   }
 
@@ -108,40 +108,40 @@ void ArrayProofReconstruction::notify(unsigned reasonType, Node reason, Node a, 
         // It could be that the guard condition is a constant disequality. In this case,
         // we need to change it to a different format.
         bool haveNegChild = false;
-        for (unsigned i = 0; i < childProof->d_children.size(); ++i) {
-          if (childProof->d_children[i]->d_node.getKind() == kind::NOT)
+        for (unsigned i = 0; i < childProof->num_children(); ++i) {
+          if (childProof->get_child(i)->d_node.getKind() == kind::NOT)
             haveNegChild = true;
         }
 
-        if ((childProof->d_children.size() != 0) &&
+        if ((childProof->num_children() != 0) &&
             (childProof->d_id == theory::eq::MERGED_THROUGH_CONSTANTS || !haveNegChild)) {
           // The proof has two children, explaining why each index is a (different) constant.
-          Assert(childProof->d_children.size() == 2);
+          Assert(childProof->num_children() == 2);
 
           Node constantOne, constantTwo;
           // Each subproof explains why one of the indices is constant.
 
-          if (childProof->d_children[0]->d_id == theory::eq::MERGED_THROUGH_REFLEXIVITY) {
-            constantOne = childProof->d_children[0]->d_node;
+          if (childProof->get_child(0)->d_id == theory::eq::MERGED_THROUGH_REFLEXIVITY) {
+            constantOne = childProof->get_child(0)->d_node;
           } else {
-            Assert(childProof->d_children[0]->d_node.getKind() == kind::EQUAL);
-            if ((childProof->d_children[0]->d_node[0] == indexOne) ||
-                (childProof->d_children[0]->d_node[0] == indexTwo)) {
-              constantOne = childProof->d_children[0]->d_node[1];
+            Assert(childProof->get_child(0)->d_node.getKind() == kind::EQUAL);
+            if ((childProof->get_child(0)->d_node[0] == indexOne) ||
+                (childProof->get_child(0)->d_node[0] == indexTwo)) {
+              constantOne = childProof->get_child(0)->d_node[1];
             } else {
-              constantOne = childProof->d_children[0]->d_node[0];
+              constantOne = childProof->get_child(0)->d_node[0];
             }
           }
 
-          if (childProof->d_children[1]->d_id == theory::eq::MERGED_THROUGH_REFLEXIVITY) {
-            constantTwo = childProof->d_children[1]->d_node;
+          if (childProof->get_child(1)->d_id == theory::eq::MERGED_THROUGH_REFLEXIVITY) {
+            constantTwo = childProof->get_child(1)->d_node;
           } else {
-            Assert(childProof->d_children[1]->d_node.getKind() == kind::EQUAL);
-            if ((childProof->d_children[1]->d_node[0] == indexOne) ||
-                (childProof->d_children[1]->d_node[0] == indexTwo)) {
-              constantTwo = childProof->d_children[1]->d_node[1];
+            Assert(childProof->get_child(1)->d_node.getKind() == kind::EQUAL);
+            if ((childProof->get_child(1)->d_node[0] == indexOne) ||
+                (childProof->get_child(1)->d_node[0] == indexTwo)) {
+              constantTwo = childProof->get_child(1)->d_node[1];
             } else {
-              constantTwo = childProof->d_children[1]->d_node[0];
+              constantTwo = childProof->get_child(1)->d_node[0];
             }
           }
 
@@ -150,18 +150,15 @@ void ArrayProofReconstruction::notify(unsigned reasonType, Node reason, Node a, 
           constantDisequalityProof->d_node =
             NodeManager::currentNM()->mkNode(kind::EQUAL, constantOne, constantTwo).negate();
 
-          // Middle is where we need to insert the new disequality
-          std::vector<eq::EqProof *>::iterator middle = childProof->d_children.begin();
-          ++middle;
-
-          childProof->d_children.insert(middle, constantDisequalityProof);
+          // We need to insert the new disequality at position 1
+          childProof->insert_child(1, constantDisequalityProof);
 
           childProof->d_id = theory::eq::MERGED_THROUGH_TRANS;
           childProof->d_node =
             NodeManager::currentNM()->mkNode(kind::EQUAL, indexOne, indexTwo).negate();
         }
 
-        proof->d_children.push_back(childProof);
+        proof->add_child(childProof);
       } else {
         // This is the case of (i == k) because ((a[i]:=t)[k] != a[k]),
 
@@ -176,7 +173,7 @@ void ArrayProofReconstruction::notify(unsigned reasonType, Node reason, Node a, 
 
         eq::EqProof* childProof = new eq::EqProof;
         d_equalityEngine->explainEquality(reason[1][0], reason[1][1], false, equalities, childProof);
-        proof->d_children.push_back(childProof);
+        proof->add_child(childProof);
       }
     }
 

@@ -16,6 +16,12 @@ namespace CVC4 {
 
 ProofOutputChannel::ProofOutputChannel() : d_conflict(), d_proof(NULL) {}
 
+ProofOutputChannel::~ProofOutputChannel() {
+  if (d_proof != NULL) {
+    delete d_proof;
+  }
+}
+
 void ProofOutputChannel::conflict(TNode n, Proof* pf) throw() {
   Trace("pf::tp") << "ProofOutputChannel: CONFLICT: " << n << std::endl;
   Assert(d_conflict.isNull());

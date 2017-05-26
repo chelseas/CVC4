@@ -16,13 +16,13 @@ namespace CVC4 {
 class ProofOutputChannel : public theory::OutputChannel {
 public:
   Node d_conflict;
+  // ProofOutputChannel owns d_proof
   Proof* d_proof;
   Node d_lemma;
   std::set<Node> d_propagations;
 
   ProofOutputChannel();
-
-  virtual ~ProofOutputChannel() throw() {}
+  virtual ~ProofOutputChannel();
 
   virtual void conflict(TNode n, Proof* pf) throw();
   virtual bool propagate(TNode x) throw();

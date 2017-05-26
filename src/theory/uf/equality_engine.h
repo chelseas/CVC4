@@ -901,6 +901,9 @@ public:
 
 class EqProof
 {
+private:
+  std::vector< EqProof * > d_children;
+
 public:
   class PrettyPrinter {
   public:
@@ -908,10 +911,55 @@ public:
     virtual std::string printTag(unsigned tag) = 0;
   };
 
-  EqProof() : d_id(MERGED_THROUGH_REFLEXIVITY){}
+  EqProof() : d_id(MERGED_THROUGH_REFLEXIVITY), refs(0) {}
+  ~EqProof();
   unsigned d_id;
+  unsigned refs;
   Node d_node;
-  std::vector< EqProof * > d_children;
+  void add_child(EqProof* child) {
+   child->refs++;
+   d_children.push_back(child);
+  }
+  void insert_child(size_t i, EqProof* child) {
+   child->refs++;
+   std::vector<eq::EqProof *>::iterator middle = d_children.begin();
+   middle += i;
+   d_children.insert(middle, child);
+  }
+  void add_children(const std::vector<EqProof*> children) {
+    for (size_t i = 0; i < children.size(); i++) {
+      this->add_child(children[i]);
+    }
+  }
+  void remove_all_children() {
+  for( unsigned i=0; i<d_children.size(); i++ ){
+    d_children[i]->refs--;
+    if (d_children[i]->refs == 0) {
+    delete d_children[i];
+}
+  }
+  }
+  void discard_children() {
+    d_children.clear();
+  }
+  void remove_last_child() {
+    EqProof* last_child = d_children[d_children.size() - 1];
+    last_child->refs--;
+    if (last_child->refs == 0) {
+      delete last_child;
+    }
+    d_children.pop_back();
+  }
+  size_t num_children() const {
+    return d_children.size();
+  }
+  EqProof* get_child(size_t n) const {
+    return d_children[n];
+  }
+  EqProof* take_child(size_t i) {
+   d_children[i]->refs--;
+return d_children[i];
+  }
   void debug_print(const char * c, unsigned tb = 0, PrettyPrinter* prettyPrinter = NULL) const;
 };/* class EqProof */
 
