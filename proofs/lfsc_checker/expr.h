@@ -142,6 +142,7 @@ protected:
 #ifdef DEBUG_REFCNT    
     debugrefcnt(ref,DEC);
 #endif
+    assert(ref >= 0);
     if (ref == 0)
       destroy(this,dec_kids);
     else
