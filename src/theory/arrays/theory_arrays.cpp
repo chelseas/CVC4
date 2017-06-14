@@ -2254,6 +2254,8 @@ void TheoryArrays::conflict(TNode a, TNode b) {
     }
 
     d_out->conflict(d_conflictNode, proof_array);
+  } else {
+    delete proof;
   }
 
   d_conflict = true;

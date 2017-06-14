@@ -538,6 +538,7 @@ Expr *read_code() {
 	        report_error("Error reading a mpq numeral.");
 
         Expr* e = new RatExpr( num );
+        mpq_clear(num);
         return e;
       }
       else
@@ -545,7 +546,9 @@ Expr *read_code() {
         mpz_t num;
         if (mpz_init_set_str(num,v.c_str(),10) == -1)
           report_error("Error reading a numeral.");
-        return new IntExpr(num);
+        Expr* e = new IntExpr(num);
+        mpz_clear(num);
+        return e;
       }
     }
     default:
@@ -973,7 +976,7 @@ Expr *check_code(Expr *_e) {
 
       if (!mtp)
         mtp = tp;
-      else
+      else {
         if (mtp != tp)
           report_error(string("Types for bodies of match cases or the default differ.")
                        +string("\n1. type for first case's body: ")
@@ -982,6 +985,7 @@ Expr *check_code(Expr *_e) {
                          : (string("\n2. type for the body of case for ")
                             +pat->toString()))
                        +string(": ")+tp->toString());
+      }
 
     }
 
@@ -1084,7 +1088,9 @@ Expr *run_code(Expr *_e) {
         mpz_cdiv_q(r, ((IntExpr *)r1)->n, ((IntExpr *)r2)->n);
       r1->dec();
       r2->dec();
-      return new IntExpr(r);
+      Expr* result = new IntExpr(r);
+      mpz_clear(r);
+      return result;
     }
     else if( r1->getclass()==RAT_EXPR && r2->getclass()==RAT_EXPR )
     {
@@ -1098,7 +1104,9 @@ Expr *run_code(Expr *_e) {
         mpq_div(q, ((RatExpr *)r1)->n, ((RatExpr *)r2)->n);
       r1->dec();
       r2->dec();
-      return new RatExpr(q);
+      Expr* result = new RatExpr(q);
+      mpq_clear(q);
+      return result;
     }
     else
     {
@@ -1117,14 +1125,18 @@ Expr *run_code(Expr *_e) {
       mpz_init(r);
       mpz_neg(r, ((IntExpr *)r1)->n);
       r1->dec();
-      return new IntExpr(r);
+      Expr* result = new IntExpr(r);
+      mpz_clear(r);
+      return result;
     }
     else if( r1->getclass() == RAT_EXPR ) {
       mpq_t q;
       mpq_init(q);
       mpq_neg(q, ((RatExpr *)r1)->n);
       r1->dec();
-      return new RatExpr(q);
+      Expr* result = new RatExpr(q);
+      mpq_clear(q);
+      return result;
     }
     else
     {

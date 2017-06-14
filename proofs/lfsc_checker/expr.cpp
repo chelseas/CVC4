@@ -10,6 +10,7 @@ using namespace std;
 
 int HoleExpr::next_id = 0;
 int Expr::markedCount = 0;
+expr_ptr_set_t Expr::to_free;
 
 C_MACROS__ADD_CHUNKING_MEMORY_MANAGEMENT_CC(CExpr,kids,32768);
 
@@ -49,6 +50,9 @@ void Expr::destroy(Expr *_e, bool dec_kids) {
   switch (_e->getclass()) {
   case INT_EXPR:
     delete (IntExpr *)_e;
+    break;
+  case RAT_EXPR:
+    delete (RatExpr *)_e;
     break;
   case SYMS_EXPR:  {
     SymSExpr *e = (SymSExpr *)_e;

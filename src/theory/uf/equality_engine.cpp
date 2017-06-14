@@ -996,8 +996,8 @@ void EqualityEngine::explainEquality(TNode t1, TNode t2, bool polarity, std::vec
         eqp->d_id = MERGED_THROUGH_CONSTANTS;
       } else if (eqp->num_children() == 1) {
         // The transitivity proof has just one child. Simplify.
-        EqProof* temp = eqp->get_child(0);
-        eqp->remove_all_children();
+        EqProof* temp = eqp->take_child(0);
+        eqp->discard_children();
         *eqp = *temp;
         delete temp;
       }

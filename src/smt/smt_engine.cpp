@@ -1163,6 +1163,13 @@ SmtEngine::~SmtEngine() throw() {
   try {
     shutdown();
 
+    PROOF(
+    std::vector<Command*>::const_iterator itg = d_defineCommands.begin();
+    for (; itg != d_defineCommands.end();  ++itg) {
+      delete (*itg);
+    }
+    );
+
     // global push/pop around everything, to ensure proper destruction
     // of context-dependent data structures
     d_context->popto(0);

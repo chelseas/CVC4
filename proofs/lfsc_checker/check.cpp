@@ -353,6 +353,9 @@ Expr *check(bool create, Expr *expected, Expr **computed = NULL,
 	      sym->dec(); // the pivar->val reference
 	      if (create)
 	        return new CExpr(LAM, sym, range);
+              if (range) {
+                range->dec();
+              }
 	      sym->dec(); // the symbol table reference, otherwise in the new LAM
 	      return 0;
       }
@@ -830,6 +833,7 @@ Expr *check(bool create, Expr *expected, Expr **computed = NULL,
         if (mpq_set_str(num,v.c_str(),10) == -1)
 	        report_error("Error reading a numeral.");
         i = new RatExpr(num);
+        mpq_clear(num);
       }
       else
       {
@@ -837,6 +841,7 @@ Expr *check(bool create, Expr *expected, Expr **computed = NULL,
         if (mpz_init_set_str(num,v.c_str(),10) == -1)
 	        report_error("Error reading a numeral.");
         i = new IntExpr(num);
+        mpz_clear(num);
       }
     }
 
@@ -1374,6 +1379,14 @@ void cleanup() {
       p->dec();
     }
   }
+
+  //std::cout << Expr::to_free.size() << std::endl;
+  expr_ptr_set_t::iterator it, it_end;
+  for (it = Expr::to_free.begin(), it_end = Expr::to_free.end(); it != it_end; it++) {
+    (*it)->debug();
+    std::cout << (*it)->getrefcnt() << std::endl;
+  }
+  
 }
 
 void init() {

@@ -103,12 +103,15 @@ protected:
 
   Expr(int _class, int _op)
     : data(1 << 9 /* refcount 1, not cloned */| (_op << 3) | _class)
-  { }
+  { /*Expr::to_free.insert(this);*/ }
 
   bool _free_in(Expr *x, expr_ptr_set_t *visited);
 
  public:
-  virtual ~Expr() {}
+  static expr_ptr_set_t to_free;
+  virtual ~Expr() {
+      Expr::to_free.erase(this);
+	}
 
   static int markedCount;
   inline Expr* followDefs();
@@ -143,8 +146,9 @@ protected:
     debugrefcnt(ref,DEC);
 #endif
     assert(ref >= 0);
-    if (ref == 0)
+    if (ref == 0) {
       destroy(this,dec_kids);
+    }
     else
       data = (ref << 9) | (data & 511);
   }
