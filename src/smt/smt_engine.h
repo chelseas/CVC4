@@ -81,23 +81,27 @@ namespace smt {
    * support getValue() over defined functions, to support user output
    * in terms of defined functions, etc.
    */
-  class DefinedFunction;
+struct SmtEngineStatistics;
+class SmtEnginePrivate;
+class SmtScope;
+class BooleanTermConverter;
 
-  struct SmtEngineStatistics;
-  class SmtEnginePrivate;
-  class SmtScope;
-  class BooleanTermConverter;
+ProofManager* currentProofManager();
 
-  ProofManager* currentProofManager();
-
-  struct CommandCleanup;
-  typedef context::CDList<Command*, CommandCleanup> CommandList;
+struct CommandCleanup;
+typedef context::CDList<Command*, CommandCleanup> CommandList;
 }/* CVC4::smt namespace */
 
 namespace theory {
   class TheoryModel;
 }/* CVC4::theory namespace */
 
+namespace preproc {
+class DefinedFunction;
+class PreprocessingPassAPI;
+} /* CVC4::preproc namespace */
+
+class RemoveTermFormulas;
 // TODO: SAT layer (esp. CNF- versus non-clausal solvers under the
 // hood): use a type parameter and have check() delegate, or subclass
 // SmtEngine and override check()?
@@ -110,10 +114,9 @@ namespace theory {
 // The CNF conversion can go on in PropEngine.
 
 class CVC4_PUBLIC SmtEngine {
-
   /** The type of our internal map of defined functions */
-  typedef context::CDHashMap<Node, smt::DefinedFunction, NodeHashFunction>
-    DefinedFunctionMap;
+  typedef context::CDHashMap<Node, preproc::DefinedFunction, NodeHashFunction>
+      DefinedFunctionMap;
   /** The type of our internal assertion list */
   typedef context::CDList<Expr> AssertionList;
   /** The type of our internal assignment set */
@@ -283,6 +286,8 @@ class CVC4_PUBLIC SmtEngine {
    */
   Node postprocess(TNode n, TypeNode expectedType) const;
 
+  void addFormula(TNode n, bool inUnsatCore, bool inInput = true);
+
   /**
    * This is something of an "init" procedure, but is idempotent; call
    * as often as you like.  Should be called whenever the final options
@@ -336,12 +341,14 @@ class CVC4_PUBLIC SmtEngine {
 
   void doPendingPops();
 
+  RemoveTermFormulas* getIteRemover();
+  std::vector<Node>* getBoolVars();
   /**
    * Internally handle the setting of a logic.  This function should always
    * be called when d_logic is updated.
    */
   void setLogicInternal() throw();
-
+  friend class ::CVC4::preproc::PreprocessingPassAPI;
   friend class ::CVC4::smt::SmtEnginePrivate;
   friend class ::CVC4::smt::SmtScope;
   friend class ::CVC4::smt::BooleanTermConverter;

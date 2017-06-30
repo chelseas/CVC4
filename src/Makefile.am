@@ -61,6 +61,67 @@ libcvc4_la_SOURCES = \
 	decision/decision_strategy.h \
 	decision/justification_heuristic.cpp \
 	decision/justification_heuristic.h \
+	preproc/linear_preprocessing_pipeline.h \
+	preproc/linear_preprocessing_pipeline.cpp \
+	preproc/expanding_definitions.h \
+	preproc/expanding_definitions.cpp \
+	preproc/nl_ext_purify.h \
+	preproc/nl_ext_purify.cpp \
+	preproc/ce_guided_inst.h \
+	preproc/ce_guided_inst.cpp \
+	preproc/solve_real_as_int.h \
+	preproc/solve_real_as_int.cpp \
+	preproc/solve_int_as_bv.h \
+	preproc/solve_int_as_bv.cpp \
+	preproc/ackermanization.h \
+	preproc/ackermanization.cpp \
+	preproc/bv_abstraction.h \
+	preproc/bv_abstraction.cpp \
+	preproc/unconstrained_simp.h \
+	preproc/unconstrained_simp.cpp \
+	preproc/rewrite_pass.h \
+	preproc/rewrite_pass.cpp \
+	preproc/apply_substitutions.h \
+	preproc/apply_substitutions.cpp \
+	preproc/bv_to_bool.h \
+	preproc/bv_to_bool.cpp \
+	preproc/bool_to_bv.h \
+	preproc/bool_to_bv.cpp \
+	preproc/sep_pre_skolem_emp.h \
+	preproc/sep_pre_skolem_emp.cpp \
+	preproc/quantified.h \
+	preproc/quantified.cpp \
+	preproc/inference_or_fairness.h \
+	preproc/inference_or_fairness.cpp \
+	preproc/pb_rewrite.h \
+	preproc/pb_rewrite.cpp \
+	preproc/remove_ite.h \
+	preproc/remove_ite.cpp \
+	preproc/do_static_learning.h \
+	preproc/do_static_learning.cpp \
+	preproc/rewrite_apply_to_const.h \
+	preproc/rewrite_apply_to_const.cpp \
+	preproc/theory_preprocess.h \
+	preproc/theory_preprocess.cpp \
+	preproc/theory_proof_pass.h \
+	preproc/theory_proof_pass.cpp \
+	preproc/bit_blast_mode_eager.h \
+	preproc/bit_blast_mode_eager.cpp \
+	preproc/repeat_simp.h \
+	preproc/repeat_simp.cpp \
+	preproc/non_clausal_simplification.h \
+	preproc/non_clausal_simplification.cpp \
+	preproc/miplib_trick.h \
+	preproc/miplib_trick.cpp \
+	preproc/early_theory.h \
+	preproc/early_theory.cpp \
+	preproc/simp_ite.h \
+	preproc/simp_ite.cpp \
+	preproc/preprocessing_pass.h \
+	preproc/preprocessing_pass.cpp \
+	preproc/preprocessing_pass_registry.cpp \
+	preproc/preprocessing_pass_registry.h \
+	preproc/preprocessing_pass_api.h \
 	printer/dagification_visitor.cpp \
 	printer/dagification_visitor.h \
 	printer/printer.cpp \
