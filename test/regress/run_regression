@@ -254,7 +254,6 @@ if [ "$proof" = yes ]; then
     fi
     if ! expr "$CVC4_REGRESSION_ARGS $command_line" : '.*--check-unsat-cores' &>/dev/null &&
        ! expr "$CVC4_REGRESSION_ARGS $command_line" : '.*--no-check-unsat-cores' &>/dev/null &&
-       ! expr "$CVC4_REGRESSION_ARGS $command_line" : '.*--incremental' &>/dev/null &&
        ! expr "$CVC4_REGRESSION_ARGS $command_line" : '.*--unconstrained-simp' &>/dev/null &&
        ! expr " $CVC4_REGRESSION_ARGS $command_line" : '.* -[a-zA-Z]*i' &>/dev/null &&
        ! expr "$BINARY" : '.*pcvc4' &>/dev/null &&

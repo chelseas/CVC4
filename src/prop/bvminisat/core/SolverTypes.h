@@ -181,7 +181,8 @@ public:
             abstraction |= 1 << (var(data[i].lit) & 31);
         data[header.size].abs = abstraction;  }
 
-
+    // No incremental solving in BVMiniSat
+    int level() const { return 0; }
     int          size        ()      const   { return header.size; }
     void         shrink      (int i)         { assert(i <= size()); if (header.has_extra) data[header.size-i] = data[header.size]; header.size -= i; }
     void         pop         ()              { shrink(1); }

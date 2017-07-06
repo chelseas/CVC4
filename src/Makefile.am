@@ -42,6 +42,7 @@ libcvc4_la_SOURCES = \
 	context/cdhashset_forward.h \
 	context/cdinsert_hashmap.h \
 	context/cdinsert_hashmap_forward.h \
+	context/cdlevel_insert_hashmap.h \
 	context/cdlist.h \
 	context/cdlist_forward.h \
 	context/cdmaybe.h \

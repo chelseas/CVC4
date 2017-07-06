@@ -211,7 +211,7 @@ TSatProof<Solver>::TSatProof(Solver* solver, context::Context* context,
       d_assumptions(),
       d_assumptionConflicts(),
       d_assumptionConflictsDebug(),
-      d_resolutionChains(d_context),
+      d_resolutionChains(context),
       d_resStack(),
       d_checkRes(checkRes),
       d_emptyClauseId(ClauseIdEmpty),
@@ -258,14 +258,6 @@ TSatProof<Solver>::~TSatProof() {
 
   for (; seen_input_it != seen_input_end; ++seen_input_it) {
     delete seen_input_it->second;
-  }
-
-  typedef typename IdResMap::const_iterator ResolutionChainIterator;
-  ResolutionChainIterator resolution_it = d_resolutionChains.begin();
-  ResolutionChainIterator resolution_it_end = d_resolutionChains.end();
-  for (; resolution_it != resolution_it_end; ++resolution_it) {
-    ResChain<Solver>* current = (*resolution_it).second;
-    delete current;
   }
 
   // It could be the case that d_resStack is not empty at destruction time
@@ -720,15 +712,8 @@ void TSatProof<Solver>::registerResolution(ClauseId id, ResChain<Solver>* res) {
   removeRedundantFromRes(res, id);
   Assert(res->redundantRemoved());
 
-  // Because the SAT solver can add the same clause multiple times, it
-  // could be the case that a resolution chain for this clause already
-  // exists (e.g. when removing units in addClause).
-  if (hasResolutionChain(id)) {
-    ResChain<Solver>* current = (*d_resolutionChains.find(id)).second;
-    delete current;
-  }
-
-  d_resolutionChains.insert(id, res);
+  int level = getClause(d_idClause[d_emptyClauseId]).level();
+  d_resolutionChains.insert(id, res, level);
 
   if (Debug.isOn("proof:sat")) {
     printRes(id);
@@ -776,15 +761,6 @@ void TSatProof<Solver>::endResChain(ClauseId id) {
   registerResolution(id, res);
   d_resStack.pop_back();
 }
-
-// template <class Solver>
-// void TSatProof<Solver>::endResChain(typename Solver::TCRef clause) {
-//   Assert(d_resStack.size() > 0);
-//   ClauseId id = registerClause(clause, LEARNT);
-//   ResChain<Solver>* res = d_resStack.back();
-//   registerResolution(id, res);
-//   d_resStack.pop_back();
-// }
 
 template <class Solver>
 void TSatProof<Solver>::endResChain(typename Solver::TLit lit) {

@@ -29,6 +29,7 @@
 #include <vector>
 
 #include "context/cdhashmap.h"
+#include "context/cdlevel_insert_hashmap.h"
 #include "context/cdmaybe.h"
 #include "expr/expr.h"
 #include "proof/clause_id.h"
@@ -99,19 +100,23 @@ class TSatProof {
  protected:
   typedef ResChain<Solver> ResolutionChain;
 
+  struct DeleteResolutionChainPtr {
+    void operator()(ResolutionChain*& value) const { delete value; }
+  };
+
   typedef std::set<typename Solver::TLit> LitSet;
   typedef std::set<typename Solver::TVar> VarSet;
   typedef std::hash_map<ClauseId, typename Solver::TCRef> IdCRefMap;
   typedef std::hash_map<typename Solver::TCRef, ClauseId> ClauseIdMap;
   typedef context::CDHashMap<ClauseId, typename Solver::TLit> IdUnitMap;
   typedef context::CDHashMap<int, ClauseId> UnitIdMap;
-  typedef context::CDHashMap<ClauseId, ResolutionChain*> IdResMap;
+  typedef context::CDLevelInsertHashMap<ClauseId, ResolutionChain*,
+                                        DeleteResolutionChainPtr>
+      IdResMap;
   typedef std::hash_map<ClauseId, uint64_t> IdProofRuleMap;
   typedef std::vector<ResolutionChain*> ResStack;
   typedef std::set<ClauseId> IdSet;
   typedef std::vector<typename Solver::TLit> LitVector;
-  typedef __gnu_cxx::hash_map<ClauseId, typename Solver::TClause&>
-      IdToMinisatClause;
   typedef __gnu_cxx::hash_map<ClauseId, LitVector*> IdToConflicts;
 
  public:
@@ -129,7 +134,6 @@ class TSatProof {
    * in the resolution map. Also registers the 'clause' parameter
    * @param clause the clause the resolution is proving
    */
-  // void endResChain(typename Solver::TCRef clause);
   void endResChain(typename Solver::TLit lit);
   void endResChain(ClauseId id);
 
@@ -255,7 +259,6 @@ class TSatProof {
    */
   void registerResolution(ClauseId id, ResolutionChain* res);
 
-
   bool hasClauseIdForCRef(typename Solver::TCRef clause) const;
   ClauseId getClauseIdForCRef(typename Solver::TCRef clause) const;
 
@@ -330,13 +333,13 @@ class TSatProof {
    */
   IdResMap d_resolutionChains;
 
-   /*
-   * Stack containting current ResChain* we are working on. d_resStack
-   * owns the memory for the ResChain* it contains. Invariant: no
-   * ResChain* pointer can be both in d_resStack and
-   * d_resolutionChains. Memory ownership is transfered from
-   * d_resStack to d_resolutionChains via registerResolution.
-   */
+  /*
+  * Stack containting current ResChain* we are working on. d_resStack
+  * owns the memory for the ResChain* it contains. Invariant: no
+  * ResChain* pointer can be both in d_resStack and
+  * d_resolutionChains. Memory ownership is transfered from
+  * d_resStack to d_resolutionChains via registerResolution.
+  */
   ResStack d_resStack;
   bool d_checkRes;
 
