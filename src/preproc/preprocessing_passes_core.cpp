@@ -2,10 +2,14 @@
 
 #include <ext/hash_map>
 #include <string>
-#include "theory/quantifiers/quant_util.h"
-#include "options/smt_options.h"
 #include "theory/theory.h"
-
+#include "theory/quantifiers/quant_util.h"
+#include "theory/sep/theory_sep_rewriter.h"
+#include "options/smt_options.h"
+#include "options/bv_bitblast_mode.h"
+#include "options/bv_options.h"
+#include "theory/quantifiers/ce_guided_instantiation.h"
+ 
 namespace CVC4 {
 namespace preproc {
 
@@ -71,6 +75,15 @@ Node NlExtPurifyPass::purifyNlTerms(TNode n, NodeMap& cache, NodeMap& bcache,
     cache[n] = ret;
   }
   return ret;
+}
+
+CEGuidedInstPass::CEGuidedInstPass(ResourceManager* resourceManager, TheoryEngine* theoryEngine) : PreprocessingPass(resourceManager), d_theoryEngine(theoryEngine){
+}
+
+void CEGuidedInstPass::apply(std::vector<Node>* assertionsToPreprocess){
+    for (unsigned i = 0; i < assertionsToPreprocess->size(); ++ i) {
+      d_theoryEngine->getQuantifiersEngine()->getCegInstantiation()->preregisterAssertion( (*assertionsToPreprocess)[i] );
+    }
 }
 
 SolveRealAsIntPass::SolveRealAsIntPass(ResourceManager* resourceManager) : PreprocessingPass(resourceManager){
@@ -425,15 +438,84 @@ Node SolveIntAsBVPass::intToBV(TNode n, NodeMap& cache) {
   return cache[n_binary];
 }
 
+BitBlastModePass::BitBlastModePass(ResourceManager* resourceManager, TheoryEngine* theoryEngine) : PreprocessingPass(resourceManager) , d_theoryEngine(theoryEngine){
+}
+
+void BitBlastModePass::apply(std::vector<Node>* assertionsToPreprocess){
+  d_theoryEngine->mkAckermanizationAsssertions(*assertionsToPreprocess);
+}
+
+BVAbstractionPass::BVAbstractionPass(ResourceManager* resourceManager, SmtEngine* smt, TheoryEngine* theoryEngine) : PreprocessingPass(resourceManager), d_smt(smt), d_theoryEngine(theoryEngine){
+}
+
+void BVAbstractionPass::bvAbstraction(std::vector<Node>* assertionsToPreprocess){
+  Trace("bv-abstraction") << "SmtEnginePrivate::bvAbstraction()" << std::endl;
+  std::vector<Node> new_assertions;
+  bool changed = d_theoryEngine->ppBvAbstraction(*assertionsToPreprocess, new_assertions);
+  //This method just changes the assertionToPreprocess, so the new_assertions variable is not necessary.
+  //TODO: change how ppBvAbstraction works
+  //order of rewrite also changed around 
+  assertionsToPreprocess->swap(new_assertions);
+ // if we are using the lazy solver and the abstraction
+  // applies, then UF symbols were introduced
+  if (options::bitblastMode() == theory::bv::BITBLAST_MODE_LAZY &&
+      changed) {
+    LogicRequest req(*d_smt);
+    req.widenLogic(theory::THEORY_UF);
+  }
+}
+ 
+void BVAbstractionPass::apply(std::vector<Node>* assertionsToPreprocess){
+    dumpAssertions("pre-bv-abstraction", *assertionsToPreprocess);
+    bvAbstraction(assertionsToPreprocess);
+    dumpAssertions("post-bv-abstraction", *assertionsToPreprocess);
+} 
+
+UnconstrainedSimpPass::UnconstrainedSimpPass(ResourceManager* resourceManager, TimerStat unconstrainedSimpTime, TheoryEngine* theoryEngine) : PreprocessingPass(resourceManager), d_unconstrainedSimpTime(unconstrainedSimpTime), d_theoryEngine(theoryEngine){
+}
+
+void UnconstrainedSimpPass::apply(std::vector<Node>* assertionsToPreprocess){
+  TimerStat::CodeTimer unconstrainedSimpTimer(d_unconstrainedSimpTime);
+  spendResource(options::preprocessStep());
+  Trace("simplify") << "SmtEnginePrivate::unconstrainedSimp()" << std::endl;
+}
+
+RewritePass::RewritePass(ResourceManager* resourceManager) : PreprocessingPass(resourceManager){
+}
+
+void RewritePass::apply(std::vector<Node>* assertionsToPreprocess){
+   for (unsigned i = 0; i < assertionsToPreprocess->size(); ++ i) {
+      (*assertionsToPreprocess)[i] = 
+      theory::Rewriter::rewrite((*assertionsToPreprocess)[i]);
+    }
+}
+
+NotUnsatCoresPass::NotUnsatCoresPass(ResourceManager* resourceManager, theory::SubstitutionMap* topLevelSubstitutions) : PreprocessingPass(resourceManager), d_topLevelSubstitutions(topLevelSubstitutions){
+}
+
+void NotUnsatCoresPass::apply(std::vector<Node>* assertionsToPreprocess){
+  Chat() << "applying substitutions..." << std::endl;
+      Trace("simplify") << "SmtEnginePrivate::nonClausalSimplify(): "
+                        << "applying substitutions" << std::endl;
+      for (unsigned i = 0; i < assertionsToPreprocess->size(); ++ i) {
+        Trace("simplify") << "applying to " << (*assertionsToPreprocess)[i] << std::endl;
+        spendResource(options::preprocessStep());
+        (*assertionsToPreprocess)[i] =
+          theory::Rewriter::rewrite(d_topLevelSubstitutions->apply((*assertionsToPreprocess)[i]));
+        Trace("simplify") << "  got " << (*assertionsToPreprocess)[i] << std::endl;
+       }
+}
+     
+BVToBoolPass::BVToBoolPass(ResourceManager* resourceManager, TheoryEngine* theoryEngine) : PreprocessingPass(resourceManager) , d_theoryEngine(theoryEngine){
+}
+
 void BVToBoolPass::apply(std::vector<Node>* assertionsToPreprocess){
   dumpAssertions("pre-bv-to-bool", *assertionsToPreprocess);
   Chat() << "...doing bvToBool..." << std::endl;
   bvToBool(assertionsToPreprocess);
+  //A rewrite pass was formerly here that has been moved to after the dump
   dumpAssertions("post-bv-to-bool", *assertionsToPreprocess);
   Trace("smt") << "POST bvToBool" << std::endl;
-}
-
-BVToBoolPass::BVToBoolPass(ResourceManager* resourceManager, TheoryEngine* theoryEngine) : PreprocessingPass(resourceManager) , d_theoryEngine(theoryEngine){
 }
 
 void BVToBoolPass::bvToBool(std::vector<Node>* assertionsToPreprocess) {
@@ -441,10 +523,10 @@ void BVToBoolPass::bvToBool(std::vector<Node>* assertionsToPreprocess) {
   spendResource(options::preprocessStep());
   std::vector<Node> new_assertions;
   d_theoryEngine->ppBvToBool((*assertionsToPreprocess), new_assertions);
-  for (unsigned i = 0; i < assertionsToPreprocess->size(); ++ i) {
-    (*assertionsToPreprocess)[i] =
-      theory::Rewriter::rewrite(new_assertions[i]);
-  }
+  //This method just changes the assertionToPreprocess, so the new_assertions variable is not necessary.
+  //TODO: change how ppBvToBool works
+  //order of rewrite also changed around 
+  assertionsToPreprocess->swap(new_assertions);
 }
 
 BoolToBVPass::BoolToBVPass(ResourceManager* resourceManager, TheoryEngine* theoryEngine) : PreprocessingPass(resourceManager) , d_theoryEngine(theoryEngine){
@@ -455,10 +537,10 @@ void BoolToBVPass::boolToBv(std::vector<Node>* assertionsToPreprocess) {
   spendResource(options::preprocessStep());
   std::vector<Node> new_assertions;
   d_theoryEngine->ppBoolToBv((*assertionsToPreprocess), new_assertions);
-  for (unsigned i = 0; i < assertionsToPreprocess->size(); ++ i) {
-    (*assertionsToPreprocess)[i] = 
-      theory::Rewriter::rewrite(new_assertions[i]);
-   }
+  //This method just changes the assertionToPreprocess, so the new_assertions variable is not necessary.
+  // TODO: change how ppBooltoBv works
+  //Order of rewrite also changed around  
+  assertionsToPreprocess->swap(new_assertions);
 }
 
 void BoolToBVPass::apply(std::vector<Node>* assertionsToPreprocess){
@@ -467,6 +549,21 @@ void BoolToBVPass::apply(std::vector<Node>* assertionsToPreprocess){
     boolToBv(assertionsToPreprocess);
     dumpAssertions("post-bool-to-bv", *assertionsToPreprocess);
     Trace("smt") << "POST boolToBv" << std::endl;
+}
+
+SepPreSkolemEmpPass::SepPreSkolemEmpPass(ResourceManager* resourceManager) : PreprocessingPass(resourceManager){
+}
+
+void SepPreSkolemEmpPass::apply(std::vector<Node>* assertionsToPreprocess){
+  for (unsigned i = 0; i < assertionsToPreprocess->size(); ++ i) {
+      Node prev = (*assertionsToPreprocess)[i];
+      Node next = theory::sep::TheorySepRewriter::preprocess( prev );
+      if( next!=prev ){
+        (*assertionsToPreprocess)[i] = theory::Rewriter::rewrite( next );
+        Trace("sep-preprocess") << "*** Preprocess sep " << prev << std::endl;
+        Trace("sep-preprocess") << "   ...got " << (*assertionsToPreprocess)[i] << std::endl;
+       }
+  }
 }
 
 }  // namespace preproc

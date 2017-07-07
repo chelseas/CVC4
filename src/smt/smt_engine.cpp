@@ -596,16 +596,8 @@ private:
    * ite removal.
    */
   bool checkForBadSkolems(TNode n, TNode skolem, NodeToBoolHashMap& cache);
-
-  // Abstract common structure over small domains to UF
-  // return true if changes were made.
-  void bvAbstraction();
-
-  // Simplify ITE structure
+ // Simplify ITE structure
   bool simpITE();
-
-  // Simplify based on unconstrained values
-  void unconstrainedSimp();
 
   /**
    * Ensures the assertions asserted after before now effectively come before
@@ -2801,22 +2793,6 @@ bool SmtEnginePrivate::nonClausalSimplify() {
   return true;
 }
 
-void SmtEnginePrivate::bvAbstraction() {
-  Trace("bv-abstraction") << "SmtEnginePrivate::bvAbstraction()" << endl;
-  std::vector<Node> new_assertions;
-  bool changed = d_smt.d_theoryEngine->ppBvAbstraction(d_assertions.ref(), new_assertions);
-  for (unsigned i = 0; i < d_assertions.size(); ++ i) {
-    d_assertions.replace(i, Rewriter::rewrite(new_assertions[i]));
-  }
-  // if we are using the lazy solver and the abstraction
-  // applies, then UF symbols were introduced
-  if (options::bitblastMode() == theory::bv::BITBLAST_MODE_LAZY &&
-      changed) {
-    LogicRequest req(d_smt);
-    req.widenLogic(THEORY_UF);
-  }
-}
-
 bool SmtEnginePrivate::simpITE() {
   TimerStat::CodeTimer simpITETimer(d_smt.d_stats->d_simpITETime);
 
@@ -2870,14 +2846,6 @@ void SmtEnginePrivate::compressBeforeRealAssertions(size_t before){
   d_assertions.replace(lastBeforeItes, newLast);
   Assert(d_assertions.size() == before);
 }
-
-void SmtEnginePrivate::unconstrainedSimp() {
-  TimerStat::CodeTimer unconstrainedSimpTimer(d_smt.d_stats->d_unconstrainedSimpTime);
-  spendResource(options::preprocessStep());
-  Trace("simplify") << "SmtEnginePrivate::unconstrainedSimp()" << endl;
-  d_smt.d_theoryEngine->ppUnconstrainedSimp(d_assertions.ref());
-}
-
 
 void SmtEnginePrivate::constrainSubtypes(TNode top, AssertionPipeline& assertions)
   throw() {
@@ -3410,8 +3378,9 @@ bool SmtEnginePrivate::simplifyAssertions()
     // Unconstrained simplification
     if(options::unconstrainedSimp()) {
       Chat() << "...doing unconstrained simplification..." << endl;
-      unconstrainedSimp();
-    }
+      preproc::UnconstrainedSimpPass pass(d_resourceManager, d_smt.d_stats->d_unconstrainedSimpTime, d_smt.d_theoryEngine);
+      pass.apply(&d_assertions.ref());
+   }
 
     dumpAssertions("post-unconstrained", d_assertions);
     Trace("smt") << "POST unconstrainedSimp" << endl;
@@ -3628,10 +3597,9 @@ void SmtEnginePrivate::processAssertions() {
 
   if( options::ceGuidedInst() ){
     //register sygus conjecture pre-rewrite (motivated by solution reconstruction)
-    for (unsigned i = 0; i < d_assertions.size(); ++ i) {
-      d_smt.d_theoryEngine->getQuantifiersEngine()->getCegInstantiation()->preregisterAssertion( d_assertions[i] );
-    }
-  }
+    preproc::CEGuidedInstPass pass(d_resourceManager, d_smt.d_theoryEngine);
+    pass.apply(&d_assertions.ref());
+ }
 
   if (options::solveRealAsInt()) {
    preproc::SolveRealAsIntPass pass(d_resourceManager);
@@ -3653,15 +3621,18 @@ void SmtEnginePrivate::processAssertions() {
   }
 
   if (options::bitblastMode() == theory::bv::BITBLAST_MODE_EAGER) {
-    d_smt.d_theoryEngine->mkAckermanizationAsssertions(d_assertions.ref());
+    preproc::BitBlastModePass pass(d_resourceManager, d_smt.d_theoryEngine);
+    pass.apply(&d_assertions.ref());   
   }
 
   if ( options::bvAbstraction() &&
       !options::incrementalSolving()) {
-    dumpAssertions("pre-bv-abstraction", d_assertions);
-    bvAbstraction();
-    dumpAssertions("post-bv-abstraction", d_assertions);
-  }
+    preproc::BVAbstractionPass pass(d_resourceManager, &d_smt, d_smt.d_theoryEngine);
+    pass.apply(&d_assertions.ref());
+
+    preproc::RewritePass pass1(d_resourceManager);
+    pass1.apply(&d_assertions.ref());
+ }
 
   Debug("smt") << " d_assertions     : " << d_assertions.size() << endl;
 
@@ -3685,16 +3656,19 @@ void SmtEnginePrivate::processAssertions() {
 
   // Unconstrained simplification
   if(options::unconstrainedSimp()) {
-    Trace("smt-proc") << "SmtEnginePrivate::processAssertions() : pre-unconstrained-simp" << endl;
+    Trace("smt-proc") << "SmtEnginePrivate::processAssertions() : pre-unconstrained-simp" << std::endl;
     dumpAssertions("pre-unconstrained-simp", d_assertions);
-    Chat() << "...doing unconstrained simplification..." << endl;
-    for (unsigned i = 0; i < d_assertions.size(); ++ i) {
-      d_assertions.replace(i, Rewriter::rewrite(d_assertions[i]));
-    }
-    unconstrainedSimp();
-    Trace("smt-proc") << "SmtEnginePrivate::processAssertions() : post-unconstrained-simp" << endl;
+    Chat() << "...doing unconstrained simplification..." << std::endl;
+    
+    preproc::RewritePass pass(d_resourceManager);
+    pass.apply(&d_assertions.ref());    
+
+    preproc::UnconstrainedSimpPass pass1(d_resourceManager, d_smt.d_stats->d_unconstrainedSimpTime, d_smt.d_theoryEngine);
+    pass1.apply(&d_assertions.ref());
+ 
+   Trace("smt-proc") << "SmtEnginePrivate::processAssertions() : post-unconstrained-simp" << std::endl;
     dumpAssertions("post-unconstrained-simp", d_assertions);
-  }
+ }
 
   if(options::bvIntroducePow2()){
     theory::bv::BVIntroducePow2::pow2Rewrite(d_assertions.ref());
@@ -3705,23 +3679,15 @@ void SmtEnginePrivate::processAssertions() {
 
   if(options::unsatCores()) {
     // special rewriting pass for unsat cores, since many of the passes below are skipped
-    for (unsigned i = 0; i < d_assertions.size(); ++ i) {
-      d_assertions.replace(i, Rewriter::rewrite(d_assertions[i]));
-    }
+    preproc::RewritePass pass(d_resourceManager);
+    pass.apply(&d_assertions.ref());
   } else {
     // Apply the substitutions we already have, and normalize
-    if(!options::unsatCores()) {
-      Chat() << "applying substitutions..." << endl;
-      Trace("simplify") << "SmtEnginePrivate::nonClausalSimplify(): "
-                        << "applying substitutions" << endl;
-      for (unsigned i = 0; i < d_assertions.size(); ++ i) {
-        Trace("simplify") << "applying to " << d_assertions[i] << endl;
-        spendResource(options::preprocessStep());
-        d_assertions.replace(i, Rewriter::rewrite(d_topLevelSubstitutions.apply(d_assertions[i])));
-        Trace("simplify") << "  got " << d_assertions[i] << endl;
-      }
-    }
+    //unsatCore check removed for redundancy
+    preproc::NotUnsatCoresPass pass1(d_resourceManager, &d_topLevelSubstitutions);
+    pass1.apply(&d_assertions.ref()); 
   }
+
   Trace("smt-proc") << "SmtEnginePrivate::processAssertions() : post-substitution" << endl;
   dumpAssertions("post-substitution", d_assertions);
 
@@ -3731,29 +3697,24 @@ void SmtEnginePrivate::processAssertions() {
   if(options::bitvectorToBool()) {
     preproc::BVToBoolPass pass(d_resourceManager, d_smt.d_theoryEngine);
     pass.apply(&d_assertions.ref());
- }
+
+    preproc::RewritePass pass1(d_resourceManager);
+    pass1.apply(&d_assertions.ref());
+  }
+
   // Convert non-top-level Booleans to bit-vectors of size 1
   if(options::boolToBitvector()) {
     preproc::BoolToBVPass pass(d_resourceManager, d_smt.d_theoryEngine);
     pass.apply(&d_assertions.ref());
 
-   /* dumpAssertions("pre-bool-to-bv", d_assertions);
-    Chat() << "...doing boolToBv..." << endl;
-    boolToBv();
-    dumpAssertions("post-bool-to-bv", d_assertions);
-    Trace("smt") << "POST boolToBv" << endl;*/
+    preproc::RewritePass pass1(d_resourceManager);
+    pass1.apply(&d_assertions.ref());
   }
+
   if(options::sepPreSkolemEmp()) {
-    for (unsigned i = 0; i < d_assertions.size(); ++ i) {
-      Node prev = d_assertions[i];
-      Node next = sep::TheorySepRewriter::preprocess( prev );
-      if( next!=prev ){
-        d_assertions.replace( i, Rewriter::rewrite( next ) );
-        Trace("sep-preprocess") << "*** Preprocess sep " << prev << endl;
-        Trace("sep-preprocess") << "   ...got " << d_assertions[i] << endl;
-      }
-    }
-  }
+    preproc::SepPreSkolemEmpPass pass(d_resourceManager);
+    pass.apply(&d_assertions.ref());
+ }
 
   if( d_smt.d_logic.isQuantified() ){
     Trace("smt-proc") << "SmtEnginePrivate::processAssertions() : pre-quant-preprocess" << endl;
