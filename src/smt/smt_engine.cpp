@@ -3626,62 +3626,9 @@ void SmtEnginePrivate::processAssertions() {
  }
 
   if( d_smt.d_logic.isQuantified() ){
-    Trace("smt-proc") << "SmtEnginePrivate::processAssertions() : pre-quant-preprocess" << endl;
-
-    dumpAssertions("pre-skolem-quant", d_assertions);
-    //remove rewrite rules, apply pre-skolemization to existential quantifiers
-    for (unsigned i = 0; i < d_assertions.size(); ++ i) {
-      Node prev = d_assertions[i];
-      Node next = quantifiers::QuantifiersRewriter::preprocess( prev );
-      if( next!=prev ){
-        d_assertions.replace( i, Rewriter::rewrite( next ) );
-        Trace("quantifiers-preprocess") << "*** Pre-skolemize " << prev << endl;
-        Trace("quantifiers-preprocess") << "   ...got " << d_assertions[i] << endl;
-      }
-    }
-    dumpAssertions("post-skolem-quant", d_assertions);
-    if( options::macrosQuant() ){
-      //quantifiers macro expansion
-      quantifiers::QuantifierMacros qm( d_smt.d_theoryEngine->getQuantifiersEngine() );
-      bool success;
-      do{
-        success = qm.simplify( d_assertions.ref(), true );
-      }while( success );
-      //finalize the definitions
-      qm.finalizeDefinitions();
-    }
-
-    //fmf-fun : assume admissible functions, applying preprocessing reduction to FMF
-    if( options::fmfFunWellDefined() ){
-      quantifiers::FunDefFmf fdf;
-      Assert( d_smt.d_fmfRecFunctionsDefined!=NULL );
-      //must carry over current definitions (for incremental)
-      for( context::CDList<Node>::const_iterator fit = d_smt.d_fmfRecFunctionsDefined->begin();
-           fit != d_smt.d_fmfRecFunctionsDefined->end(); ++fit ) {
-        Node f = (*fit);
-        Assert( d_smt.d_fmfRecFunctionsAbs.find( f )!=d_smt.d_fmfRecFunctionsAbs.end() );
-        TypeNode ft = d_smt.d_fmfRecFunctionsAbs[f];
-        fdf.d_sorts[f] = ft;
-        std::map< Node, std::vector< Node > >::iterator fcit = d_smt.d_fmfRecFunctionsConcrete.find( f );
-        Assert( fcit!=d_smt.d_fmfRecFunctionsConcrete.end() );
-        for( unsigned j=0; j<fcit->second.size(); j++ ){
-          fdf.d_input_arg_inj[f].push_back( fcit->second[j] );
-        }
-      }
-      fdf.simplify( d_assertions.ref() );
-      //must store new definitions (for incremental)
-      for( unsigned i=0; i<fdf.d_funcs.size(); i++ ){
-        Node f = fdf.d_funcs[i];
-        d_smt.d_fmfRecFunctionsAbs[f] = fdf.d_sorts[f];
-        d_smt.d_fmfRecFunctionsConcrete[f].clear();
-        for( unsigned j=0; j<fdf.d_input_arg_inj[f].size(); j++ ){
-          d_smt.d_fmfRecFunctionsConcrete[f].push_back( fdf.d_input_arg_inj[f][j] );
-        }
-        d_smt.d_fmfRecFunctionsDefined->push_back( f );
-      }
-    }
-    Trace("smt-proc") << "SmtEnginePrivate::processAssertions() : post-quant-preprocess" << endl;
-  }
+    preproc::QuantifiedPass pass(d_resourceManager, d_smt.d_theoryEngine, d_smt.d_fmfRecFunctionsDefined, d_smt.d_fmfRecFunctionsAbs, d_smt.d_fmfRecFunctionsConcrete);
+    pass.apply(&d_assertions.ref());
+ }
 
   if( options::sortInference() || options::ufssFairnessMonotone() ){
     //sort inference technique
