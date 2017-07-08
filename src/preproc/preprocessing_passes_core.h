@@ -11,6 +11,7 @@ namespace preproc {
 
 typedef std::hash_map<Node, Node, NodeHashFunction> NodeMap;
 typedef std::hash_map<Node, Node, NodeHashFunction> NodeToNodeHashMap;
+typedef context::CDList<Node> NodeList;
   
 class NlExtPurifyPass : public PreprocessingPass {
  public:
@@ -117,6 +118,17 @@ class SepPreSkolemEmpPass : public PreprocessingPass {
    SepPreSkolemEmpPass(ResourceManager* resourceManager);
 };
 
+class QuantifiedPass : public PreprocessingPass {
+  public:
+    virtual void apply(std::vector<Node>* assertionsToPreprocess);
+    QuantifiedPass(ResourceManager* resourceManager, TheoryEngine* theoryEngine, NodeList* fmfRecFunctionsDefined, std::map<Node,TypeNode> fmfRecFunctionsAbs, std::map<Node, std::vector<Node> > fmfRecFunctionsConcrete); 
+  private:
+    TheoryEngine* d_theoryEngine;
+    NodeList* d_fmfRecFunctionsDefined;
+    std::map<Node,TypeNode> d_fmfRecFunctionsAbs;
+    std::map<Node, std::vector<Node> > d_fmfRecFunctionsConcrete;
+};
+    
 }  // namespace preproc
 }  // namespace CVC4
 

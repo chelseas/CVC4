@@ -4,11 +4,15 @@
 #include <string>
 #include "theory/theory.h"
 #include "theory/quantifiers/quant_util.h"
+#include "theory/quantifiers/ce_guided_instantiation.h"
+#include "theory/quantifiers/fun_def_process.h"
+#include "theory/quantifiers/macros.h"
+#include "theory/quantifiers/quantifiers_rewriter.h"
 #include "theory/sep/theory_sep_rewriter.h"
+#include "options/quantifiers_options.h"
 #include "options/smt_options.h"
 #include "options/bv_bitblast_mode.h"
 #include "options/bv_options.h"
-#include "theory/quantifiers/ce_guided_instantiation.h"
  
 namespace CVC4 {
 namespace preproc {
@@ -565,6 +569,68 @@ void SepPreSkolemEmpPass::apply(std::vector<Node>* assertionsToPreprocess){
        }
   }
 }
+
+QuantifiedPass::QuantifiedPass(ResourceManager* resourceManager, TheoryEngine* theoryEngine, NodeList* fmfRecFunctionsDefined, std::map<Node,TypeNode> fmfRecFunctionsAbs, std::map<Node, std::vector<Node> > fmfRecFunctionsConcrete) : PreprocessingPass(resourceManager), d_theoryEngine(theoryEngine), d_fmfRecFunctionsDefined(fmfRecFunctionsDefined), d_fmfRecFunctionsAbs(fmfRecFunctionsAbs), d_fmfRecFunctionsConcrete(fmfRecFunctionsConcrete){
+}
+
+void QuantifiedPass::apply(std::vector<Node>* assertionsToPreprocess){
+    Trace("smt-proc") << "SmtEnginePrivate::processAssertions() : pre-quant-preprocess" << std::endl;
+
+    dumpAssertions("pre-skolem-quant", *assertionsToPreprocess);
+    //remove rewrite rules, apply pre-skolemization to existential quantifiers
+    for (unsigned i = 0; i < assertionsToPreprocess->size(); ++ i) {
+      Node prev = (*assertionsToPreprocess)[i];
+      Node next = theory::quantifiers::QuantifiersRewriter::preprocess( prev );
+      if( next!=prev ){
+        (*assertionsToPreprocess)[i] = theory::Rewriter::rewrite( next );
+        Trace("quantifiers-preprocess") << "*** Pre-skolemize " << prev <<std::endl;
+        Trace("quantifiers-preprocess") << "   ...got " << (*assertionsToPreprocess)[i] << std::endl;
+      }
+    }
+    dumpAssertions("post-skolem-quant", *assertionsToPreprocess);
+    if( options::macrosQuant() ){
+      //quantifiers macro expansion
+      theory::quantifiers::QuantifierMacros qm( d_theoryEngine->getQuantifiersEngine() );
+      bool success;
+      do{
+        success = qm.simplify( *assertionsToPreprocess, true );
+      }while( success );
+      //finalize the definitions
+      qm.finalizeDefinitions();
+    }
+
+    //fmf-fun : assume admissible functions, applying preprocessing reduction to FMF
+    if( options::fmfFunWellDefined() ){
+      theory::quantifiers::FunDefFmf fdf;
+      Assert( d_fmfRecFunctionsDefined!=NULL );
+      //must carry over current definitions (for incremental)
+      for( context::CDList<Node>::const_iterator fit = d_fmfRecFunctionsDefined->begin();
+           fit != d_fmfRecFunctionsDefined->end(); ++fit ) {
+        Node f = (*fit);
+        Assert( d_fmfRecFunctionsAbs.find( f )!= d_fmfRecFunctionsAbs.end() );
+        TypeNode ft = d_fmfRecFunctionsAbs[f];
+        fdf.d_sorts[f] = ft;
+        std::map< Node, std::vector< Node > >::iterator fcit = d_fmfRecFunctionsConcrete.find( f );
+        Assert( fcit!= d_fmfRecFunctionsConcrete.end() );
+        for( unsigned j=0; j<fcit->second.size(); j++ ){
+          fdf.d_input_arg_inj[f].push_back( fcit->second[j] );
+        }
+      }
+      fdf.simplify(*assertionsToPreprocess);
+      //must store new definitions (for incremental)
+      for( unsigned i=0; i<fdf.d_funcs.size(); i++ ){
+        Node f = fdf.d_funcs[i];
+        d_fmfRecFunctionsAbs[f] = fdf.d_sorts[f];
+        d_fmfRecFunctionsConcrete[f].clear();
+        for( unsigned j=0; j<fdf.d_input_arg_inj[f].size(); j++ ){
+          d_fmfRecFunctionsConcrete[f].push_back( fdf.d_input_arg_inj[f][j] );
+        }
+        d_fmfRecFunctionsDefined->push_back( f );
+      }
+    }
+    Trace("smt-proc") << "SmtEnginePrivate::processAssertions() : post-quant-preprocess" << std::endl;
+}
+
 
 }  // namespace preproc
 }  // namespace CVC4
