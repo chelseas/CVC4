@@ -12,12 +12,38 @@
 #include "theory/theory_engine.h"
 
 namespace CVC4 {
+
+namespace smt {
+class AssertionPipeline {
+  std::vector<Node> d_nodes;
+
+public:
+
+  size_t size() const { return d_nodes.size(); }
+
+  void resize(size_t n) { d_nodes.resize(n); }
+  void clear() { d_nodes.clear(); }
+
+  Node& operator[](size_t i) { return d_nodes[i]; }
+  const Node& operator[](size_t i) const { return d_nodes[i]; }
+  void push_back(Node n) { d_nodes.push_back(n); }
+
+  std::vector<Node>& ref() { return d_nodes; }
+  const std::vector<Node>& ref() const { return d_nodes; }
+
+  void replace(size_t i, Node n) {
+    PROOF( ProofManager::currentPM()->addDependence(n, d_nodes[i]); );
+    d_nodes[i] = n;
+  }
+};// class AssertionPipeline 
+} //namespace smt
+
 namespace preproc {
 
 class PreprocessingPass {
  public:
-  virtual void apply(std::vector<Node>* assertionsToPreprocess) = 0;
-  void dumpAssertions(const char* key, const std::vector<Node>& assertionList) {
+  virtual void apply(smt::AssertionPipeline* assertionsToPreprocess) = 0;
+  void dumpAssertions(const char* key, const smt::AssertionPipeline& assertionList) {
   if( Dump.isOn("assertions") &&
       Dump.isOn(std::string("assertions:") + key) ) {
     // Push the simplified assertions to the dump output stream

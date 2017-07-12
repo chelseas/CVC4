@@ -5,6 +5,7 @@
 
 #include "preproc/preprocessing_pass.h"
 #include "theory/substitutions.h"
+#include "smt/smt_engine.h"
 
 namespace CVC4 {
 namespace preproc {
@@ -15,7 +16,7 @@ typedef context::CDList<Node> NodeList;
   
 class NlExtPurifyPass : public PreprocessingPass {
  public:
-  virtual void apply(std::vector<Node>* assertionsToPreprocess);
+  virtual void apply(smt::AssertionPipeline* assertionsToPreprocess);
   NlExtPurifyPass(ResourceManager* resourceManager);
  private:
   Node purifyNlTerms(TNode n, NodeMap& cache, NodeMap& bcache,
@@ -24,16 +25,15 @@ class NlExtPurifyPass : public PreprocessingPass {
 
 class CEGuidedInstPass : public PreprocessingPass {
  public:
-  virtual void apply(std::vector<Node>* assertionsToPreprocess);
+  virtual void apply(smt::AssertionPipeline* assertionsToPreprocess);
   CEGuidedInstPass(ResourceManager* resourceManager, TheoryEngine* theoryEngine);
  private:
   TheoryEngine* d_theoryEngine;
 };
  
-// TODO: add classes for other preprocessing steps here
 class SolveRealAsIntPass : public PreprocessingPass {
  public:
-  virtual void apply(std::vector<Node>* assertionsToPreprocess);
+  virtual void apply(smt::AssertionPipeline* assertionsToPreprocess);
   SolveRealAsIntPass(ResourceManager* resourceManager);
  private:
   Node realToInt(TNode n, NodeMap& cache, std::vector<Node>& var_eq);
@@ -41,7 +41,7 @@ class SolveRealAsIntPass : public PreprocessingPass {
 
 class SolveIntAsBVPass : public PreprocessingPass {
  public:
-  virtual void apply(std::vector<Node>* assertionsToPreprocess);
+  virtual void apply(smt::AssertionPipeline* assertionsToPreprocess);
   SolveIntAsBVPass(ResourceManager* resourceManager);
  private:
   Node intToBV(TNode n, NodeToNodeHashMap& cache);
@@ -50,28 +50,31 @@ class SolveIntAsBVPass : public PreprocessingPass {
 
 class BitBlastModePass : public PreprocessingPass {
  public:
-   virtual void apply(std::vector<Node>* assertionsToPreprocess);
-   BitBlastModePass(ResourceManager* resourceManager, TheoryEngine* theoryEngine); 
+   virtual void apply(smt::AssertionPipeline* assertionsToPreprocess);
+   BitBlastModePass(ResourceManager* resourceManager,
+      TheoryEngine* theoryEngine); 
  private:
    TheoryEngine* d_theoryEngine;
 };
 
 class BVAbstractionPass : public PreprocessingPass {
  public: 
-  virtual void apply(std::vector<Node>* assertionsToPreprocess);
-  BVAbstractionPass(ResourceManager* resourceManager, SmtEngine* smt, TheoryEngine* theoryEngine);
+  virtual void apply(smt::AssertionPipeline* assertionsToPreprocess);
+  BVAbstractionPass(ResourceManager* resourceManager, 
+      SmtEngine* smt, TheoryEngine* theoryEngine);
  private:
   SmtEngine* d_smt;
   TheoryEngine* d_theoryEngine;
   // Abstract common structure over small domains to UF
   // return true if changes were made.
-  void bvAbstraction(std::vector<Node>* assertionsToPreprocess);  
+  void bvAbstraction(smt::AssertionPipeline* assertionsToPreprocess);  
 };
 
 class UnconstrainedSimpPass : public PreprocessingPass {
  public:
-  virtual void apply(std::vector<Node>* assertionsToPreprocess);
-  UnconstrainedSimpPass(ResourceManager* resourceManager, TimerStat unconstrainedSimpTime, TheoryEngine* theoryEngine);
+  virtual void apply(smt::AssertionPipeline* assertionsToPreprocess);
+  UnconstrainedSimpPass(ResourceManager* resourceManager, 
+      TimerStat unconstrainedSimpTime, TheoryEngine* theoryEngine);
  private:
   TimerStat d_unconstrainedSimpTime;
   TheoryEngine* d_theoryEngine;
@@ -80,48 +83,54 @@ class UnconstrainedSimpPass : public PreprocessingPass {
 
 class RewritePass : public PreprocessingPass {
  public:
-    virtual void apply(std::vector<Node>* assertionsToPreprocess);
+    virtual void apply(smt::AssertionPipeline* assertionsToPreprocess);
     RewritePass(ResourceManager* resourceManager);
 };
  
 class NotUnsatCoresPass : public PreprocessingPass {
  public:
-    virtual void apply(std::vector<Node>* assertionsToPreprocess);
-    NotUnsatCoresPass(ResourceManager* resourceManager, theory::SubstitutionMap* topLevelSubstitutions);
+    virtual void apply(smt::AssertionPipeline* assertionsToPreprocess);
+    NotUnsatCoresPass(ResourceManager* resourceManager,
+       theory::SubstitutionMap* topLevelSubstitutions);
  private:
     theory::SubstitutionMap* d_topLevelSubstitutions;
 };
  
 class BVToBoolPass : public PreprocessingPass {
  public:
-   virtual void apply(std::vector<Node>* assertionsToPreprocess);
-   BVToBoolPass(ResourceManager* resourceManager, TheoryEngine* theoryEngine);
+   virtual void apply(smt::AssertionPipeline* assertionsToPreprocess);
+   BVToBoolPass(ResourceManager* resourceManager, 
+      TheoryEngine* theoryEngine);
  private:
   // Lift bit-vectors of size 1 to booleans
   TheoryEngine* d_theoryEngine;
-  void bvToBool(std::vector<Node>* assertionsToPreprocess);
+  void bvToBool(smt::AssertionPipeline* assertionsToPreprocess);
 };
 
 class BoolToBVPass : public PreprocessingPass {
  public:
-   virtual void apply(std::vector<Node>* assertionsTopreprocess);
-   BoolToBVPass(ResourceManager* resourceManager, TheoryEngine* theoryEngine);
+   virtual void apply(smt::AssertionPipeline* assertionsTopreprocess);
+   BoolToBVPass(ResourceManager* resourceManager,
+     TheoryEngine* theoryEngine);
  private:
    // Convert booleans to bit-vectors of size 1
   TheoryEngine* d_theoryEngine;
-  void boolToBv(std::vector<Node>* assertionsToPreprocess);
+  void boolToBv(smt::AssertionPipeline* assertionsToPreprocess);
 };
 
 class SepPreSkolemEmpPass : public PreprocessingPass {
   public:
-   virtual void apply(std::vector<Node>* assertionsToPreprocess);
+   virtual void apply(smt::AssertionPipeline* assertionsToPreprocess);
    SepPreSkolemEmpPass(ResourceManager* resourceManager);
 };
 
 class QuantifiedPass : public PreprocessingPass {
   public:
-    virtual void apply(std::vector<Node>* assertionsToPreprocess);
-    QuantifiedPass(ResourceManager* resourceManager, TheoryEngine* theoryEngine, NodeList* fmfRecFunctionsDefined, std::map<Node,TypeNode> fmfRecFunctionsAbs, std::map<Node, std::vector<Node> > fmfRecFunctionsConcrete); 
+    virtual void apply(smt::AssertionPipeline* assertionsToPreprocess);
+    QuantifiedPass(ResourceManager* resourceManager, 
+      TheoryEngine* theoryEngine, NodeList* fmfRecFunctionsDefined, 
+      std::map<Node,TypeNode> fmfRecFunctionsAbs, 
+      std::map<Node, std::vector<Node> > fmfRecFunctionsConcrete); 
   private:
     TheoryEngine* d_theoryEngine;
     NodeList* d_fmfRecFunctionsDefined;
