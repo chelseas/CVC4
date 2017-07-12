@@ -102,6 +102,8 @@
 #include "util/proof.h"
 #include "util/resource_manager.h"
 
+#include "preproc/preprocessing_pass.h"
+
 using namespace std;
 using namespace CVC4;
 using namespace CVC4::smt;
@@ -157,7 +159,7 @@ public:
   Node getFormula() const { return d_formula; }
 };/* class DefinedFunction */
 
-class AssertionPipeline {
+/*class AssertionPipeline {
   vector<Node> d_nodes;
 
 public:
@@ -178,7 +180,8 @@ public:
     PROOF( ProofManager::currentPM()->addDependence(n, d_nodes[i]); );
     d_nodes[i] = n;
   }
-};/* class AssertionPipeline */
+}; //class AssertionPipeline 
+*/
 
 struct SmtEngineStatistics {
   /** time spent in definition-expansion */
@@ -596,6 +599,7 @@ private:
    * ite removal.
    */
   bool checkForBadSkolems(TNode n, TNode skolem, NodeToBoolHashMap& cache);
+ 
  // Simplify ITE structure
   bool simpITE();
 
@@ -3304,7 +3308,7 @@ bool SmtEnginePrivate::simplifyAssertions()
     if(options::unconstrainedSimp()) {
       Chat() << "...doing unconstrained simplification..." << endl;
       preproc::UnconstrainedSimpPass pass(d_resourceManager, d_smt.d_stats->d_unconstrainedSimpTime, d_smt.d_theoryEngine);
-      pass.apply(&d_assertions.ref());
+      pass.apply(&d_assertions);
    }
 
     dumpAssertions("post-unconstrained", d_assertions);
@@ -3517,23 +3521,23 @@ void SmtEnginePrivate::processAssertions() {
 
   if( options::nlExtPurify() ){
     preproc::NlExtPurifyPass pass(d_resourceManager);
-    pass.apply(&d_assertions.ref());
+    pass.apply(&d_assertions);
   }
 
   if( options::ceGuidedInst() ){
     //register sygus conjecture pre-rewrite (motivated by solution reconstruction)
     preproc::CEGuidedInstPass pass(d_resourceManager, d_smt.d_theoryEngine);
-    pass.apply(&d_assertions.ref());
+    pass.apply(&d_assertions);
  }
 
   if (options::solveRealAsInt()) {
    preproc::SolveRealAsIntPass pass(d_resourceManager);
-   pass.apply(&d_assertions.ref());   
+   pass.apply(&d_assertions);   
   } 
 
   if (options::solveIntAsBV() > 0) {
    preproc::SolveIntAsBVPass pass(d_resourceManager);
-   pass.apply(&d_assertions.ref());   
+   pass.apply(&d_assertions);   
   }
 
   if (options::bitblastMode() == theory::bv::BITBLAST_MODE_EAGER &&
@@ -3547,16 +3551,16 @@ void SmtEnginePrivate::processAssertions() {
 
   if (options::bitblastMode() == theory::bv::BITBLAST_MODE_EAGER) {
     preproc::BitBlastModePass pass(d_resourceManager, d_smt.d_theoryEngine);
-    pass.apply(&d_assertions.ref());   
+    pass.apply(&d_assertions);
   }
 
   if ( options::bvAbstraction() &&
       !options::incrementalSolving()) {
     preproc::BVAbstractionPass pass(d_resourceManager, &d_smt, d_smt.d_theoryEngine);
-    pass.apply(&d_assertions.ref());
+    pass.apply(&d_assertions);
 
     preproc::RewritePass pass1(d_resourceManager);
-    pass1.apply(&d_assertions.ref());
+    pass1.apply(&d_assertions);
  }
 
   Debug("smt") << " d_assertions     : " << d_assertions.size() << endl;
@@ -3568,12 +3572,12 @@ void SmtEnginePrivate::processAssertions() {
     Trace("smt-proc") << "SmtEnginePrivate::processAssertions() : pre-unconstrained-simp" << std::endl;
     dumpAssertions("pre-unconstrained-simp", d_assertions);
     Chat() << "...doing unconstrained simplification..." << std::endl;
-    
+   
     preproc::RewritePass pass(d_resourceManager);
-    pass.apply(&d_assertions.ref());    
+    pass.apply(&d_assertions);    
 
     preproc::UnconstrainedSimpPass pass1(d_resourceManager, d_smt.d_stats->d_unconstrainedSimpTime, d_smt.d_theoryEngine);
-    pass1.apply(&d_assertions.ref());
+    pass1.apply(&d_assertions);
  
    Trace("smt-proc") << "SmtEnginePrivate::processAssertions() : post-unconstrained-simp" << std::endl;
     dumpAssertions("post-unconstrained-simp", d_assertions);
@@ -3589,12 +3593,12 @@ void SmtEnginePrivate::processAssertions() {
   if(options::unsatCores()) {
     // special rewriting pass for unsat cores, since many of the passes below are skipped
     preproc::RewritePass pass(d_resourceManager);
-    pass.apply(&d_assertions.ref());
+    pass.apply(&d_assertions);
   } else {
     // Apply the substitutions we already have, and normalize
     //unsatCore check removed for redundancy
     preproc::NotUnsatCoresPass pass1(d_resourceManager, &d_topLevelSubstitutions);
-    pass1.apply(&d_assertions.ref()); 
+    pass1.apply(&d_assertions); 
   }
 
   Trace("smt-proc") << "SmtEnginePrivate::processAssertions() : post-substitution" << endl;
@@ -3605,29 +3609,86 @@ void SmtEnginePrivate::processAssertions() {
   // Lift bit-vectors of size 1 to bool
   if(options::bitvectorToBool()) {
     preproc::BVToBoolPass pass(d_resourceManager, d_smt.d_theoryEngine);
-    pass.apply(&d_assertions.ref());
+    pass.apply(&d_assertions);
 
     preproc::RewritePass pass1(d_resourceManager);
-    pass1.apply(&d_assertions.ref());
+    pass1.apply(&d_assertions);
   }
 
   // Convert non-top-level Booleans to bit-vectors of size 1
   if(options::boolToBitvector()) {
     preproc::BoolToBVPass pass(d_resourceManager, d_smt.d_theoryEngine);
-    pass.apply(&d_assertions.ref());
+    pass.apply(&d_assertions);
 
     preproc::RewritePass pass1(d_resourceManager);
-    pass1.apply(&d_assertions.ref());
+    pass1.apply(&d_assertions);
   }
 
   if(options::sepPreSkolemEmp()) {
     preproc::SepPreSkolemEmpPass pass(d_resourceManager);
-    pass.apply(&d_assertions.ref());
+    pass.apply(&d_assertions);
  }
 
   if( d_smt.d_logic.isQuantified() ){
-    preproc::QuantifiedPass pass(d_resourceManager, d_smt.d_theoryEngine, d_smt.d_fmfRecFunctionsDefined, d_smt.d_fmfRecFunctionsAbs, d_smt.d_fmfRecFunctionsConcrete);
-    pass.apply(&d_assertions.ref());
+    Trace("smt-proc") << "SmtEnginePrivate::processAssertions() : pre-quant-preprocess" << std::endl;
+
+    dumpAssertions("pre-skolem-quant", d_assertions);
+    //remove rewrite rules, apply pre-skolemization to existential quantifiers
+    for (unsigned i = 0; i < d_assertions.size(); ++ i) {
+      Node prev = (d_assertions)[i];
+      Node next = quantifiers::QuantifiersRewriter::preprocess( prev );
+      if( next!=prev ){
+        d_assertions.replace(i, Rewriter::rewrite( next ));
+        Trace("quantifiers-preprocess") << "*** Pre-skolemize " << prev <<std::endl;
+        Trace("quantifiers-preprocess") << "   ...got " << (d_assertions)[i] << std::endl;
+      }
+    }
+    dumpAssertions("post-skolem-quant", d_assertions);
+    if( options::macrosQuant() ){
+      //quantifiers macro expansion
+      quantifiers::QuantifierMacros qm( d_smt.d_theoryEngine->getQuantifiersEngine() );
+      bool success;
+      do{
+        success = qm.simplify( d_assertions.ref(), true );
+      }while( success );
+      //finalize the definitions
+      qm.finalizeDefinitions();
+    }
+
+    //fmf-fun : assume admissible functions, applying preprocessing reduction to FMF
+    if( options::fmfFunWellDefined() ){
+      quantifiers::FunDefFmf fdf;
+      Assert( d_smt.d_fmfRecFunctionsDefined!=NULL );
+      //must carry over current definitions (for incremental)
+      for( context::CDList<Node>::const_iterator fit = d_smt.d_fmfRecFunctionsDefined->begin();
+           fit != d_smt.d_fmfRecFunctionsDefined->end(); ++fit ) {
+        Node f = (*fit);
+        Assert( d_smt.d_fmfRecFunctionsAbs.find( f )!= d_fmfRecFunctionsAbs.end() );
+        TypeNode ft = d_smt.d_fmfRecFunctionsAbs[f];
+        fdf.d_sorts[f] = ft;
+        std::map< Node, std::vector< Node > >::iterator fcit = d_smt.d_fmfRecFunctionsConcrete.find( f );
+        Assert( fcit!= d_smt.d_fmfRecFunctionsConcrete.end() );
+        for( unsigned j=0; j<fcit->second.size(); j++ ){
+          fdf.d_input_arg_inj[f].push_back( fcit->second[j] );
+        }
+      }
+      fdf.simplify(d_assertions.ref());
+      //must store new definitions (for incremental)
+      for( unsigned i=0; i<fdf.d_funcs.size(); i++ ){
+        Node f = fdf.d_funcs[i];
+        d_smt.d_fmfRecFunctionsAbs[f] = fdf.d_sorts[f];
+        d_smt.d_fmfRecFunctionsConcrete[f].clear();
+        for( unsigned j=0; j<fdf.d_input_arg_inj[f].size(); j++ ){
+          d_smt.d_fmfRecFunctionsConcrete[f].push_back( fdf.d_input_arg_inj[f][j] );
+        }
+        d_smt.d_fmfRecFunctionsDefined->push_back( f );
+      }
+    }
+    Trace("smt-proc") << "SmtEnginePrivate::processAssertions() : post-quant-preprocess" << std::endl;
+  /*  preproc::QuantifiedPass pass(d_resourceManager, d_smt.d_theoryEngine,
+     d_smt.d_fmfRecFunctionsDefined, d_smt.d_fmfRecFunctionsAbs,
+     d_smt.d_fmfRecFunctionsConcrete);
+    pass.apply(&d_assertions);*/
  }
 
   if( options::sortInference() || options::ufssFairnessMonotone() ){
