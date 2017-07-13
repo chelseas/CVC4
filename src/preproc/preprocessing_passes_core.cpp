@@ -84,7 +84,7 @@ CEGuidedInstPass::CEGuidedInstPass(ResourceManager* resourceManager,
     d_theoryEngine(theoryEngine){
 }
 
-void CEGuidedInstPass::apply(smt::AssertionPipeline* assertionsToPreprocess){
+void CEGuidedInstPass::apply(AssertionPipeline* assertionsToPreprocess){
     for (unsigned i = 0; i < assertionsToPreprocess->size(); ++ i) {
       d_theoryEngine->getQuantifiersEngine()->getCegInstantiation()->preregisterAssertion( (*assertionsToPreprocess)[i] );
     }
@@ -94,7 +94,7 @@ SolveRealAsIntPass::SolveRealAsIntPass(ResourceManager* resourceManager) :
      PreprocessingPass(resourceManager){
 }
 
-void SolveRealAsIntPass::apply(smt::AssertionPipeline* assertionsToPreprocess) {
+void SolveRealAsIntPass::apply(AssertionPipeline* assertionsToPreprocess) {
  Chat() << "converting reals to ints..." << std::endl;
  std::unordered_map<Node, Node, NodeHashFunction> cache;
  std::vector<Node> var_eq;
@@ -202,7 +202,7 @@ SolveIntAsBVPass::SolveIntAsBVPass(ResourceManager* resourceManager) :
     PreprocessingPass(resourceManager){
 }
 
-void SolveIntAsBVPass::apply(smt::AssertionPipeline* assertionsToPreprocess)
+void SolveIntAsBVPass::apply(AssertionPipeline* assertionsToPreprocess)
 {
   Chat() << "converting ints to bit-vectors..." << std::endl;
   std::unordered_map<Node, Node, NodeHashFunction> cache;
@@ -447,7 +447,7 @@ BitBlastModePass::BitBlastModePass(ResourceManager* resourceManager,
      d_theoryEngine(theoryEngine){
 }
 
-void BitBlastModePass::apply(smt::AssertionPipeline* assertionsToPreprocess){
+void BitBlastModePass::apply(AssertionPipeline* assertionsToPreprocess){
   d_theoryEngine->mkAckermanizationAsssertions(assertionsToPreprocess->ref());
 }
 
@@ -457,7 +457,7 @@ BVAbstractionPass::BVAbstractionPass(ResourceManager* resourceManager,
      d_theoryEngine(theoryEngine){
 }
 
-void BVAbstractionPass::bvAbstraction(smt::AssertionPipeline* assertionsToPreprocess){
+void BVAbstractionPass::bvAbstraction(AssertionPipeline* assertionsToPreprocess){
   Trace("bv-abstraction") << "SmtEnginePrivate::bvAbstraction()" << std::endl;
   std::vector<Node> new_assertions;
   bool changed = d_theoryEngine->ppBvAbstraction(assertionsToPreprocess->ref(), new_assertions);
@@ -474,7 +474,7 @@ void BVAbstractionPass::bvAbstraction(smt::AssertionPipeline* assertionsToPrepro
   }
 }
  
-void BVAbstractionPass::apply(smt::AssertionPipeline* assertionsToPreprocess){
+void BVAbstractionPass::apply(AssertionPipeline* assertionsToPreprocess){
     dumpAssertions("pre-bv-abstraction", *assertionsToPreprocess);
     bvAbstraction(assertionsToPreprocess);
     dumpAssertions("post-bv-abstraction", *assertionsToPreprocess);
@@ -487,7 +487,7 @@ UnconstrainedSimpPass::UnconstrainedSimpPass(ResourceManager* resourceManager,
       d_theoryEngine(theoryEngine){
 }
 
-void UnconstrainedSimpPass::apply(smt::AssertionPipeline* assertionsToPreprocess){
+void UnconstrainedSimpPass::apply(AssertionPipeline* assertionsToPreprocess){
   TimerStat::CodeTimer unconstrainedSimpTimer(d_unconstrainedSimpTime);
   spendResource(options::preprocessStep());
   Trace("simplify") << "SmtEnginePrivate::unconstrainedSimp()" << std::endl;
@@ -498,7 +498,7 @@ RewritePass::RewritePass(ResourceManager* resourceManager) :
     PreprocessingPass(resourceManager){
 }
 
-void RewritePass::apply(smt::AssertionPipeline* assertionsToPreprocess){
+void RewritePass::apply(AssertionPipeline* assertionsToPreprocess){
    for (unsigned i = 0; i < assertionsToPreprocess->size(); ++ i) {
     assertionsToPreprocess->replace(i, theory::Rewriter::rewrite((*assertionsToPreprocess)[i]));
     }
@@ -510,7 +510,7 @@ NotUnsatCoresPass::NotUnsatCoresPass(ResourceManager* resourceManager,
      d_topLevelSubstitutions(topLevelSubstitutions){
 }
 
-void NotUnsatCoresPass::apply(smt::AssertionPipeline* assertionsToPreprocess){
+void NotUnsatCoresPass::apply(AssertionPipeline* assertionsToPreprocess){
   Chat() << "applying substitutions..." << std::endl;
       Trace("simplify") << "SmtEnginePrivate::nonClausalSimplify(): "
                         << "applying substitutions" << std::endl;
@@ -527,7 +527,7 @@ BVToBoolPass::BVToBoolPass(ResourceManager* resourceManager,
       d_theoryEngine(theoryEngine){
 }
 
-void BVToBoolPass::apply(smt::AssertionPipeline* assertionsToPreprocess){
+void BVToBoolPass::apply(AssertionPipeline* assertionsToPreprocess){
   dumpAssertions("pre-bv-to-bool", *assertionsToPreprocess);
   Chat() << "...doing bvToBool..." << std::endl;
   bvToBool(assertionsToPreprocess);
@@ -536,7 +536,7 @@ void BVToBoolPass::apply(smt::AssertionPipeline* assertionsToPreprocess){
   Trace("smt") << "POST bvToBool" << std::endl;
 }
 
-void BVToBoolPass::bvToBool(smt::AssertionPipeline* assertionsToPreprocess) {
+void BVToBoolPass::bvToBool(AssertionPipeline* assertionsToPreprocess) {
   Trace("bv-to-bool") << "SmtEnginePrivate::bvToBool()" << std::endl;
   spendResource(options::preprocessStep());
   std::vector<Node> new_assertions;
@@ -552,7 +552,7 @@ BoolToBVPass::BoolToBVPass(ResourceManager* resourceManager,
      d_theoryEngine(theoryEngine){
 }
   
-void BoolToBVPass::boolToBv(smt::AssertionPipeline* assertionsToPreprocess) {
+void BoolToBVPass::boolToBv(AssertionPipeline* assertionsToPreprocess) {
   Trace("bool-to-bv") << "SmtEnginePrivate::boolToBv()" << std::endl;
   spendResource(options::preprocessStep());
   std::vector<Node> new_assertions;
@@ -563,7 +563,7 @@ void BoolToBVPass::boolToBv(smt::AssertionPipeline* assertionsToPreprocess) {
   assertionsToPreprocess->ref().swap(new_assertions);
 }
 
-void BoolToBVPass::apply(smt::AssertionPipeline* assertionsToPreprocess){
+void BoolToBVPass::apply(AssertionPipeline* assertionsToPreprocess){
     dumpAssertions("pre-bool-to-bv", *assertionsToPreprocess);
     Chat() << "...doing boolToBv..." << std::endl;
     boolToBv(assertionsToPreprocess);
@@ -574,7 +574,7 @@ void BoolToBVPass::apply(smt::AssertionPipeline* assertionsToPreprocess){
 SepPreSkolemEmpPass::SepPreSkolemEmpPass(ResourceManager* resourceManager) : PreprocessingPass(resourceManager){
 }
 
-void SepPreSkolemEmpPass::apply(smt::AssertionPipeline* assertionsToPreprocess){
+void SepPreSkolemEmpPass::apply(AssertionPipeline* assertionsToPreprocess){
   for (unsigned i = 0; i < assertionsToPreprocess->size(); ++ i) {
       Node prev = (*assertionsToPreprocess)[i];
       Node next = theory::sep::TheorySepRewriter::preprocess( prev );
@@ -587,16 +587,16 @@ void SepPreSkolemEmpPass::apply(smt::AssertionPipeline* assertionsToPreprocess){
 }
 
 QuantifiedPass::QuantifiedPass(ResourceManager* resourceManager, 
-   TheoryEngine* theoryEngine, NodeList* fmfRecFunctionsDefined, 
-   std::map<Node,TypeNode> fmfRecFunctionsAbs, 
-   std::map<Node, std::vector<Node> > fmfRecFunctionsConcrete) : 
+   TheoryEngine* theoryEngine, NodeList* &fmfRecFunctionsDefined, 
+   std::map<Node,TypeNode> &fmfRecFunctionsAbs, 
+   std::map<Node, std::vector<Node> > &fmfRecFunctionsConcrete) : 
    PreprocessingPass(resourceManager), d_theoryEngine(theoryEngine), 
    d_fmfRecFunctionsDefined(fmfRecFunctionsDefined), 
    d_fmfRecFunctionsAbs(fmfRecFunctionsAbs), 
    d_fmfRecFunctionsConcrete(fmfRecFunctionsConcrete){
 }
 
-void QuantifiedPass::apply(smt::AssertionPipeline* assertionsToPreprocess){
+void QuantifiedPass::apply(AssertionPipeline* assertionsToPreprocess){
     Trace("smt-proc") << "SmtEnginePrivate::processAssertions() : pre-quant-preprocess" << std::endl;
 
     dumpAssertions("pre-skolem-quant", *assertionsToPreprocess);
@@ -653,7 +653,6 @@ void QuantifiedPass::apply(smt::AssertionPipeline* assertionsToPreprocess){
     }
     Trace("smt-proc") << "SmtEnginePrivate::processAssertions() : post-quant-preprocess" << std::endl;
 }
-
 
 }  // namespace preproc
 }  // namespace CVC4

@@ -13,7 +13,7 @@
 
 namespace CVC4 {
 
-namespace smt {
+namespace preproc {
 class AssertionPipeline {
   std::vector<Node> d_nodes;
 
@@ -36,14 +36,11 @@ public:
     d_nodes[i] = n;
   }
 };// class AssertionPipeline 
-} //namespace smt
-
-namespace preproc {
 
 class PreprocessingPass {
  public:
-  virtual void apply(smt::AssertionPipeline* assertionsToPreprocess) = 0;
-  void dumpAssertions(const char* key, const smt::AssertionPipeline& assertionList) {
+  virtual void apply(AssertionPipeline* assertionsToPreprocess) = 0;
+  void dumpAssertions(const char* key, const AssertionPipeline& assertionList) {
   if( Dump.isOn("assertions") &&
       Dump.isOn(std::string("assertions:") + key) ) {
     // Push the simplified assertions to the dump output stream
