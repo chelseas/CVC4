@@ -108,6 +108,7 @@ using namespace CVC4::smt;
 using namespace CVC4::prop;
 using namespace CVC4::context;
 using namespace CVC4::theory;
+using namespace CVC4::preproc;
 
 namespace CVC4 {
 namespace smt {
@@ -3721,6 +3722,11 @@ void SmtEnginePrivate::processAssertions() {
  }
 
   if( d_smt.d_logic.isQuantified() ){
+/*    preproc::QuantifiedPass pass(d_resourceManager, d_smt.d_theoryEngine,
+     d_smt.d_fmfRecFunctionsDefined, d_smt.d_fmfRecFunctionsAbs,
+     d_smt.d_fmfRecFunctionsConcrete);
+    pass.apply(&d_assertions);*/
+ 
     Trace("smt-proc") << "SmtEnginePrivate::processAssertions() : pre-quant-preprocess" << std::endl;
 
     dumpAssertions("pre-skolem-quant", d_assertions);
@@ -3745,6 +3751,7 @@ void SmtEnginePrivate::processAssertions() {
       //finalize the definitions
       qm.finalizeDefinitions();
     }
+
 
     //fmf-fun : assume admissible functions, applying preprocessing reduction to FMF
     if( options::fmfFunWellDefined() ){
@@ -3776,11 +3783,7 @@ void SmtEnginePrivate::processAssertions() {
       }
     }
     Trace("smt-proc") << "SmtEnginePrivate::processAssertions() : post-quant-preprocess" << std::endl;
-  /*  preproc::QuantifiedPass pass(d_resourceManager, d_smt.d_theoryEngine,
-     d_smt.d_fmfRecFunctionsDefined, d_smt.d_fmfRecFunctionsAbs,
-     d_smt.d_fmfRecFunctionsConcrete);
-    pass.apply(&d_assertions);*/
- }
+}
 
   if( options::sortInference() || options::ufssFairnessMonotone() ){
     //sort inference technique
