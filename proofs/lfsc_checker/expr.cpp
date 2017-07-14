@@ -1,9 +1,12 @@
 #include "expr.h"
-#include <stdlib.h>
+
+#include <cstdlib>
+#include <iostream>
 #include <sstream>
 #ifdef _MSC_VER
 #include <algorithm>
 #endif
+
 #include "check.h"
 
 using namespace std;

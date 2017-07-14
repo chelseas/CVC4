@@ -17,8 +17,6 @@
 #ifndef __CVC4__QUANTIFIERS_FUN_DEF_PROCESS_H
 #define __CVC4__QUANTIFIERS_FUN_DEF_PROCESS_H
 
-#include <iostream>
-#include <string>
 #include <vector>
 #include <map>
 #include "expr/node.h"

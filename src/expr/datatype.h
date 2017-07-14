@@ -20,10 +20,10 @@
 #ifndef __CVC4__DATATYPE_H
 #define __CVC4__DATATYPE_H
 
-#include <iostream>
+#include <iosfwd>
+#include <map>
 #include <string>
 #include <vector>
-#include <map>
 
 namespace CVC4 {
   // messy; Expr needs Datatype (because it's the payload of a

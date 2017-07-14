@@ -16,6 +16,8 @@
 
 #include "expr/record.h"
 
+#include <iostream>
+
 #include "base/cvc4_assert.h"
 #include "base/output.h"
 #include "expr/expr.h"

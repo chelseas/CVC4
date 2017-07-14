@@ -43,6 +43,7 @@
 #include "theory/rewriter.h"
 #include "util/hash.h"
 
+#include <iostream>
 #include <iterator>
 #include <queue>
 

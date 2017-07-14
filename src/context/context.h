@@ -19,7 +19,7 @@
 #ifndef __CVC4__CONTEXT__CONTEXT_H
 #define __CVC4__CONTEXT__CONTEXT_H
 
-#include <iostream>
+#include <iosfwd>
 #include <cstdlib>
 #include <cstring>
 #include <vector>

@@ -1,7 +1,9 @@
-#include "check.h"
 #include "code.h"
+
+#include <iostream>
 #include <string>
 
+#include "check.h"
 #include "scccode.h"
 
 using namespace std;

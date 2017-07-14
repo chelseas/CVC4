@@ -25,8 +25,6 @@
 
 #include "cvc4parser_private.h"
 
-#include <iostream>
-#include <sstream>
 #include <stdexcept>
 #include <string>
 #include <vector>

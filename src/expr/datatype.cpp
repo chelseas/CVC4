@@ -16,8 +16,9 @@
  **/
 #include "expr/datatype.h"
 
-#include <string>
+#include <iostream>
 #include <sstream>
+#include <string>
 
 #include "base/cvc4_assert.h"
 #include "expr/attribute.h"

@@ -17,6 +17,8 @@
 
 #include "options/arith_heuristic_pivot_rule.h"
 
+#include <iostream>
+
 namespace CVC4 {
 
 std::ostream& operator<<(std::ostream& out, ErrorSelectionRule rule) {

@@ -20,7 +20,6 @@
 #ifndef __CVC4__BASE_HANDLERS_H
 #define __CVC4__BASE_HANDLERS_H
 
-#include <iostream>
 #include <string>
 #include <sstream>
 

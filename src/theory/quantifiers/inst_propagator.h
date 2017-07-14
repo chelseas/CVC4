@@ -17,7 +17,6 @@
 #ifndef __CVC4__QUANTIFIERS_INST_PROPAGATOR_H
 #define __CVC4__QUANTIFIERS_INST_PROPAGATOR_H
 
-#include <iostream>
 #include <string>
 #include <vector>
 #include <map>

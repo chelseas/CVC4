@@ -21,9 +21,6 @@
 // only enable the hack with -DCVC4_TRACE_ANTLR
 #ifdef CVC4_TRACE_ANTLR
 
-#include <iostream>
-#include <string>
-
 #include "base/output.h"
 
 /* The ANTLR lexer generator, as of v3.2, puts Java trace commands

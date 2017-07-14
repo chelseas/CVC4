@@ -22,9 +22,8 @@
 //#include <cstdint>
 #include <ext/hash_map>
 #include <ext/hash_set>
-#include <iostream>
+#include <iosfwd>
 #include <set>
-#include <sstream>
 #include <vector>
 
 #include "expr/expr.h"

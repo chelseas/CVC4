@@ -15,6 +15,9 @@
 
 **/
 
+#include <iostream>
+#include <sstream>
+
 #include "options/bv_options.h"
 #include "options/proof_options.h"
 #include "proof/array_proof.h"

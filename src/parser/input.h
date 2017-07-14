@@ -19,7 +19,6 @@
 #ifndef __CVC4__PARSER__INPUT_H
 #define __CVC4__PARSER__INPUT_H
 
-#include <iostream>
 #include <stdio.h>
 #include <string>
 #include <vector>

@@ -26,10 +26,9 @@ ${includes}
 #ifndef __CVC4__EXPR_H
 #define __CVC4__EXPR_H
 
-#include <stdint.h>
-#include <iostream>
+#include <cstdint>
+#include <iosfwd>
 #include <iterator>
-
 #include <string>
 
 #include "base/exception.h"

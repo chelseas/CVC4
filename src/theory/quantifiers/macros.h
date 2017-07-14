@@ -17,8 +17,6 @@
 #ifndef __CVC4__QUANTIFIERS_MACROS_H
 #define __CVC4__QUANTIFIERS_MACROS_H
 
-#include <iostream>
-#include <string>
 #include <vector>
 #include <map>
 #include "expr/node.h"

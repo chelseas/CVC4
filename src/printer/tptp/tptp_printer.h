@@ -19,7 +19,7 @@
 #ifndef __CVC4__PRINTER__TPTP_PRINTER_H
 #define __CVC4__PRINTER__TPTP_PRINTER_H
 
-#include <iostream>
+#include <iosfwd>
 
 #include "printer/printer.h"
 

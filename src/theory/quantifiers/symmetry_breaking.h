@@ -17,7 +17,6 @@
 #ifndef __CVC4__QUANT_SYMMETRY_BREAKING_H
 #define __CVC4__QUANT_SYMMETRY_BREAKING_H
 
-#include <iostream>
 #include <map>
 #include <string>
 #include <vector>

@@ -15,8 +15,8 @@
  **/
 #include "options/set_language.h"
 
-#include <iosfwd>
 #include <iomanip>
+#include <iostream>
 
 #include "options/base_options.h"
 #include "options/language.h"

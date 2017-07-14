@@ -19,7 +19,6 @@
 #ifndef __CVC4__THEORY__DATATYPES__DATATYPES_SYGUS_NEW_H
 #define __CVC4__THEORY__DATATYPES__DATATYPES_SYGUS_NEW_H
 
-#include <iostream>
 #include <map>
 
 #include "expr/node.h"

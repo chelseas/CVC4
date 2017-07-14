@@ -19,10 +19,11 @@
 #ifndef __CVC4__RECORD_H
 #define __CVC4__RECORD_H
 
-#include <iostream>
+#include <iosfwd>
 #include <string>
-#include <vector>
 #include <utility>
+#include <vector>
+
 #include "util/hash.h"
 
 // Forward Declarations

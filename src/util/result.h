@@ -19,7 +19,7 @@
 #ifndef __CVC4__RESULT_H
 #define __CVC4__RESULT_H
 
-#include <iostream>
+#include <iosfwd>
 #include <string>
 
 #include "base/exception.h"

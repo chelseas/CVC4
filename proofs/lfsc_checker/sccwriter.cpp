@@ -1,6 +1,7 @@
 #include "sccwriter.h"
 
 #include <fstream>
+#include <iostream>
 #include <sstream>
 
 int sccwriter::exprCount = 0;

@@ -44,7 +44,7 @@
 #ifndef __CVC4__THEORY__UF__SYMMETRY_BREAKER_H
 #define __CVC4__THEORY__UF__SYMMETRY_BREAKER_H
 
-#include <iostream>
+#include <iosfwd>
 #include <list>
 #include <vector>
 

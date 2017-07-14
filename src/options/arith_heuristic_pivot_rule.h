@@ -20,7 +20,7 @@
 #ifndef __CVC4__THEORY__ARITH__ARITH_HEURISTIC_PIVOT_RULE_H
 #define __CVC4__THEORY__ARITH__ARITH_HEURISTIC_PIVOT_RULE_H
 
-#include <iostream>
+#include <iosfwd>
 
 namespace CVC4 {
 

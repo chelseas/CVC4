@@ -21,7 +21,6 @@
 #include "theory/uf/equality_engine.h"
 
 #include <ext/hash_set>
-#include <iostream>
 #include <map>
 
 namespace CVC4 {

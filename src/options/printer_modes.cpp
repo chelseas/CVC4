@@ -17,6 +17,8 @@
 
 #include "options/printer_modes.h"
 
+#include <iostream>
+
 namespace CVC4 {
 
 std::ostream& operator<<(std::ostream& out, ModelFormatMode mode) {

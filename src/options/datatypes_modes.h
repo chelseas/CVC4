@@ -20,8 +20,6 @@
 #ifndef __CVC4__BASE__DATATYPES_MODES_H
 #define __CVC4__BASE__DATATYPES_MODES_H
 
-#include <iostream>
-
 namespace CVC4 {
 namespace theory {
 

@@ -20,7 +20,7 @@
 #ifndef __CVC4__THEORY__ARITH__ARITH_UNATE_LEMMA_MODE_H
 #define __CVC4__THEORY__ARITH__ARITH_UNATE_LEMMA_MODE_H
 
-#include <iostream>
+#include <iosfwd>
 
 namespace CVC4 {
 

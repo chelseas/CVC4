@@ -20,7 +20,6 @@
 #define __CVC4__THEORY__DATATYPES__THEORY_DATATYPES_H
 
 #include <ext/hash_set>
-#include <iostream>
 #include <map>
 
 #include "context/cdchunk_list.h"

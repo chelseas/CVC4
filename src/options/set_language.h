@@ -19,7 +19,8 @@
 #ifndef __CVC4__OPTIONS__SET_LANGUAGE_H
 #define __CVC4__OPTIONS__SET_LANGUAGE_H
 
-#include <iostream>
+#include <iosfwd>
+
 #include "options/language.h"
 
 namespace CVC4 {
