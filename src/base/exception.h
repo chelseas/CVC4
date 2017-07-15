@@ -19,12 +19,10 @@
 #ifndef __CVC4__EXCEPTION_H
 #define __CVC4__EXCEPTION_H
 
-#include <cstdarg>
 #include <cstdlib>
 #include <exception>
 #include <iosfwd>
 #include <sstream>
-#include <stdexcept>
 #include <string>
 
 #include "base/tls.h"

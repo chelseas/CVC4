@@ -19,7 +19,6 @@
 #ifndef __CVC4__OPTIONS__OPTIONS_HANDLER_H
 #define __CVC4__OPTIONS__OPTIONS_HANDLER_H
 
-#include <ostream>
 #include <string>
 
 #include "base/modal_exception.h"

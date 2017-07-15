@@ -18,7 +18,8 @@
 #include "util/regexp.h"
 
 #include <iomanip>
-#include <iostream>
+
+#include "base/exception.h"
 
 using namespace std;
 

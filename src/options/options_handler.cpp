@@ -24,7 +24,6 @@
 
 #include "base/configuration.h"
 #include "base/cvc4_assert.h"
-#include "base/exception.h"
 #include "base/modal_exception.h"
 #include "base/output.h"
 #include "lib/strtok_r.h"
@@ -40,6 +39,7 @@
 #include "options/didyoumean.h"
 #include "options/language.h"
 #include "options/option_exception.h"
+#include "options/options.h"
 #include "options/printer_modes.h"
 #include "options/quantifiers_modes.h"
 #include "options/simplification_mode.h"

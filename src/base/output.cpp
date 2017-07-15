@@ -16,6 +16,7 @@
 
 #include "base/output.h"
 
+#include <cstdarg>
 #include <iostream>
 
 using namespace std;

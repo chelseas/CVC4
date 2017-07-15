@@ -21,9 +21,7 @@
 #define __CVC4__CARDINALITY_H
 
 #include <iostream>
-#include <utility>
 
-#include "base/exception.h"
 #include "util/integer.h"
 
 namespace CVC4 {

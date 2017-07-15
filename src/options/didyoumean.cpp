@@ -19,7 +19,6 @@
 
 #include "options/didyoumean.h"
 
-#include <iostream>
 #include <set>
 #include <sstream>
 #include <string>

@@ -19,10 +19,10 @@
 #include <cstdlib>
 #include <cstring>
 #include <list>
+#include <ostream>
 
 #include "base/cvc4_assert.h"
 #include "base/output.h"
-#include "options/argument_extender.h"
 
 namespace CVC4 {
 namespace options {

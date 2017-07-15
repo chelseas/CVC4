@@ -26,7 +26,6 @@
 #include <sstream>
 #include <cassert>
 
-#include "base/exception.h"
 #include "util/hash.h"
 
 namespace CVC4 {

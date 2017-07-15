@@ -17,6 +17,7 @@
 #include "util/cardinality.h"
 
 #include "base/cvc4_assert.h"
+#include "base/exception.h"
 
 namespace CVC4 {
 
