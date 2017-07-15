@@ -19,7 +19,7 @@
 #ifndef __CVC4__KIND__METAKIND_H
 #define __CVC4__KIND__METAKIND_H
 
-#include <iostream>
+#include <iosfwd>
 
 #include "base/cvc4_assert.h"
 #include "expr/kind.h"
