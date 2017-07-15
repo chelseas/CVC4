@@ -2,18 +2,19 @@
 
 #include <ext/hash_map>
 #include <string>
-#include "theory/theory.h"
 #include "theory/quantifiers/quant_util.h"
 #include "theory/quantifiers/ce_guided_instantiation.h"
 #include "theory/quantifiers/fun_def_process.h"
 #include "theory/quantifiers/macros.h"
 #include "theory/quantifiers/quantifiers_rewriter.h"
 #include "theory/sep/theory_sep_rewriter.h"
+#include "theory/theory_model.h"
 #include "options/quantifiers_options.h"
 #include "options/smt_options.h"
 #include "options/bv_bitblast_mode.h"
 #include "options/bv_options.h"
- 
+#include "options/uf_options.h"
+
 namespace CVC4 {
 namespace preproc {
 
@@ -652,6 +653,357 @@ void QuantifiedPass::apply(AssertionPipeline* assertionsToPreprocess){
       }
     }
     Trace("smt-proc") << "SmtEnginePrivate::processAssertions() : post-quant-preprocess" << std::endl;
+}
+
+InferenceOrFairnessPass::InferenceOrFairnessPass(ResourceManager* resourceManager, TheoryEngine* theoryEngine, SmtEngine* smt) : PreprocessingPass(resourceManager), d_theoryEngine(theoryEngine), d_smt(smt){
+}
+
+void InferenceOrFairnessPass::apply(AssertionPipeline* assertionsToPreprocess){
+     //sort inference technique
+    SortInference * si = d_theoryEngine->getSortInference();
+    si->simplify( assertionsToPreprocess->ref(), options::sortInference(), options::ufssFairnessMonotone() );
+    for( std::map< Node, Node >::iterator it = si->d_model_replace_f.begin(); it != si->d_model_replace_f.end(); ++it ){
+      d_smt->setPrintFuncInModel( it->first.toExpr(), false );
+      d_smt->setPrintFuncInModel( it->second.toExpr(), true );
+    }
+}
+
+PBRewritePass::PBRewritePass(ResourceManager* resourceManager, theory::arith::PseudoBooleanProcessor* pbsProcessor) : PreprocessingPass(resourceManager), d_pbsProcessor(pbsProcessor){
+}
+
+void PBRewritePass::apply(AssertionPipeline* assertionsToPreprocess){
+  d_pbsProcessor->learn(assertionsToPreprocess->ref());
+    if(d_pbsProcessor->likelyToHelp()){
+      d_pbsProcessor->applyReplacements(assertionsToPreprocess->ref());
+    }
+}
+
+DoStaticLearningPass::DoStaticLearningPass(ResourceManager* resourceManager, TheoryEngine* theoryEngine, SmtEngine* smt, TimerStat staticLearningTime) : PreprocessingPass(resourceManager), d_theoryEngine(theoryEngine), d_smt(smt), d_staticLearningTime(staticLearningTime){
+}
+
+void DoStaticLearningPass::staticLearning(AssertionPipeline* assertionsToPreprocess){
+/*  d_smt->finalOptionsAreSet();
+  spendResource(options::preprocessStep());
+
+  TimerStat::CodeTimer staticLearningTimer(d_staticLearningTime);
+
+  Trace("simplify") << "SmtEnginePrivate::staticLearning()" << std::endl;
+
+  for (unsigned i = 0; i < assertionsToPreprocess->size(); ++ i) {
+
+    NodeBuilder<> learned(kind::AND);
+    learned << (*assertionsToPreprocess)[i];
+    d_theoryEngine->ppStaticLearn((*assertionsToPreprocess)[i], learned);
+    if(learned.getNumChildren() == 1) {
+      learned.clear();
+    } else {
+      assertionsToPreprocess->replace(i, learned);
+    }
+  }*/
+}
+
+void DoStaticLearningPass::apply(AssertionPipeline* assertionsToPreprocess){
+  /*  Trace("smt-proc") << "SmtEnginePrivate::processAssertions() : pre-static-learning" << std::endl;
+    // Perform static learning
+    Chat() << "doing static learning..." << std::endl;
+    Trace("simplify") << "SmtEnginePrivate::simplify(): "
+                      << "performing static learning" << std::endl;
+    staticLearning(assertionsToPreprocess);
+    Trace("smt-proc") << "SmtEnginePrivate::processAssertions() : post-static-learning" << std::endl;*/
+} 
+
+RewriteApplyToConstPass::RewriteApplyToConstPass(ResourceManager* resourceManager, TimerStat rewriteApplyToConstTime) : PreprocessingPass(resourceManager), d_rewriteApplyToConstTime(rewriteApplyToConstTime){
+}
+
+Node RewriteApplyToConstPass::rewriteApplyToConst(TNode n){
+    NodeToNodeHashMap d_rewriteApplyToConstCache;
+    Trace("rewriteApplyToConst") << "rewriteApplyToConst :: " << n << std::endl;
+
+    if(n.getMetaKind() == kind::metakind::CONSTANT ||
+       n.getMetaKind() == kind::metakind::VARIABLE ||
+       n.getMetaKind() == kind::metakind::NULLARY_OPERATOR)
+    {
+      return n;
+    }
+
+    if(d_rewriteApplyToConstCache.find(n) != d_rewriteApplyToConstCache.end()) {
+      Trace("rewriteApplyToConst") << "in cache :: "
+                                   << d_rewriteApplyToConstCache[n]
+                                   << std::endl;
+      return d_rewriteApplyToConstCache[n];
+    }
+
+    if(n.getKind() == kind::APPLY_UF) {
+      if(n.getNumChildren() == 1 && n[0].isConst() &&
+         n[0].getType().isInteger())
+      {
+        std::stringstream ss;
+        ss << n.getOperator() << "_";
+        if(n[0].getConst<Rational>() < 0) {
+          ss << "m" << -n[0].getConst<Rational>();
+        } else {
+          ss << n[0];
+        }
+        Node newvar = NodeManager::currentNM()->mkSkolem(
+            ss.str(), n.getType(), "rewriteApplyToConst skolem",
+            NodeManager::SKOLEM_EXACT_NAME);
+        d_rewriteApplyToConstCache[n] = newvar;
+        Trace("rewriteApplyToConst") << "made :: " << newvar << std::endl;
+        return newvar;
+      } else {
+        std::stringstream ss;
+        ss << "The rewrite-apply-to-const preprocessor is currently limited;"
+           << std::endl
+           << "it only works if all function symbols are unary and with Integer"
+           << std::endl
+           << "domain, and all applications are to integer values." << std::endl
+           << "Found application: " << n;
+        Unhandled(ss.str());
+      }
+    }
+    NodeBuilder<> builder(n.getKind());
+    if(n.getMetaKind() == kind::metakind::PARAMETERIZED) {
+      builder << n.getOperator();
+    }
+    for(unsigned i = 0; i < n.getNumChildren(); ++i) {
+      builder << rewriteApplyToConst(n[i]);
+    }
+    Node rewr = builder;
+    d_rewriteApplyToConstCache[n] = rewr;
+    Trace("rewriteApplyToConst") << "built :: " << rewr << std::endl;
+    return rewr;
+}
+
+void RewriteApplyToConstPass::apply(AssertionPipeline* assertionsToPreprocess){
+   Chat() << "Rewriting applies to constants..." << std::endl;
+    TimerStat::CodeTimer codeTimer(d_rewriteApplyToConstTime);
+    for (unsigned i = 0; i < assertionsToPreprocess->size(); ++ i) {
+      (*assertionsToPreprocess)[i] = theory::Rewriter::rewrite(rewriteApplyToConst((*assertionsToPreprocess)[i]));
+    }
+}
+
+BitBlastModeEagerPass::BitBlastModeEagerPass(ResourceManager* resourceManager, TheoryEngine* theoryEngine) : PreprocessingPass(resourceManager), d_theoryEngine(theoryEngine){
+}
+
+void BitBlastModeEagerPass::apply(AssertionPipeline* assertionsToPreprocess){
+    for (unsigned i = 0; i < assertionsToPreprocess->size(); ++i) {
+      TNode atom = (*assertionsToPreprocess)[i];
+      Node eager_atom = NodeManager::currentNM()->mkNode(kind::BITVECTOR_EAGER_ATOM, atom);
+      assertionsToPreprocess->replace(i, eager_atom);
+      theory::TheoryModel* m = d_theoryEngine->getModel();
+      m->addSubstitution(eager_atom, atom);
+    }
+}
+
+NoConflictPass::NoConflictPass(ResourceManager* resourceManager, DecisionEngine* decisionEngine, unsigned realAssertionsEnd, IteSkolemMap* iteSkolemMap) : PreprocessingPass(resourceManager), d_decisionEngine(decisionEngine), d_realAssertionsEnd(realAssertionsEnd), d_iteSkolemMap(iteSkolemMap){
+}
+
+void NoConflictPass::apply(AssertionPipeline* assertionsToPreprocess){
+    Chat() << "pushing to decision engine..." << std::endl;
+    Assert(iteRewriteAssertionsEnd == assertionsToPreprocess->size());
+    d_decisionEngine->addAssertions
+      (assertionsToPreprocess->ref(), d_realAssertionsEnd, *d_iteSkolemMap);
+}
+
+RepeatSimpPass::RepeatSimpPass(ResourceManager* resourceManager, theory::SubstitutionMap* topLevelSubstitutions, unsigned simplifyAssertionsDepth, bool* noConflict) : PreprocessingPass(resourceManager), d_topLevelSubstitutions(topLevelSubstitutions), d_simplifyAssertionsDepth(simplifyAssertionsDepth), noConflict(noConflict){
+}
+
+// returns false if simplification led to "false"
+bool RepeatSimpPass::simplifyAssertions(){
+/*  throw(TypeCheckingException, LogicException, UnsafeInterruptException) {
+  spendResource(options::preprocessStep());
+  Assert(d_smt.d_pendingPops == 0);
+  try {
+    ScopeCounter depth(d_simplifyAssertionsDepth);
+
+    Trace("simplify") << "SmtEnginePrivate::simplify()" << endl;
+
+    dumpAssertions("pre-nonclausal", d_assertions);
+
+    if(options::simplificationMode() != SIMPLIFICATION_MODE_NONE) {
+      // Perform non-clausal simplification
+      Chat() << "...performing nonclausal simplification..." << endl;
+      Trace("simplify") << "SmtEnginePrivate::simplify(): "
+                        << "performing non-clausal simplification" << endl;
+      bool noConflict = nonClausalSimplify();
+      if(!noConflict) {
+        return false;
+      }
+
+      // We piggy-back off of the BackEdgesMap in the CircuitPropagator to
+      // do the miplib trick.
+      if( // check that option is on
+          options::arithMLTrick() &&
+          // miplib rewrites aren't safe in incremental mode
+          ! options::incrementalSolving() &&
+          // only useful in arith
+          d_smt.d_logic.isTheoryEnabled(THEORY_ARITH) &&
+          // we add new assertions and need this (in practice, this
+          // restriction only disables miplib processing during
+          // re-simplification, which we don't expect to be useful anyway)
+          d_realAssertionsEnd == d_assertions.size() ) {
+        Chat() << "...fixing miplib encodings..." << endl;
+        Trace("simplify") << "SmtEnginePrivate::simplify(): "
+                          << "looking for miplib pseudobooleans..." << endl;
+
+        TimerStat::CodeTimer miplibTimer(d_smt.d_stats->d_miplibPassTime);
+
+        doMiplibTrick();
+      } else {
+        Trace("simplify") << "SmtEnginePrivate::simplify(): "
+                          << "skipping miplib pseudobooleans pass (either incrementalSolving is on, or miplib pbs are turned off)..." << endl;
+      }
+    }
+
+    dumpAssertions("post-nonclausal", d_assertions);
+    Trace("smt") << "POST nonClausalSimplify" << endl;
+    Debug("smt") << " d_assertions     : " << d_assertions.size() << endl;
+
+    // before ppRewrite check if only core theory for BV theory
+    d_smt.d_theoryEngine->staticInitializeBVOptions(d_assertions.ref());
+
+    dumpAssertions("pre-theorypp", d_assertions);
+
+    // Theory preprocessing
+    if (d_smt.d_earlyTheoryPP) {
+      Chat() << "...doing early theory preprocessing..." << endl;
+      TimerStat::CodeTimer codeTimer(d_smt.d_stats->d_theoryPreprocessTime);
+      // Call the theory preprocessors
+      d_smt.d_theoryEngine->preprocessStart();
+      for (unsigned i = 0; i < d_assertions.size(); ++ i) {
+        Assert(Rewriter::rewrite(d_assertions[i]) == d_assertions[i]);
+        d_assertions.replace(i, d_smt.d_theoryEngine->preprocess(d_assertions[i]));
+        Assert(Rewriter::rewrite(d_assertions[i]) == d_assertions[i]);
+      }
+    }
+
+    dumpAssertions("post-theorypp", d_assertions);
+    Trace("smt") << "POST theoryPP" << endl;
+    Debug("smt") << " d_assertions     : " << d_assertions.size() << endl;
+
+    // ITE simplification
+    if(options::doITESimp() &&
+       (d_simplifyAssertionsDepth <= 1 || options::doITESimpOnRepeat())) {
+      Chat() << "...doing ITE simplification..." << endl;
+      bool noConflict = simpITE();
+      if(!noConflict){
+        Chat() << "...ITE simplification found unsat..." << endl;
+        return false;
+      }
+    }
+
+    dumpAssertions("post-itesimp", d_assertions);
+    Trace("smt") << "POST iteSimp" << endl;
+    Debug("smt") << " d_assertions     : " << d_assertions.size() << endl;
+
+    // Unconstrained simplification
+    if(options::unconstrainedSimp()) {
+      Chat() << "...doing unconstrained simplification..." << endl;
+      preproc::UnconstrainedSimpPass pass(d_resourceManager, d_smt.d_stats->d_unconstrainedSimpTime, d_smt.d_theoryEngine);
+      pass.apply(&d_assertions);
+   }
+
+    dumpAssertions("post-unconstrained", d_assertions);
+    Trace("smt") << "POST unconstrainedSimp" << endl;
+    Debug("smt") << " d_assertions     : " << d_assertions.size() << endl;
+
+    if(options::repeatSimp() && options::simplificationMode() != SIMPLIFICATION_MODE_NONE) {
+      Chat() << "...doing another round of nonclausal simplification..." << endl;
+      Trace("simplify") << "SmtEnginePrivate::simplify(): "
+                        << " doing repeated simplification" << endl;
+      bool noConflict = nonClausalSimplify();
+      if(!noConflict) {
+        return false;
+      }
+    }
+
+    dumpAssertions("post-repeatsimp", d_assertions);
+    Trace("smt") << "POST repeatSimp" << endl;
+    Debug("smt") << " d_assertions     : " << d_assertions.size() << endl;
+
+  } catch(TypeCheckingExceptionPrivate& tcep) {
+    // Calls to this function should have already weeded out any
+    // typechecking exceptions via (e.g.) ensureBoolean().  But a
+    // theory could still create a new expression that isn't
+    // well-typed, and we don't want the C++ runtime to abort our
+    // process without any error notice.
+    stringstream ss;
+    ss << "A bad expression was produced.  Original exception follows:\n"
+       << tcep;
+    InternalError(ss.str().c_str());
+  }
+  return true;*/
+  return true;
+}
+
+void RepeatSimpPass::apply(AssertionPipeline* assertionsToPreprocess){
+/*   Trace("smt-proc") << "SmtEnginePrivate::processAssertions() : pre-repeat-simplify" << std::endl;
+    Chat() << "re-simplifying assertions..." << std::endl;
+    ScopeCounter depth(d_simplifyAssertionsDepth);
+    *noConflict &= simplifyAssertions();
+    if (*noConflict) {
+      // Need to fix up assertion list to maintain invariants:
+      // Let Sk be the set of Skolem variables introduced by ITE's.  Let <_sk be the order in which these variables were introduced
+      // during ite removal.
+      // For each skolem variable sk, let iteExpr = iteMap(sk) be the ite expr mapped to by sk.
+
+      // cache for expression traversal
+      std::hash_map<Node, bool, NodeHashFunction> cache;
+
+      // First, find all skolems that appear in the substitution map - their associated iteExpr will need
+      // to be moved to the main assertion set
+      std::set<TNode> skolemSet;
+      theory::SubstitutionMap::iterator pos = d_topLevelSubstitutions->begin();
+      for (; pos != d_topLevelSubstitutions->end(); ++pos) {
+        collectSkolems((*pos).first, skolemSet, cache);
+        collectSkolems((*pos).second, skolemSet, cache);
+      }
+
+      // We need to ensure:
+      // 1. iteExpr has the form (ite cond (sk = t) (sk = e))
+      // 2. if some sk' in Sk appears in cond, t, or e, then sk' <_sk sk
+      // If either of these is violated, we must add iteExpr as a proper assertion
+      IteSkolemMap::iterator it = d_iteSkolemMap.begin();
+      IteSkolemMap::iterator iend = d_iteSkolemMap.end();
+      NodeBuilder<> builder(kind::AND);
+      builder << d_assertions[d_realAssertionsEnd - 1];
+      std::vector<TNode> toErase;
+      for (; it != iend; ++it) {
+        if (skolemSet.find((*it).first) == skolemSet.end()) {
+          TNode iteExpr = d_assertions[(*it).second];
+          if (iteExpr.getKind() == kind::ITE &&
+              iteExpr[1].getKind() == kind::EQUAL &&
+              iteExpr[1][0] == (*it).first &&
+              iteExpr[2].getKind() == kind::EQUAL &&
+              iteExpr[2][0] == (*it).first) {
+            cache.clear();
+            bool bad = checkForBadSkolems(iteExpr[0], (*it).first, cache);
+            bad = bad || checkForBadSkolems(iteExpr[1][1], (*it).first, cache);
+            bad = bad || checkForBadSkolems(iteExpr[2][1], (*it).first, cache);
+            if (!bad) {
+              continue;
+            }
+          }
+        }
+        // Move this iteExpr into the main assertions
+        builder << (*assertionsToPreprocess)[(*it).second];
+        d_assertions[(*it).second] = NodeManager::currentNM()->mkConst<bool>(true);
+        toErase.push_back((*it).first);
+      }
+      if(builder.getNumChildren() > 1) {
+        while (!toErase.empty()) {
+          d_iteSkolemMap.erase(toErase.back());
+          toErase.pop_back();
+        }
+        (*assertionsToPreprocess)[d_realAssertionsEnd - 1] = theory::Rewriter::rewrite(Node(builder));
+       }
+      // For some reason this is needed for some benchmarks, such as
+      // http://cvc4.cs.nyu.edu/benchmarks/smtlib2/QF_AUFBV/dwp_formulas/try5_small_difret_functions_dwp_tac.re_node_set_remove_at.il.dwp.smt2
+      // Figure it out later
+      removeITEs();
+      //      Assert(iteRewriteAssertionsEnd == d_assertions.size());
+    }
+  Trace("smt-proc") << "SmtEnginePrivate::processAssertions() : post-repeat-simplify" << std::endl;*/
 }
 
 }  // namespace preproc
