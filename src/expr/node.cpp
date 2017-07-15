@@ -131,9 +131,56 @@ bool NodeTemplate<ref_count>::hasBoundVar() {
   return getAttribute(HasBoundVarAttr());
 }
 
+template <bool ref_count>
+void NodeTemplate<ref_count>::printAst(std::ostream& out, int indent) const {
+  assertTNodeNotExpired();
+  d_nv->printAst(out, indent);
+}
+
+std::ostream& operator<<(std::ostream& out, TNode n) {
+  n.toStream(out, Node::setdepth::getDepth(out),
+             Node::printtypes::getPrintTypes(out), Node::dag::getDag(out),
+             Node::setlanguage::getLanguage(out));
+  return out;
+}
+
+template <bool ref_count>
+std::ostream& operator<<(std::ostream& out,
+                         const std::vector<NodeTemplate<ref_count> >& ns) {
+  for (typename std::vector<NodeTemplate<ref_count> >::const_iterator
+           i = ns.begin(),
+           end = ns.end();
+       i != end; ++i) {
+    out << *i;
+  }
+  return out;
+}
+
+template <bool ref_count>
+void NodeTemplate<ref_count>::toStream(std::ostream& out, int toDepth,
+                                       bool types, size_t dag,
+                                       OutputLanguage language) const {
+  assertTNodeNotExpired();
+  d_nv->toStream(out, toDepth, types, dag, language);
+}
+
 template bool NodeTemplate<true>::isConst() const;
 template bool NodeTemplate<false>::isConst() const;
 template bool NodeTemplate<true>::hasBoundVar();
 template bool NodeTemplate<false>::hasBoundVar();
+template void NodeTemplate<true>::printAst(std::ostream& out, int indent) const;
+template void NodeTemplate<false>::printAst(std::ostream& out,
+                                            int indent) const;
+template void NodeTemplate<true>::toStream(std::ostream& out, int toDepth,
+                                           bool types, size_t dag,
+                                           OutputLanguage language) const;
+template void NodeTemplate<false>::toStream(std::ostream& out, int toDepth,
+                                            bool types, size_t dag,
+                                            OutputLanguage language) const;
+template std::ostream& operator<<(std::ostream& out,
+                                  const std::vector<NodeTemplate<true> >& ns);
+
+template std::ostream& operator<<(std::ostream& out,
+                                  const std::vector<NodeTemplate<false> >& ns);
 
 }/* CVC4 namespace */

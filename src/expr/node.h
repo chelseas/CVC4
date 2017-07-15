@@ -22,18 +22,17 @@
 #ifndef __CVC4__NODE_H
 #define __CVC4__NODE_H
 
-#include <vector>
-#include <string>
-#include <iostream>
-#include <utility>
 #include <algorithm>
+#include <cstdint>
 #include <functional>
-#include <stdint.h>
+#include <iosfwd>
+#include <string>
+#include <utility>
+#include <vector>
 
 #include "base/configuration.h"
 #include "base/cvc4_assert.h"
 #include "base/exception.h"
-#include "base/output.h"
 #include "expr/type.h"
 #include "expr/kind.h"
 #include "expr/metakind.h"
@@ -832,11 +831,9 @@ public:
    * (might break language compliance, but good for debugging expressions)
    * @param language the language in which to output
    */
-  inline void toStream(std::ostream& out, int toDepth = -1, bool types = false, size_t dag = 1,
-                       OutputLanguage language = language::output::LANG_AUTO) const {
-    assertTNodeNotExpired();
-    d_nv->toStream(out, toDepth, types, dag, language);
-  }
+  void toStream(std::ostream& out, int toDepth = -1, bool types = false,
+                size_t dag = 1,
+                OutputLanguage language = language::output::LANG_AUTO) const;
 
   /**
    * IOStream manipulator to set the maximum depth of Nodes when
@@ -880,7 +877,7 @@ public:
    * @param out output stream to print to.
    * @param indent number of spaces to indent the formula by.
    */
-  inline void printAst(std::ostream& out, int indent = 0) const;
+  void printAst(std::ostream& out, int indent = 0) const;
 
   /**
    * Check if the node has a subterm t.
@@ -913,14 +910,7 @@ public:
  * @param n the node to output to the stream
  * @return the stream
  */
-inline std::ostream& operator<<(std::ostream& out, TNode n) {
-  n.toStream(out,
-             Node::setdepth::getDepth(out),
-             Node::printtypes::getPrintTypes(out),
-             Node::dag::getDag(out),
-             Node::setlanguage::getLanguage(out));
-  return out;
-}
+std::ostream& operator<<(std::ostream& out, TNode n);
 
 /**
  * Serializes a vector of node to the given stream.
@@ -929,17 +919,9 @@ inline std::ostream& operator<<(std::ostream& out, TNode n) {
  * @param ns the vector of nodes to output to the stream
  * @return the stream
  */
-template<bool ref_count>
-inline std::ostream& operator<<(std::ostream& out,
-                                const std::vector< NodeTemplate<ref_count> > & ns) {
-  for(typename std::vector< NodeTemplate<ref_count> >::const_iterator
-        i=ns.begin(), end=ns.end();
-      i != end; ++i){
-    out << *i;
-  }
-  return out;
-}
-
+template <bool ref_count>
+std::ostream& operator<<(std::ostream& out,
+                         const std::vector<NodeTemplate<ref_count> >& ns);
 
 }/* CVC4 namespace */
 
@@ -1219,13 +1201,6 @@ NodeTemplate<true>
 NodeTemplate<ref_count>::xorNode(const NodeTemplate<ref_count2>& right) const {
   assertTNodeNotExpired();
   return NodeManager::currentNM()->mkNode(kind::XOR, *this, right);
-}
-
-template <bool ref_count>
-inline void
-NodeTemplate<ref_count>::printAst(std::ostream& out, int indent) const {
-  assertTNodeNotExpired();
-  d_nv->printAst(out, indent);
 }
 
 /**
