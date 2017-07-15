@@ -60,8 +60,7 @@ private:
 protected: 
   void spendResource(unsigned amount) {
     d_resourceManager->spendResource(amount);
-  }
-  // TODO: modify class as needed
+  }  // TODO: modify class as needed
 };
 
 }  // namespace preproc

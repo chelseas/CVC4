@@ -3631,11 +3631,7 @@ void SmtEnginePrivate::processAssertions() {
  }
 
   if( d_smt.d_logic.isQuantified() ){
-/*    preproc::QuantifiedPass pass(d_resourceManager, d_smt.d_theoryEngine,
-     d_smt.d_fmfRecFunctionsDefined, d_smt.d_fmfRecFunctionsAbs,
-     d_smt.d_fmfRecFunctionsConcrete);
-    pass.apply(&d_assertions);*/
- 
+
     Trace("smt-proc") << "SmtEnginePrivate::processAssertions() : pre-quant-preprocess" << std::endl;
 
     dumpAssertions("pre-skolem-quant", d_assertions);
@@ -3692,24 +3688,22 @@ void SmtEnginePrivate::processAssertions() {
       }
     }
     Trace("smt-proc") << "SmtEnginePrivate::processAssertions() : post-quant-preprocess" << std::endl;
+
+/*    preproc::QuantifiedPass pass(d_resourceManager, d_smt.d_theoryEngine,
+     d_smt.d_fmfRecFunctionsDefined, d_smt.d_fmfRecFunctionsAbs, d_smt.d_fmfRecFunctionsConcrete);
+    pass.apply(&d_assertions);*/
 }
 
   if( options::sortInference() || options::ufssFairnessMonotone() ){
     //sort inference technique
-    SortInference * si = d_smt.d_theoryEngine->getSortInference();
-    si->simplify( d_assertions.ref(), options::sortInference(), options::ufssFairnessMonotone() );
-    for( std::map< Node, Node >::iterator it = si->d_model_replace_f.begin(); it != si->d_model_replace_f.end(); ++it ){
-      d_smt.setPrintFuncInModel( it->first.toExpr(), false );
-      d_smt.setPrintFuncInModel( it->second.toExpr(), true );
-    }
-  }
+    preproc::InferenceOrFairnessPass pass(d_resourceManager, d_smt.d_theoryEngine, &d_smt);
+    pass.apply(&d_assertions); 
+ }
 
   if( options::pbRewrites() ){
-    d_pbsProcessor.learn(d_assertions.ref());
-    if(d_pbsProcessor.likelyToHelp()){
-      d_pbsProcessor.applyReplacements(d_assertions.ref());
-    }
-  }
+   preproc::PBRewritePass pass(d_resourceManager, &d_pbsProcessor);
+   pass.apply(&d_assertions);
+ }
 
   Trace("smt-proc") << "SmtEnginePrivate::processAssertions() : pre-simplify" << endl;
   dumpAssertions("pre-simplify", d_assertions);
@@ -3723,6 +3717,9 @@ void SmtEnginePrivate::processAssertions() {
 
   dumpAssertions("pre-static-learning", d_assertions);
   if(options::doStaticLearning()) {
+/*    preproc::DoStaticLearningPass pass(d_resourceManager, d_smt.d_theoryEngine, &d_smt, d_smt.d_stats->d_staticLearningTime);
+    pass.apply(&d_assertions);*/
+
     Trace("smt-proc") << "SmtEnginePrivate::processAssertions() : pre-static-learning" << endl;
     // Perform static learning
     Chat() << "doing static learning..." << endl;
@@ -3751,6 +3748,8 @@ void SmtEnginePrivate::processAssertions() {
 
   dumpAssertions("pre-repeat-simplify", d_assertions);
   if(options::repeatSimp()) {
+/*     preproc::RepeatSimpPass pass(d_resourceManager, &d_topLevelSubstitutions, d_simplifyAssertionsDepth, &noConflict); 
+     pass.apply(&d_assertions);*/
     Trace("smt-proc") << "SmtEnginePrivate::processAssertions() : pre-repeat-simplify" << endl;
     Chat() << "re-simplifying assertions..." << endl;
     ScopeCounter depth(d_simplifyAssertionsDepth);
@@ -3823,12 +3822,9 @@ void SmtEnginePrivate::processAssertions() {
 
   dumpAssertions("pre-rewrite-apply-to-const", d_assertions);
   if(options::rewriteApplyToConst()) {
-    Chat() << "Rewriting applies to constants..." << endl;
-    TimerStat::CodeTimer codeTimer(d_smt.d_stats->d_rewriteApplyToConstTime);
-    for (unsigned i = 0; i < d_assertions.size(); ++ i) {
-      d_assertions[i] = Rewriter::rewrite(rewriteApplyToConst(d_assertions[i]));
-    }
-  }
+    preproc::RewriteApplyToConstPass pass(d_resourceManager, d_smt.d_stats->d_rewriteApplyToConstTime);
+    pass.apply(&d_assertions);
+ }
   dumpAssertions("post-rewrite-apply-to-const", d_assertions);
 
   // begin: INVARIANT to maintain: no reordering of assertions or
@@ -3859,24 +3855,17 @@ void SmtEnginePrivate::processAssertions() {
   // If we are using eager bit-blasting wrap assertions in fake atom so that
   // everything gets bit-blasted to internal SAT solver
   if (options::bitblastMode() == theory::bv::BITBLAST_MODE_EAGER) {
-    for (unsigned i = 0; i < d_assertions.size(); ++i) {
-      TNode atom = d_assertions[i];
-      Node eager_atom = NodeManager::currentNM()->mkNode(kind::BITVECTOR_EAGER_ATOM, atom);
-      d_assertions.replace(i, eager_atom);
-      TheoryModel* m = d_smt.d_theoryEngine->getModel();
-      m->addSubstitution(eager_atom, atom);
-    }
-  }
+    preproc::BitBlastModeEagerPass pass(d_resourceManager, d_smt.d_theoryEngine);
+    pass.apply(&d_assertions);
+ }
 
   //notify theory engine new preprocessed assertions
   d_smt.d_theoryEngine->notifyPreprocessedAssertions( d_assertions.ref() );
 
   // Push the formula to decision engine
   if(noConflict) {
-    Chat() << "pushing to decision engine..." << endl;
-    Assert(iteRewriteAssertionsEnd == d_assertions.size());
-    d_smt.d_decisionEngine->addAssertions
-      (d_assertions.ref(), d_realAssertionsEnd, d_iteSkolemMap);
+    preproc::NoConflictPass pass(d_resourceManager, d_smt.d_decisionEngine, d_realAssertionsEnd, &d_iteSkolemMap);
+    pass.apply(&d_assertions);    
   }
 
   // end: INVARIANT to maintain: no reordering of assertions or

@@ -5,7 +5,10 @@
 
 #include "preproc/preprocessing_pass.h"
 #include "theory/substitutions.h"
+#include "theory/arith/pseudoboolean_proc.h"
 #include "smt/smt_engine.h"
+#include "smt/term_formula_removal.h"
+#include "decision/decision_engine.h"
 
 namespace CVC4 {
 namespace preproc {
@@ -127,7 +130,7 @@ class SepPreSkolemEmpPass : public PreprocessingPass {
 class QuantifiedPass : public PreprocessingPass {
   public:
     virtual void apply(AssertionPipeline* assertionsToPreprocess);
-    QuantifiedPass(ResourceManager* resourceManager, 
+     QuantifiedPass(ResourceManager* resourceManager, 
       TheoryEngine* theoryEngine, NodeList* &fmfRecFunctionsDefined, 
       std::map<Node,TypeNode> &fmfRecFunctionsAbs, 
       std::map<Node, std::vector<Node> > &fmfRecFunctionsConcrete); 
@@ -137,7 +140,74 @@ class QuantifiedPass : public PreprocessingPass {
     std::map<Node,TypeNode> d_fmfRecFunctionsAbs;
     std::map<Node, std::vector<Node> > d_fmfRecFunctionsConcrete;
 };
-    
+
+class InferenceOrFairnessPass : public PreprocessingPass {
+  public:
+    virtual void apply(AssertionPipeline* assertionsToPreprocess);
+    InferenceOrFairnessPass(ResourceManager* resourceManager, TheoryEngine* theoryEngine, SmtEngine* smt);
+  private:
+    TheoryEngine* d_theoryEngine;
+    SmtEngine* d_smt;
+};
+
+class PBRewritePass : public PreprocessingPass {
+  public:
+     virtual void apply(AssertionPipeline* assertionsToPreprocess);
+     PBRewritePass(ResourceManager* resourceManager, theory::arith::PseudoBooleanProcessor* pbsProcessor);
+  private:
+    theory::arith::PseudoBooleanProcessor* d_pbsProcessor;  
+};
+
+class DoStaticLearningPass : public PreprocessingPass {
+  public:
+     virtual void apply(AssertionPipeline* assertionsToPreprocess);
+     DoStaticLearningPass(ResourceManager* resourceManager, TheoryEngine* theoryEngine, SmtEngine* smt, TimerStat staticLearningTime);
+  private:
+     TheoryEngine* d_theoryEngine;
+     SmtEngine* d_smt;
+     TimerStat d_staticLearningTime;
+     //Performs static learning on the assertions.
+     void staticLearning(AssertionPipeline* assertionsToPreprocess);
+};
+
+class RewriteApplyToConstPass : public PreprocessingPass {
+  public:
+     virtual void apply(AssertionPipeline* assertionsToPreprocess);
+     RewriteApplyToConstPass(ResourceManager* resourceManager, TimerStat rewriteApplyToConstTime);
+  private:
+    TimerStat d_rewriteApplyToConstTime;
+    Node rewriteApplyToConst(TNode n);
+};
+
+class BitBlastModeEagerPass : public PreprocessingPass {
+  public:
+     virtual void apply(AssertionPipeline* assertionsToPreprocess);
+     BitBlastModeEagerPass(ResourceManager* resourceManager, TheoryEngine* theoryEngine);
+  private:
+     TheoryEngine* d_theoryEngine;
+}; 
+
+class NoConflictPass : public PreprocessingPass {
+  public:
+      virtual void apply(AssertionPipeline* assertionsToPreprocess);
+      NoConflictPass(ResourceManager* resourceManager, DecisionEngine* decisionEngine, unsigned realAssertionsEnd, IteSkolemMap* iteSkolemMap );
+  private:
+     DecisionEngine* d_decisionEngine;
+     unsigned d_realAssertionsEnd;
+     IteSkolemMap* d_iteSkolemMap;
+}; 
+ 
+class RepeatSimpPass : public PreprocessingPass {
+  public:
+     virtual void apply(AssertionPipeline* assertionsToPreprocess);
+     RepeatSimpPass(ResourceManager* resourceManager, theory::SubstitutionMap* topLevelSubstitutions, unsigned simplifyAssertionsDepth, bool* noConflict);
+  private: 
+     theory::SubstitutionMap* d_topLevelSubstitutions;
+     bool simplifyAssertions();
+     unsigned d_simplifyAssertionsDepth;
+     bool* noConflict;
+};     
+
 }  // namespace preproc
 }  // namespace CVC4
 
