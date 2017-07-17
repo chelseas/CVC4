@@ -117,7 +117,7 @@ namespace theory {
 // The CNF conversion can go on in PropEngine.
 
 class CVC4_PUBLIC SmtEngine {
-
+  friend class PreprocessingPass;
   /** The type of our internal map of defined functions */
   typedef context::CDHashMap<Node, smt::DefinedFunction, NodeHashFunction>
     DefinedFunctionMap;
