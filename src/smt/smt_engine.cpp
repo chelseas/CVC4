@@ -3717,16 +3717,16 @@ void SmtEnginePrivate::processAssertions() {
 
   dumpAssertions("pre-static-learning", d_assertions);
   if(options::doStaticLearning()) {
-/*    preproc::DoStaticLearningPass pass(d_resourceManager, d_smt.d_theoryEngine, &d_smt, d_smt.d_stats->d_staticLearningTime);
-    pass.apply(&d_assertions);*/
+    preproc::DoStaticLearningPass pass(d_resourceManager, d_smt.d_theoryEngine, &d_smt, d_smt.d_stats->d_staticLearningTime);
+    pass.apply(&d_assertions);
 
-    Trace("smt-proc") << "SmtEnginePrivate::processAssertions() : pre-static-learning" << endl;
+/*    Trace("smt-proc") << "SmtEnginePrivate::processAssertions() : pre-static-learning" << endl;
     // Perform static learning
     Chat() << "doing static learning..." << endl;
     Trace("simplify") << "SmtEnginePrivate::simplify(): "
                       << "performing static learning" << endl;
     staticLearning();
-    Trace("smt-proc") << "SmtEnginePrivate::processAssertions() : post-static-learning" << endl;
+    Trace("smt-proc") << "SmtEnginePrivate::processAssertions() : post-static-learning" << endl;*/
   }
   dumpAssertions("post-static-learning", d_assertions);
 
