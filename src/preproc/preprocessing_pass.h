@@ -14,6 +14,20 @@
 namespace CVC4 {
 
 namespace preproc {
+
+/** Useful for counting the number of recursive calls. */
+class ScopeCounter {
+private:
+  unsigned& d_depth;
+public:
+  ScopeCounter(unsigned& d) : d_depth(d) {
+    ++d_depth;
+  }
+  ~ScopeCounter(){
+    --d_depth;
+  }
+};
+
 class AssertionPipeline {
   std::vector<Node> d_nodes;
 
@@ -37,9 +51,15 @@ public:
   }
 };// class AssertionPipeline 
 
+struct PreprocessingPassResult {
+ bool d_noConflict;
+ PreprocessingPassResult(bool noConflict) : d_noConflict(noConflict){
+}
+};
+
 class PreprocessingPass {
  public:
-  virtual void apply(AssertionPipeline* assertionsToPreprocess) = 0;
+  virtual PreprocessingPassResult apply(AssertionPipeline* assertionsToPreprocess) = 0;
   void dumpAssertions(const char* key, const AssertionPipeline& assertionList) {
   if( Dump.isOn("assertions") &&
       Dump.isOn(std::string("assertions:") + key) ) {

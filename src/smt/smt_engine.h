@@ -98,6 +98,11 @@ namespace theory {
   class TheoryModel;
 }/* CVC4::theory namespace */
 
+namespace preproc{
+  class DoStaticLearningPass; 
+  class QuantifiedPass;
+}/* CVC4::preproc namespace */
+
 // TODO: SAT layer (esp. CNF- versus non-clausal solvers under the
 // hood): use a type parameter and have check() delegate, or subclass
 // SmtEngine and override check()?
@@ -110,7 +115,6 @@ namespace theory {
 // The CNF conversion can go on in PropEngine.
 
 class CVC4_PUBLIC SmtEngine {
-  friend class PreprocessingPass;
   /** The type of our internal map of defined functions */
   typedef context::CDHashMap<Node, smt::DefinedFunction, NodeHashFunction>
     DefinedFunctionMap;
@@ -341,7 +345,9 @@ class CVC4_PUBLIC SmtEngine {
    * be called when d_logic is updated.
    */
   void setLogicInternal() throw();
-
+  
+  friend class ::CVC4::preproc::DoStaticLearningPass;
+  friend class ::CVC4::preproc::QuantifiedPass; 
   friend class ::CVC4::smt::SmtEnginePrivate;
   friend class ::CVC4::smt::SmtScope;
   friend class ::CVC4::smt::BooleanTermConverter;
