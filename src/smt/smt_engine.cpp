@@ -124,7 +124,7 @@ void DeleteAndClearCommandVector(std::vector<Command*>& commands) {
 }
 
 /** Useful for counting the number of recursive calls. */
-class ScopeCounter {
+/*class ScopeCounter {
 private:
   unsigned& d_depth;
 public:
@@ -134,7 +134,7 @@ public:
   ~ScopeCounter(){
     --d_depth;
   }
-};
+};*/
 
 /**
  * Representation of a defined function.  We keep these around in
@@ -3503,7 +3503,6 @@ void SmtEnginePrivate::collectSkolems(TNode n, set<TNode>& skolemSet, hash_map<N
   cache[n] = true;
 }
 
-
 bool SmtEnginePrivate::checkForBadSkolems(TNode n, TNode skolem, hash_map<Node, bool, NodeHashFunction>& cache)
 {
   hash_map<Node, bool, NodeHashFunction>::iterator it;
@@ -3574,6 +3573,8 @@ void SmtEnginePrivate::processAssertions() {
   Trace("smt-proc") << "SmtEnginePrivate::processAssertions() : pre-definition-expansion" << endl;
   dumpAssertions("pre-definition-expansion", d_assertions);
   {
+/*   preproc::ExpandingDefinitionsPass pass(d_resourceManager, d_smt.d_stats->d_definitionExpansionTime);
+   pass.apply(&d_assertions);*/
     Chat() << "expanding definitions..." << endl;
     Trace("simplify") << "SmtEnginePrivate::simplify(): expanding definitions" << endl;
     TimerStat::CodeTimer codeTimer(d_smt.d_stats->d_definitionExpansionTime);
@@ -3722,67 +3723,8 @@ void SmtEnginePrivate::processAssertions() {
  }
 
   if( d_smt.d_logic.isQuantified() ){
-
-    Trace("smt-proc") << "SmtEnginePrivate::processAssertions() : pre-quant-preprocess" << std::endl;
-
-    dumpAssertions("pre-skolem-quant", d_assertions);
-    //remove rewrite rules, apply pre-skolemization to existential quantifiers
-    for (unsigned i = 0; i < d_assertions.size(); ++ i) {
-      Node prev = (d_assertions)[i];
-      Node next = quantifiers::QuantifiersRewriter::preprocess( prev );
-      if( next!=prev ){
-        d_assertions.replace(i, Rewriter::rewrite( next ));
-        Trace("quantifiers-preprocess") << "*** Pre-skolemize " << prev <<std::endl;
-        Trace("quantifiers-preprocess") << "   ...got " << (d_assertions)[i] << std::endl;
-      }
-    }
-    dumpAssertions("post-skolem-quant", d_assertions);
-    if( options::macrosQuant() ){
-      //quantifiers macro expansion
-      quantifiers::QuantifierMacros qm( d_smt.d_theoryEngine->getQuantifiersEngine() );
-      bool success;
-      do{
-        success = qm.simplify( d_assertions.ref(), true );
-      }while( success );
-      //finalize the definitions
-      qm.finalizeDefinitions();
-    }
-
-
-    //fmf-fun : assume admissible functions, applying preprocessing reduction to FMF
-    if( options::fmfFunWellDefined() ){
-      quantifiers::FunDefFmf fdf;
-      Assert( d_smt.d_fmfRecFunctionsDefined!=NULL );
-      //must carry over current definitions (for incremental)
-      for( context::CDList<Node>::const_iterator fit = d_smt.d_fmfRecFunctionsDefined->begin();
-           fit != d_smt.d_fmfRecFunctionsDefined->end(); ++fit ) {
-        Node f = (*fit);
-        Assert( d_smt.d_fmfRecFunctionsAbs.find( f )!= d_fmfRecFunctionsAbs.end() );
-        TypeNode ft = d_smt.d_fmfRecFunctionsAbs[f];
-        fdf.d_sorts[f] = ft;
-        std::map< Node, std::vector< Node > >::iterator fcit = d_smt.d_fmfRecFunctionsConcrete.find( f );
-        Assert( fcit!= d_smt.d_fmfRecFunctionsConcrete.end() );
-        for( unsigned j=0; j<fcit->second.size(); j++ ){
-          fdf.d_input_arg_inj[f].push_back( fcit->second[j] );
-        }
-      }
-      fdf.simplify(d_assertions.ref());
-      //must store new definitions (for incremental)
-      for( unsigned i=0; i<fdf.d_funcs.size(); i++ ){
-        Node f = fdf.d_funcs[i];
-        d_smt.d_fmfRecFunctionsAbs[f] = fdf.d_sorts[f];
-        d_smt.d_fmfRecFunctionsConcrete[f].clear();
-        for( unsigned j=0; j<fdf.d_input_arg_inj[f].size(); j++ ){
-          d_smt.d_fmfRecFunctionsConcrete[f].push_back( fdf.d_input_arg_inj[f][j] );
-        }
-        d_smt.d_fmfRecFunctionsDefined->push_back( f );
-      }
-    }
-    Trace("smt-proc") << "SmtEnginePrivate::processAssertions() : post-quant-preprocess" << std::endl;
-
-/*    preproc::QuantifiedPass pass(d_resourceManager, d_smt.d_theoryEngine,
-     d_smt.d_fmfRecFunctionsDefined, d_smt.d_fmfRecFunctionsAbs, d_smt.d_fmfRecFunctionsConcrete);
-    pass.apply(&d_assertions);*/
+    preproc::QuantifiedPass pass(d_resourceManager, d_smt.d_theoryEngine, &d_smt);
+    pass.apply(&d_assertions);
 }
 
   if( options::sortInference() || options::ufssFairnessMonotone() ){
@@ -3839,9 +3781,12 @@ void SmtEnginePrivate::processAssertions() {
 
   dumpAssertions("pre-repeat-simplify", d_assertions);
   if(options::repeatSimp()) {
-/*     preproc::RepeatSimpPass pass(d_resourceManager, &d_topLevelSubstitutions, d_simplifyAssertionsDepth, &noConflict); 
-     pass.apply(&d_assertions);*/
-    Trace("smt-proc") << "SmtEnginePrivate::processAssertions() : pre-repeat-simplify" << endl;
+     preproc::SimplifyAssertionsPass pass(d_resourceManager, d_simplifyAssertionsDepth);
+     noConflict &= pass.apply(&d_assertions).d_noConflict;
+
+     preproc::RepeatSimpPass pass1(d_resourceManager, &d_topLevelSubstitutions, d_simplifyAssertionsDepth, &noConflict, d_iteSkolemMap, d_realAssertionsEnd); 
+     pass1.apply(&d_assertions);
+/*    Trace("smt-proc") << "SmtEnginePrivate::processAssertions() : pre-repeat-simplify" << endl;
     Chat() << "re-simplifying assertions..." << endl;
     ScopeCounter depth(d_simplifyAssertionsDepth);
     noConflict &= simplifyAssertions();
@@ -3907,7 +3852,7 @@ void SmtEnginePrivate::processAssertions() {
       removeITEs();
       //      Assert(iteRewriteAssertionsEnd == d_assertions.size());
     }
-    Trace("smt-proc") << "SmtEnginePrivate::processAssertions() : post-repeat-simplify" << endl;
+    Trace("smt-proc") << "SmtEnginePrivate::processAssertions() : post-repeat-simplify" << endl;*/
   }
   dumpAssertions("post-repeat-simplify", d_assertions);
 
