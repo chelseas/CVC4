@@ -3562,19 +3562,7 @@ void SmtEnginePrivate::processAssertions() {
  }
 
   Debug("smt") << " d_assertions     : " << d_assertions.size() << endl;
-
-<<<<<<< e79fa19f8eacdeab55089cdfec717574b9b7af34
-=======
-  dumpAssertions("pre-constrain-subtypes", d_assertions);
-  {
-    preproc::ConstrainSubtypesPass pass(d_resourceManager, &d_smt);
-    pass.apply(&d_assertions);
- }
-  dumpAssertions("post-constrain-subtypes", d_assertions);
-
-  Debug("smt") << " d_assertions     : " << d_assertions.size() << endl;
-
->>>>>>> ContrainSubtypes and ExpandingDefinitions classes
+ 
   bool noConflict = true;
 
   // Unconstrained simplification

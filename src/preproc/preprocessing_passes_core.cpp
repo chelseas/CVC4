@@ -27,7 +27,7 @@ namespace preproc {
 ExpandingDefinitionsPass::ExpandingDefinitionsPass(ResourceManager* resourceManager, SmtEngine* smt, TimerStat definitionExpansionTime) : PreprocessingPass(resourceManager), d_smt(smt), d_definitionExpansionTime(definitionExpansionTime){
 }
 
-Node ExpandingDefinitionsPass::expandDefinitions(TNode n, hash_map<Node, Node, NodeHashFunction>& cache, bool expandOnly)
+Node ExpandingDefinitionsPass::expandDefinitions(TNode n, unordered_map<Node, Node, NodeHashFunction>& cache, bool expandOnly)
   throw(TypeCheckingException, LogicException, UnsafeInterruptException) {
   stack< triple<Node, Node, bool> > worklist;
   stack<Node> result;
@@ -194,7 +194,7 @@ PreprocessingPassResult ExpandingDefinitionsPass::apply(AssertionPipeline* asser
   Chat() << "expanding definitions..." << std::endl;
     Trace("simplify") << "SmtEnginePrivate::simplify(): expanding definitions" << endl;
     TimerStat::CodeTimer codeTimer(d_definitionExpansionTime);
-    hash_map<Node, Node, NodeHashFunction> cache;
+    unordered_map<Node, Node, NodeHashFunction> cache;
     for(unsigned i = 0; i < assertionsToPreprocess->size(); ++ i) {
       assertionsToPreprocess->replace(i, expandDefinitions((*assertionsToPreprocess)[i], cache));
     }
@@ -205,7 +205,7 @@ NlExtPurifyPass::NlExtPurifyPass(ResourceManager* resourceManager) :
     PreprocessingPass(resourceManager){
 }
 
-void NlExtPurifyPass::apply(AssertionPipeline* assertionsToPreprocess) {
+PreprocessingPassResult NlExtPurifyPass::apply(AssertionPipeline* assertionsToPreprocess) {
   std::unordered_map<Node, Node, NodeHashFunction> cache;
   std::unordered_map<Node, Node, NodeHashFunction> bcache;
   std::vector<Node> var_eq;
@@ -670,7 +670,7 @@ PreprocessingPassResult BVAbstractionPass::apply(AssertionPipeline* assertionsTo
  return PreprocessingPassResult(true);
 } 
 
-ConstrainSubtypesPass::ConstrainSubtypesPass(ResourceManager* resourceManager, SmtEngine* smt) : PreprocessingPass(resourceManager), d_smt(smt) {
+/*ConstrainSubtypesPass::ConstrainSubtypesPass(ResourceManager* resourceManager, SmtEngine* smt) : PreprocessingPass(resourceManager), d_smt(smt) {
 }
 
 void ConstrainSubtypesPass::constrainSubtypes(TNode top, AssertionPipeline& assertions)
@@ -740,7 +740,7 @@ PreprocessingPassResult ConstrainSubtypesPass::apply(AssertionPipeline* assertio
       constrainSubtypes((*assertionsToPreprocess)[i], *assertionsToPreprocess);
     }
   return PreprocessingPassResult(true);
-}
+}*/
 
 UnconstrainedSimpPass::UnconstrainedSimpPass(ResourceManager* resourceManager,
       TimerStat unconstrainedSimpTime, TheoryEngine* theoryEngine) :
@@ -1129,9 +1129,9 @@ RepeatSimpPass::RepeatSimpPass(ResourceManager* resourceManager,
     d_realAssertionsEnd(realAssertionsEnd){
 }
 
-bool RepeatSimpPass::checkForBadSkolems(TNode n, TNode skolem, hash_map<Node, bool, NodeHashFunction>& cache)
+bool RepeatSimpPass::checkForBadSkolems(TNode n, TNode skolem, unordered_map<Node, bool, NodeHashFunction>& cache)
 {
-  hash_map<Node, bool, NodeHashFunction>::iterator it;
+  unordered_map<Node, bool, NodeHashFunction>::iterator it;
   it = cache.find(n);
   if (it != cache.end()) {
     return (*it).second;
@@ -1162,9 +1162,9 @@ bool RepeatSimpPass::checkForBadSkolems(TNode n, TNode skolem, hash_map<Node, bo
   return false;
 }
 
-void RepeatSimpPass::collectSkolems(TNode n, set<TNode>& skolemSet, hash_map<Node, bool, NodeHashFunction>& cache)
+void RepeatSimpPass::collectSkolems(TNode n, set<TNode>& skolemSet, unordered_map<Node, bool, NodeHashFunction>& cache)
 {
-  hash_map<Node, bool, NodeHashFunction>::iterator it;
+  unordered_map<Node, bool, NodeHashFunction>::iterator it;
   it = cache.find(n);
   if (it != cache.end()) {
     return;
@@ -1199,7 +1199,7 @@ PreprocessingPassResult RepeatSimpPass::apply(AssertionPipeline* assertionsToPre
       // For each skolem variable sk, let iteExpr = iteMap(sk) be the ite expr mapped to by sk.
 
       // cache for expression traversal
-      std::hash_map<Node, bool, NodeHashFunction> cache;
+      std::unordered_map<Node, bool, NodeHashFunction> cache;
 
       // First, find all skolems that appear in the substitution map - their associated iteExpr will need
       // to be moved to the main assertion set
