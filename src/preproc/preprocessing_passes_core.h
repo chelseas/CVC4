@@ -86,16 +86,6 @@ class BVAbstractionPass : public PreprocessingPass {
   void bvAbstraction(AssertionPipeline* assertionsToPreprocess);  
 };
 
-/*class ConstrainSubtypesPass : public PreprocessingPass {
- public:
-  virtual PreprocessingPassResult apply(AssertionPipeline* assertionsToPreprocess);
-  ConstrainSubtypesPass(ResourceManager* resourceManager, SmtEngine* smt);
- private:
-  SmtEngine* d_smt;
-  void constrainSubtypes(TNode n, AssertionPipeline& assertions)
-    throw();
-};*/
-
 class UnconstrainedSimpPass : public PreprocessingPass {
  public:
   virtual PreprocessingPassResult apply(AssertionPipeline* assertionsToPreprocess);
@@ -251,8 +241,8 @@ class RepeatSimpPass : public PreprocessingPass {
      RepeatSimpPass(ResourceManager* resourceManager, theory::SubstitutionMap* topLevelSubstitutions, unsigned simplifyAssertionsDepth, bool* noConflict, IteSkolemMap iteSkolemMap, unsigned realAssertionsEnd);
   private: 
      theory::SubstitutionMap* d_topLevelSubstitutions;
-     void collectSkolems(TNode n, set<TNode>& skolemSet, unordered_map<Node, bool, NodeHashFunction>& cache);
-     bool checkForBadSkolems(TNode n, TNode skolem, unordered_map<Node, bool, NodeHashFunction>& cache);
+     void collectSkolems(TNode n, set<TNode>& skolemSet, hash_map<Node, bool, NodeHashFunction>& cache);
+     bool checkForBadSkolems(TNode n, TNode skolem, hash_map<Node, bool, NodeHashFunction>& cache);
      bool simplifyAssertions();
      unsigned d_simplifyAssertionsDepth;
      bool* noConflict;

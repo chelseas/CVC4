@@ -3501,7 +3501,7 @@ void SmtEnginePrivate::processAssertions() {
   dumpAssertions("pre-definition-expansion", d_assertions);
   {
   preproc::ExpandingDefinitionsPass pass(d_resourceManager, &d_smt, d_smt.d_stats->d_definitionExpansionTime);
-   pass.apply(&d_assertions);
+  pass.apply(&d_assertions);
  }
 
   Trace("smt-proc") << "SmtEnginePrivate::processAssertions() : post-definition-expansion" << endl;
@@ -3561,9 +3561,7 @@ void SmtEnginePrivate::processAssertions() {
     pass1.apply(&d_assertions);
  }
 
-  Debug("smt") << " d_assertions     : " << d_assertions.size() << endl;
- 
-  bool noConflict = true;
+ bool noConflict = true;
 
   // Unconstrained simplification
   if(options::unconstrainedSimp()) {

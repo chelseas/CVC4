@@ -28,7 +28,7 @@ ExpandingDefinitionsPass::ExpandingDefinitionsPass(ResourceManager* resourceMana
 }
 
 Node ExpandingDefinitionsPass::expandDefinitions(TNode n, unordered_map<Node, Node, NodeHashFunction>& cache, bool expandOnly)
-  throw(TypeCheckingException, LogicException, UnsafeInterruptException) {
+ throw(TypeCheckingException, LogicException, UnsafeInterruptException) {
   stack< triple<Node, Node, bool> > worklist;
   stack<Node> result;
   worklist.push(make_triple(Node(n), Node(n), false));
@@ -67,7 +67,7 @@ Node ExpandingDefinitionsPass::expandDefinitions(TNode n, unordered_map<Node, No
 
       // maybe it's in the cache
       unordered_map<Node, Node, NodeHashFunction>::iterator cacheHit = cache.find(n);
-      if(cacheHit != cache.end()) {
+     if(cacheHit != cache.end()) {
         TNode ret = (*cacheHit).second;
         result.push(ret.isNull() ? n : ret);
         continue;
@@ -670,78 +670,6 @@ PreprocessingPassResult BVAbstractionPass::apply(AssertionPipeline* assertionsTo
  return PreprocessingPassResult(true);
 } 
 
-/*ConstrainSubtypesPass::ConstrainSubtypesPass(ResourceManager* resourceManager, SmtEngine* smt) : PreprocessingPass(resourceManager), d_smt(smt) {
-}
-
-void ConstrainSubtypesPass::constrainSubtypes(TNode top, AssertionPipeline& assertions)
-  throw() {
-  Trace("constrainSubtypes") << "constrainSubtypes(): looking at " << top << endl;
-
-  set<TNode> done;
-  stack<TNode> worklist;
-  worklist.push(top);
-  done.insert(top);
-
-  do {
-    TNode n = worklist.top();
-    worklist.pop();
-
-    TypeNode t = n.getType();
-    if(t.isPredicateSubtype()) {
-      WarningOnce() << "Warning: CVC4 doesn't yet do checking that predicate subtypes are nonempty domains" << endl;
-      Node pred = t.getSubtypePredicate();
-      Kind k;
-      // pred can be a LAMBDA, a function constant, or a datatype tester
-      Trace("constrainSubtypes") << "constrainSubtypes(): pred.getType() == " << pred.getType() << endl;
-      if(d_smt->d_definedFunctions->find(pred) != d_smt->d_definedFunctions->end()) {
-        k = kind::APPLY;
-      } else if(pred.getType().isTester()) {
-        k = kind::APPLY_TESTER;
-      } else {
-        k = kind::APPLY_UF;
-      }
-      Node app = NodeManager::currentNM()->mkNode(k, pred, n);
-      Trace("constrainSubtypes") << "constrainSubtypes(): assert(" << k << ") " << app << endl;
-      assertions.push_back(app);
-    } else if(t.isSubrange()) {
-      SubrangeBounds bounds = t.getSubrangeBounds();
-      Trace("constrainSubtypes") << "constrainSubtypes(): got bounds " << bounds << endl;
-      if(bounds.lower.hasBound()) {
-        Node c = NodeManager::currentNM()->mkConst(Rational(bounds.lower.getBound()));
-        Node lb = NodeManager::currentNM()->mkNode(kind::LEQ, c, n);
-        Trace("constrainSubtypes") << "constrainSubtypes(): assert " << lb << endl;
-        assertions.push_back(lb);
-      }
-      if(bounds.upper.hasBound()) {
-        Node c = NodeManager::currentNM()->mkConst(Rational(bounds.upper.getBound()));
-        Node ub = NodeManager::currentNM()->mkNode(kind::LEQ, n, c);
-        Trace("constrainSubtypes") << "constrainSubtypes(): assert " << ub << endl;
-        assertions.push_back(ub);
-      }
-    }
-
-    for(TNode::iterator i = n.begin(); i != n.end(); ++i) {
-      if(done.find(*i) == done.end()) {
-        worklist.push(*i);
-        done.insert(*i);
-      }
-    }
-  } while(! worklist.empty());
-}
-
-PreprocessingPassResult ConstrainSubtypesPass::apply(AssertionPipeline* assertionsToPreprocess){
-    // Any variables of subtype types need to be constrained properly.
-    // Careful, here: constrainSubtypes() adds to the back of
-    // d_assertions, but we don't need to reprocess those.
-    // We also can't use an iterator, because the vector may be moved in
-    // memory during this loop.
-    Chat() << "constraining subtypes..." << endl;
-    for(unsigned i = 0, i_end = assertionsToPreprocess->size(); i != i_end; ++i) {
-      constrainSubtypes((*assertionsToPreprocess)[i], *assertionsToPreprocess);
-    }
-  return PreprocessingPassResult(true);
-}*/
-
 UnconstrainedSimpPass::UnconstrainedSimpPass(ResourceManager* resourceManager,
       TimerStat unconstrainedSimpTime, TheoryEngine* theoryEngine) :
       PreprocessingPass(resourceManager), 
@@ -1129,9 +1057,15 @@ RepeatSimpPass::RepeatSimpPass(ResourceManager* resourceManager,
     d_realAssertionsEnd(realAssertionsEnd){
 }
 
+<<<<<<< HEAD
 bool RepeatSimpPass::checkForBadSkolems(TNode n, TNode skolem, unordered_map<Node, bool, NodeHashFunction>& cache)
 {
   unordered_map<Node, bool, NodeHashFunction>::iterator it;
+=======
+bool RepeatSimpPass::checkForBadSkolems(TNode n, TNode skolem, hash_map<Node, bool, NodeHashFunction>& cache)
+{
+  hash_map<Node, bool, NodeHashFunction>::iterator it;
+>>>>>>> 93c2bbb764e34cd5285607dcb2bc4872bbe92456
   it = cache.find(n);
   if (it != cache.end()) {
     return (*it).second;
@@ -1162,9 +1096,15 @@ bool RepeatSimpPass::checkForBadSkolems(TNode n, TNode skolem, unordered_map<Nod
   return false;
 }
 
+<<<<<<< HEAD
 void RepeatSimpPass::collectSkolems(TNode n, set<TNode>& skolemSet, unordered_map<Node, bool, NodeHashFunction>& cache)
 {
   unordered_map<Node, bool, NodeHashFunction>::iterator it;
+=======
+void RepeatSimpPass::collectSkolems(TNode n, set<TNode>& skolemSet, hash_map<Node, bool, NodeHashFunction>& cache)
+{
+  hash_map<Node, bool, NodeHashFunction>::iterator it;
+>>>>>>> 93c2bbb764e34cd5285607dcb2bc4872bbe92456
   it = cache.find(n);
   if (it != cache.end()) {
     return;
@@ -1200,7 +1140,6 @@ PreprocessingPassResult RepeatSimpPass::apply(AssertionPipeline* assertionsToPre
 
       // cache for expression traversal
       std::unordered_map<Node, bool, NodeHashFunction> cache;
-
       // First, find all skolems that appear in the substitution map - their associated iteExpr will need
       // to be moved to the main assertion set
       std::set<TNode> skolemSet;
