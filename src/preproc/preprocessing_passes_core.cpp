@@ -946,6 +946,22 @@ PreprocessingPassResult PBRewritePass::apply(AssertionPipeline* assertionsToPrep
 DoStaticLearningPass::DoStaticLearningPass(ResourceManager* resourceManager, TheoryEngine* theoryEngine, SmtEngine* smt, TimerStat staticLearningTime) : PreprocessingPass(resourceManager), d_theoryEngine(theoryEngine), d_smt(smt), d_staticLearningTime(staticLearningTime){
 }
 
+RemoveITEPass::RemoveITEPass(ResourceManager* resourceManager, SmtEngine* smt, IteSkolemMap* iteSkolemMap, RemoveTermFormulas* iteRemover) : PreprocessingPass(resourceManager), d_smt(smt), d_iteSkolemMap(iteSkolemMap), d_iteRemover(iteRemover){
+}
+
+PreprocessingPassResult RemoveITEPass::apply(AssertionPipeline* assertionsToPreprocess){
+  d_smt->finalOptionsAreSet();
+  spendResource(options::preprocessStep());
+  Trace("simplify") << "SmtEnginePrivate::removeITEs()" << endl;
+
+  // Remove all of the ITE occurrences and normalize
+  d_iteRemover->run(assertionsToPreprocess->ref(), *d_iteSkolemMap, true);
+  for (unsigned i = 0; i < assertionsToPreprocess->size(); ++ i) {
+    assertionsToPreprocess->replace(i, theory::Rewriter::rewrite((*assertionsToPreprocess)[i]));
+  }
+ return PreprocessingPassResult(true);
+}
+
 void DoStaticLearningPass::staticLearning(AssertionPipeline* assertionsToPreprocess){
   d_smt->finalOptionsAreSet();
   spendResource(options::preprocessStep());
@@ -1049,6 +1065,20 @@ PreprocessingPassResult RewriteApplyToConstPass::apply(AssertionPipeline* assert
  return PreprocessingPassResult(true);
 }
 
+TheoryPreprocessPass::TheoryPreprocessPass(ResourceManager* resourceManager, TheoryEngine* theoryEngine, TimerStat theoryPreprocessTime) : PreprocessingPass(resourceManager), d_theoryEngine(theoryEngine), d_theoryPreprocessTime(theoryPreprocessTime){
+}
+
+PreprocessingPassResult TheoryPreprocessPass::apply(AssertionPipeline* assertionsToPreprocess){
+    Chat() << "theory preprocessing..." << endl;
+    TimerStat::CodeTimer codeTimer(d_theoryPreprocessTime);
+    // Call the theory preprocessors
+    d_theoryEngine->preprocessStart();
+    for (unsigned i = 0; i < assertionsToPreprocess->size(); ++ i) {
+      assertionsToPreprocess->replace(i, d_theoryEngine->preprocess((*assertionsToPreprocess)[i]));
+    }
+   return PreprocessingPassResult(true);
+}
+
 BitBlastModeEagerPass::BitBlastModeEagerPass(ResourceManager* resourceManager, TheoryEngine* theoryEngine) : PreprocessingPass(resourceManager), d_theoryEngine(theoryEngine){
 }
 
@@ -1072,6 +1102,19 @@ PreprocessingPassResult NoConflictPass::apply(AssertionPipeline* assertionsToPre
     d_decisionEngine->addAssertions
       (assertionsToPreprocess->ref(), d_realAssertionsEnd, *d_iteSkolemMap);
  return PreprocessingPassResult(true);
+}
+
+CNFPass::CNFPass(ResourceManager* resourceManager, prop::PropEngine* propEngine, TimerStat cnfConversionTime) : PreprocessingPass(resourceManager), d_propEngine(propEngine), d_cnfConversionTime(cnfConversionTime){
+}
+
+PreprocessingPassResult CNFPass::apply(AssertionPipeline* assertionsToPreprocess){
+   Chat() << "converting to CNF..." << endl;
+    TimerStat::CodeTimer codeTimer(d_cnfConversionTime);
+    for (unsigned i = 0; i < assertionsToPreprocess->size(); ++ i) {
+      Chat() << "+ " << (*assertionsToPreprocess)[i] << std::endl;
+      d_propEngine->assertFormula((*assertionsToPreprocess)[i]);
+    }
+  return PreprocessingPassResult(true);
 }
 
 /**

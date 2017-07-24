@@ -177,6 +177,16 @@ class PBRewritePass : public PreprocessingPass {
     theory::arith::PseudoBooleanProcessor* d_pbsProcessor;  
 };
 
+class RemoveITEPass : public PreprocessingPass {
+  public: 
+     virtual PreprocessingPassResult apply(AssertionPipeline* assertionsToPreprocess);
+     RemoveITEPass(ResourceManager* resourceManager, SmtEngine* smt, IteSkolemMap* iteSkolemMap, RemoveTermFormulas* iteRemover);
+  private:
+     SmtEngine* d_smt;
+     IteSkolemMap* d_iteSkolemMap;
+     RemoveTermFormulas* d_iteRemover;
+};
+ 
 class DoStaticLearningPass : public PreprocessingPass {
   public:
      virtual PreprocessingPassResult apply(AssertionPipeline* assertionsToPreprocess);
@@ -198,6 +208,15 @@ class RewriteApplyToConstPass : public PreprocessingPass {
     Node rewriteApplyToConst(TNode n);
 };
 
+class TheoryPreprocessPass : public PreprocessingPass {
+  public :
+      virtual PreprocessingPassResult apply(AssertionPipeline* assertionsToPreprocess);
+      TheoryPreprocessPass(ResourceManager* resourceManager, TheoryEngine* theoryEngine, TimerStat theoryPreprocessTime);
+  private:
+      TheoryEngine* d_theoryEngine;
+      TimerStat d_theoryPreprocessTime;
+};
+ 
 class BitBlastModeEagerPass : public PreprocessingPass {
   public:
      virtual PreprocessingPassResult apply(AssertionPipeline* assertionsToPreprocess);
@@ -215,6 +234,15 @@ class NoConflictPass : public PreprocessingPass {
      unsigned d_realAssertionsEnd;
      IteSkolemMap* d_iteSkolemMap;
 }; 
+
+class CNFPass : public PreprocessingPass{
+  public:
+      virtual PreprocessingPassResult apply(AssertionPipeline* assertionsToPreprocess);
+      CNFPass(ResourceManager* resourceManager, prop::PropEngine* propEngine, TimerStat cnfConversionTime);
+  private:
+     prop::PropEngine* d_propEngine; 
+     TimerStat d_cnfConversionTime;
+};
 
 /* 
 class RepeatSimpPass : public PreprocessingPass {
