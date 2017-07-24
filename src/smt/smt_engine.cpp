@@ -3669,19 +3669,11 @@ void SmtEnginePrivate::processAssertions() {
   if(options::doStaticLearning()) {
     preproc::DoStaticLearningPass pass(d_resourceManager, d_smt.d_theoryEngine, &d_smt, d_smt.d_stats->d_staticLearningTime);
     pass.apply(&d_assertions);
+ }
 
-/*    Trace("smt-proc") << "SmtEnginePrivate::processAssertions() : pre-static-learning" << endl;
-    // Perform static learning
-    Chat() << "doing static learning..." << endl;
-    Trace("simplify") << "SmtEnginePrivate::simplify(): "
-                      << "performing static learning" << endl;
-    staticLearning();
-    Trace("smt-proc") << "SmtEnginePrivate::processAssertions() : post-static-learning" << endl;*/
-  }
   dumpAssertions("post-static-learning", d_assertions);
 
   Debug("smt") << " d_assertions     : " << d_assertions.size() << endl;
-
 
   Trace("smt-proc") << "SmtEnginePrivate::processAssertions() : pre-ite-removal" << endl;
   dumpAssertions("pre-ite-removal", d_assertions);
@@ -3690,7 +3682,10 @@ void SmtEnginePrivate::processAssertions() {
     TimerStat::CodeTimer codeTimer(d_smt.d_stats->d_iteRemovalTime);
     // Remove ITEs, updating d_iteSkolemMap
     d_smt.d_stats->d_numAssertionsPre += d_assertions.size();
-    removeITEs();
+   
+    preproc::RemoveITEPass pass(d_resourceManager, &d_smt, &d_iteSkolemMap, &d_iteRemover);
+    pass.apply(&d_assertions);
+//removeITEs();
     d_smt.d_stats->d_numAssertionsPost += d_assertions.size();
   }
   Trace("smt-proc") << "SmtEnginePrivate::processAssertions() : post-ite-removal" << endl;
@@ -3794,14 +3789,9 @@ void SmtEnginePrivate::processAssertions() {
   Trace("smt-proc") << "SmtEnginePrivate::processAssertions() : pre-theory-preprocessing" << endl;
   dumpAssertions("pre-theory-preprocessing", d_assertions);
   {
-    Chat() << "theory preprocessing..." << endl;
-    TimerStat::CodeTimer codeTimer(d_smt.d_stats->d_theoryPreprocessTime);
-    // Call the theory preprocessors
-    d_smt.d_theoryEngine->preprocessStart();
-    for (unsigned i = 0; i < d_assertions.size(); ++ i) {
-      d_assertions.replace(i, d_smt.d_theoryEngine->preprocess(d_assertions[i]));
-    }
-  }
+    preproc::TheoryPreprocessPass pass(d_resourceManager, d_smt.d_theoryEngine, d_smt.d_stats->d_theoryPreprocessTime);
+    pass.apply(&d_assertions);
+ }
   Trace("smt-proc") << "SmtEnginePrivate::processAssertions() : post-theory-preprocessing" << endl;
   dumpAssertions("post-theory-preprocessing", d_assertions);
 
@@ -3829,13 +3819,9 @@ void SmtEnginePrivate::processAssertions() {
 
   // Push the formula to SAT
   {
-    Chat() << "converting to CNF..." << endl;
-    TimerStat::CodeTimer codeTimer(d_smt.d_stats->d_cnfConversionTime);
-    for (unsigned i = 0; i < d_assertions.size(); ++ i) {
-      Chat() << "+ " << d_assertions[i] << std::endl;
-      d_smt.d_propEngine->assertFormula(d_assertions[i]);
-    }
-  }
+    preproc::CNFPass pass(d_resourceManager, d_smt.d_propEngine, d_smt.d_stats->d_cnfConversionTime);
+    pass.apply(&d_assertions);
+ }
 
   d_assertionsProcessed = true;
 

@@ -105,6 +105,7 @@ namespace preproc{
   class SimplifyAssertionsPass;
   class ExpandingDefinitionsPass;
   class ConstrainSubtypesPass;
+  class RemoveITEPass;
 }/* CVC4::preproc namespace */
 
 // TODO: SAT layer (esp. CNF- versus non-clausal solvers under the
@@ -355,6 +356,7 @@ class CVC4_PUBLIC SmtEngine {
   friend class ::CVC4::preproc::SimplifyAssertionsPass;
   friend class ::CVC4::preproc::ExpandingDefinitionsPass;
   friend class ::CVC4::preproc::ConstrainSubtypesPass;
+  friend class ::CVC4::preproc::RemoveITEPass;
   friend class ::CVC4::smt::SmtEnginePrivate;
   friend class ::CVC4::smt::SmtScope;
   friend class ::CVC4::smt::BooleanTermConverter;
