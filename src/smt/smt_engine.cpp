@@ -142,7 +142,8 @@ public:
  * support getValue() over defined functions, to support user output
  * in terms of defined functions, etc.
  */
-class DefinedFunction {
+
+/*class DefinedFunction {
   Node d_func;
   vector<Node> d_formals;
   Node d_formula;
@@ -156,7 +157,8 @@ public:
   Node getFunction() const { return d_func; }
   vector<Node> getFormals() const { return d_formals; }
   Node getFormula() const { return d_formula; }
-};/* class DefinedFunction */
+};*/
+/* class DefinedFunction */
 
 /*class AssertionPipeline {
   vector<Node> d_nodes;
@@ -1028,7 +1030,7 @@ SmtEngine::SmtEngine(ExprManager* em) throw() :
   d_userContext->push();
   d_context->push();
 
-  d_definedFunctions = new(true) DefinedFunctionMap(d_userContext);
+  d_definedFunctions = new(true) DefinedFunctionMap(d_userContext); 
   d_fmfRecFunctionsDefined = new(true) NodeList(d_userContext);
   d_modelCommands = new(true) smt::CommandList(d_userContext);
 }
@@ -3573,16 +3575,10 @@ void SmtEnginePrivate::processAssertions() {
   Trace("smt-proc") << "SmtEnginePrivate::processAssertions() : pre-definition-expansion" << endl;
   dumpAssertions("pre-definition-expansion", d_assertions);
   {
-/*   preproc::ExpandingDefinitionsPass pass(d_resourceManager, d_smt.d_stats->d_definitionExpansionTime);
-   pass.apply(&d_assertions);*/
-    Chat() << "expanding definitions..." << endl;
-    Trace("simplify") << "SmtEnginePrivate::simplify(): expanding definitions" << endl;
-    TimerStat::CodeTimer codeTimer(d_smt.d_stats->d_definitionExpansionTime);
-    hash_map<Node, Node, NodeHashFunction> cache;
-    for(unsigned i = 0; i < d_assertions.size(); ++ i) {
-      d_assertions.replace(i, expandDefinitions(d_assertions[i], cache));
-    }
-  }
+   preproc::ExpandingDefinitionsPass pass(d_resourceManager, &d_smt, d_smt.d_stats->d_definitionExpansionTime);
+   pass.apply(&d_assertions);
+ }
+
   Trace("smt-proc") << "SmtEnginePrivate::processAssertions() : post-definition-expansion" << endl;
   dumpAssertions("post-definition-expansion", d_assertions);
 
@@ -3644,16 +3640,9 @@ void SmtEnginePrivate::processAssertions() {
 
   dumpAssertions("pre-constrain-subtypes", d_assertions);
   {
-    // Any variables of subtype types need to be constrained properly.
-    // Careful, here: constrainSubtypes() adds to the back of
-    // d_assertions, but we don't need to reprocess those.
-    // We also can't use an iterator, because the vector may be moved in
-    // memory during this loop.
-    Chat() << "constraining subtypes..." << endl;
-    for(unsigned i = 0, i_end = d_assertions.size(); i != i_end; ++i) {
-      constrainSubtypes(d_assertions[i], d_assertions);
-    }
-  }
+    preproc::ConstrainSubtypesPass pass(d_resourceManager, &d_smt);
+    pass.apply(&d_assertions);
+ }
   dumpAssertions("post-constrain-subtypes", d_assertions);
 
   Debug("smt") << " d_assertions     : " << d_assertions.size() << endl;
@@ -3781,12 +3770,12 @@ void SmtEnginePrivate::processAssertions() {
 
   dumpAssertions("pre-repeat-simplify", d_assertions);
   if(options::repeatSimp()) {
-     preproc::SimplifyAssertionsPass pass(d_resourceManager, d_simplifyAssertionsDepth);
+/*     preproc::SimplifyAssertionsPass pass(d_resourceManager, d_simplifyAssertionsDepth, &d_smt, d_propagatorNeedsFinish, d_propagator, d_substitutionsIndex, d_nonClausalLearnedLiterals, d_true, d_smt.d_stats->d_nonclausalSimplificationTime);
      noConflict &= pass.apply(&d_assertions).d_noConflict;
 
      preproc::RepeatSimpPass pass1(d_resourceManager, &d_topLevelSubstitutions, d_simplifyAssertionsDepth, &noConflict, d_iteSkolemMap, d_realAssertionsEnd); 
-     pass1.apply(&d_assertions);
-/*    Trace("smt-proc") << "SmtEnginePrivate::processAssertions() : pre-repeat-simplify" << endl;
+     pass1.apply(&d_assertions);*/
+    Trace("smt-proc") << "SmtEnginePrivate::processAssertions() : pre-repeat-simplify" << endl;
     Chat() << "re-simplifying assertions..." << endl;
     ScopeCounter depth(d_simplifyAssertionsDepth);
     noConflict &= simplifyAssertions();
@@ -3852,7 +3841,7 @@ void SmtEnginePrivate::processAssertions() {
       removeITEs();
       //      Assert(iteRewriteAssertionsEnd == d_assertions.size());
     }
-    Trace("smt-proc") << "SmtEnginePrivate::processAssertions() : post-repeat-simplify" << endl;*/
+    Trace("smt-proc") << "SmtEnginePrivate::processAssertions() : post-repeat-simplify" << endl;
   }
   dumpAssertions("post-repeat-simplify", d_assertions);
 

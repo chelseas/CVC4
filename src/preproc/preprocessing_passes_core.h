@@ -6,6 +6,7 @@
 #include "preproc/preprocessing_pass.h"
 #include "theory/substitutions.h"
 #include "theory/arith/pseudoboolean_proc.h"
+#include "theory/booleans/circuit_propagator.h"
 #include "smt/smt_engine.h"
 #include "smt/term_formula_removal.h"
 #include "decision/decision_engine.h"
@@ -20,10 +21,13 @@ typedef context::CDList<Node> NodeList;
 class ExpandingDefinitionsPass : public PreprocessingPass {
  public:   
   virtual PreprocessingPassResult apply(AssertionPipeline* assertionsToPreprocess);
-  ExpandingDefinitionsPass(ResourceManager* resourceManager, TimerStat definitionExpansionTime);
+  ExpandingDefinitionsPass(ResourceManager* resourceManager, SmtEngine* smt, TimerStat definitionExpansionTime);
  private:
+  SmtEngine* d_smt;
   TimerStat d_definitionExpansionTime;
-  Node expandDefinitions(TNode n, hash_map<Node, Node, NodeHashFunction>& cache, bool expandOnly);
+  Node expandDefinitions(TNode n, NodeToNodeHashMap& cache,
+                         bool expandOnly = false)
+      throw(TypeCheckingException, LogicException, UnsafeInterruptException);
 };
  
 class NlExtPurifyPass : public PreprocessingPass {
@@ -80,6 +84,16 @@ class BVAbstractionPass : public PreprocessingPass {
   // Abstract common structure over small domains to UF
   // return true if changes were made.
   void bvAbstraction(AssertionPipeline* assertionsToPreprocess);  
+};
+
+class ConstrainSubtypesPass : public PreprocessingPass {
+ public:
+  virtual PreprocessingPassResult apply(AssertionPipeline* assertionsToPreprocess);
+  ConstrainSubtypesPass(ResourceManager* resourceManager, SmtEngine* smt);
+ private:
+  SmtEngine* d_smt;
+  void constrainSubtypes(TNode n, AssertionPipeline& assertions)
+    throw();
 };
 
 class UnconstrainedSimpPass : public PreprocessingPass {
@@ -201,7 +215,8 @@ class NoConflictPass : public PreprocessingPass {
      unsigned d_realAssertionsEnd;
      IteSkolemMap* d_iteSkolemMap;
 }; 
- 
+
+/* 
 class RepeatSimpPass : public PreprocessingPass {
   public:
      virtual PreprocessingPassResult apply(AssertionPipeline* assertionsToPreprocess);
@@ -221,11 +236,21 @@ class SimplifyAssertionsPass : public PreprocessingPass {
   public:
      virtual PreprocessingPassResult apply(AssertionPipeline* assertionsToPreprocess) throw(TypeCheckingException, LogicException,
                                   UnsafeInterruptException);
-     SimplifyAssertionsPass(ResourceManager* resourceManager, unsigned simplifyAssertionsDepth);
+     SimplifyAssertionsPass(ResourceManager* resourceManager, unsigned simplifyAssertionsDepth, SmtEngine* smt, bool propagatorNeedsFinish, theory::booleans::CircuitPropagator propagator, context::CDO<unsigned> substitutionsIndex, std::vector<Node> nonClausalLearnedLiterals, Node dtrue, TimerStat nonclausalSimplificationTime);
   private:
-     unsigned d_simplifyAssertionsDepth;
- 
+   unsigned d_simplifyAssertionsDepth;
+   SmtEngine* d_smt;
+   bool d_propagatorNeedsFinish;
+   theory::booleans::CircuitPropagator d_propagator;
+   context::CDO<unsigned> d_substitutionsIndex;
+   std::vector<Node> d_nonClausalLearnedLiterals;
+   Node d_true;
+   TimerStat d_nonclausalSimplificationTime;
+   bool nonClausalSimplify(AssertionPipeline &d_assertions);
+   void addFormula(TNode n, bool inUnsatCore, bool inInput = true, AssertionPipeline d_assertions)
+    throw(TypeCheckingException, LogicException);
 };
+*/
  
 }  // namespace preproc
 }  // namespace CVC4

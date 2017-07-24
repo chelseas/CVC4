@@ -88,7 +88,7 @@ namespace smt {
    * support getValue() over defined functions, to support user output
    * in terms of defined functions, etc.
    */
-//  class DefinedFunction;
+  class DefinedFunction;
 
   struct SmtEngineStatistics;
   class SmtEnginePrivate;
@@ -106,7 +106,7 @@ namespace theory {
 }/* CVC4::theory namespace */
 
 namespace preproc{
-  class DefinedFunction;
+//  class DefinedFunction;
   class DoStaticLearningPass; 
   class QuantifiedPass;
   class SimplifyAssertionsPass;
@@ -127,7 +127,7 @@ namespace preproc{
 
 class CVC4_PUBLIC SmtEngine {
   /** The type of our internal map of defined functions */
-  typedef context::CDHashMap<Node, preproc::DefinedFunction, NodeHashFunction>
+  typedef context::CDHashMap<Node, smt::DefinedFunction, NodeHashFunction>
     DefinedFunctionMap;
   /** The type of our internal assertion list */
   typedef context::CDList<Expr> AssertionList;
@@ -356,7 +356,7 @@ class CVC4_PUBLIC SmtEngine {
    * be called when d_logic is updated.
    */
   void setLogicInternal() throw();
-  friend class ::CVC4::preproc::DefinedFunction; 
+  
   friend class ::CVC4::preproc::DoStaticLearningPass;
   friend class ::CVC4::preproc::QuantifiedPass; 
   friend class ::CVC4::preproc::SimplifyAssertionsPass;

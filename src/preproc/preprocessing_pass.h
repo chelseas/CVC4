@@ -11,6 +11,8 @@
 #include "theory/rewriter.h"
 #include "theory/theory_engine.h"
 
+using namespace std;
+
 namespace CVC4 {
 
 namespace preproc {
@@ -27,6 +29,23 @@ public:
     --d_depth;
   }
 };
+
+class DefinedFunction {
+  Node d_func;
+  vector<Node> d_formals;
+  Node d_formula;
+public:
+  DefinedFunction() {}
+  DefinedFunction(Node func, vector<Node> formals, Node formula) :
+    d_func(func),
+    d_formals(formals),
+    d_formula(formula) {
+  }
+  Node getFunction() const { return d_func; }
+  vector<Node> getFormals() const { return d_formals; }
+  Node getFormula() const { return d_formula; }
+};
+/* class DefinedFunction */
 
 class AssertionPipeline {
   std::vector<Node> d_nodes;
