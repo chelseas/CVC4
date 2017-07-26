@@ -1,4 +1,4 @@
-#include "cvc4_public.h"
+#include "cvc4_private.h"
 
 #ifndef __CVC4__PREPROC__PREPROCESSING_PASSES_CORE_H
 #define __CVC4__PREPROC__PREPROCESSING_PASSES_CORE_H
@@ -12,6 +12,9 @@
 #include "decision/decision_engine.h"
 
 namespace CVC4 {
+
+using namespace theory;
+
 namespace preproc {
 
 typedef std::unordered_map<Node, Node, NodeHashFunction> NodeMap;
@@ -234,41 +237,52 @@ class CNFPass : public PreprocessingPass{
      TimerStat d_cnfConversionTime;
 };
 
-/* 
 class RepeatSimpPass : public PreprocessingPass {
   public:
      virtual PreprocessingPassResult apply(AssertionPipeline* assertionsToPreprocess);
      RepeatSimpPass(ResourceManager* resourceManager, theory::SubstitutionMap* topLevelSubstitutions, unsigned simplifyAssertionsDepth, bool* noConflict, IteSkolemMap iteSkolemMap, unsigned realAssertionsEnd);
   private: 
      theory::SubstitutionMap* d_topLevelSubstitutions;
-     void collectSkolems(TNode n, set<TNode>& skolemSet, hash_map<Node, bool, NodeHashFunction>& cache);
-     bool checkForBadSkolems(TNode n, TNode skolem, hash_map<Node, bool, NodeHashFunction>& cache);
-     bool simplifyAssertions();
+     void collectSkolems(TNode n, set<TNode>& skolemSet, unordered_map<Node, bool, NodeHashFunction>& cache);
+     bool checkForBadSkolems(TNode n, TNode skolem, unordered_map<Node, bool, NodeHashFunction>& cache);
      unsigned d_simplifyAssertionsDepth;
      bool* noConflict;
      IteSkolemMap d_iteSkolemMap;
      unsigned d_realAssertionsEnd;
 };     
 
-class SimplifyAssertionsPass : public PreprocessingPass {
+/*class SimplifyAssertionsPass : public PreprocessingPass {
   public:
      virtual PreprocessingPassResult apply(AssertionPipeline* assertionsToPreprocess) throw(TypeCheckingException, LogicException,
                                   UnsafeInterruptException);
-     SimplifyAssertionsPass(ResourceManager* resourceManager, unsigned simplifyAssertionsDepth, SmtEngine* smt, bool propagatorNeedsFinish, theory::booleans::CircuitPropagator propagator, context::CDO<unsigned> substitutionsIndex, std::vector<Node> nonClausalLearnedLiterals, Node dtrue, TimerStat nonclausalSimplificationTime);
+     SimplifyAssertionsPass(ResourceManager* resourceManager, unsigned simplifyAssertionsDepth, SmtEngine* smt, bool propagatorNeedsFinish, theory::booleans::CircuitPropagator* propagator, context::CDO<unsigned>* substitutionsIndex, std::vector<Node>* nonClausalLearnedLiterals, Node dtrue, TimerStat nonclausalSimplificationTime, unsigned realAssertionsEnd, theory::SubstitutionMap* topLevelSubstitutions, bool doConstantProp, std::vector<Node>* boolVars, context::Context* fakeContext );
   private:
    unsigned d_simplifyAssertionsDepth;
    SmtEngine* d_smt;
    bool d_propagatorNeedsFinish;
-   theory::booleans::CircuitPropagator d_propagator;
-   context::CDO<unsigned> d_substitutionsIndex;
-   std::vector<Node> d_nonClausalLearnedLiterals;
+   theory::booleans::CircuitPropagator* d_propagator;
+   context::CDO<unsigned>* d_substitutionsIndex;
+   std::vector<Node>* d_nonClausalLearnedLiterals;
    Node d_true;
    TimerStat d_nonclausalSimplificationTime;
+   unsigned d_realAssertionsEnd;
+   theory::SubstitutionMap* d_topLevelSubstitutions;
+   bool d_doConstantProp;
+   std::vector<Node>* d_boolVars;
+   context::Context* d_fakeContext;
+   
+   void traceBackToAssertions(const std::vector<Node>& nodes,
+                             std::vector<TNode>& assertions);
+   void doMiplibTrick(AssertionPipeline &d_assertions);
    bool nonClausalSimplify(AssertionPipeline &d_assertions);
-   void addFormula(TNode n, bool inUnsatCore, bool inInput = true, AssertionPipeline d_assertions)
+   void addFormula(TNode n, bool inUnsatCore, AssertionPipeline& d_assertions, bool inInput = true)
     throw(TypeCheckingException, LogicException);
-};
-*/
+   void compressBeforeRealAssertions(size_t before, AssertionPipeline &d_assertions);
+   bool simpITE(AssertionPipeline &d_assertions);
+   size_t removeFromConjunction(Node& n,
+                               const std::unordered_set<unsigned long>& toRemove);
+
+};*/
  
 }  // namespace preproc
 }  // namespace CVC4

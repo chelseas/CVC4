@@ -3560,7 +3560,8 @@ void SmtEnginePrivate::processAssertions() {
     preproc::RewritePass pass1(d_resourceManager);
     pass1.apply(&d_assertions);
  }
-
+ 
+ Debug("smt") << "d_assertions    :" << d_assertions.size() << endl;
  bool noConflict = true;
 
   // Unconstrained simplification
@@ -3679,12 +3680,23 @@ void SmtEnginePrivate::processAssertions() {
 
   dumpAssertions("pre-repeat-simplify", d_assertions);
   if(options::repeatSimp()) {
-/*     preproc::SimplifyAssertionsPass pass(d_resourceManager, d_simplifyAssertionsDepth, &d_smt, d_propagatorNeedsFinish, d_propagator, d_substitutionsIndex, d_nonClausalLearnedLiterals, d_true, d_smt.d_stats->d_nonclausalSimplificationTime);
-     noConflict &= pass.apply(&d_assertions).d_noConflict;
-
-     preproc::RepeatSimpPass pass1(d_resourceManager, &d_topLevelSubstitutions, d_simplifyAssertionsDepth, &noConflict, d_iteSkolemMap, d_realAssertionsEnd); 
-     pass1.apply(&d_assertions);*/
-    Trace("smt-proc") << "SmtEnginePrivate::processAssertions() : pre-repeat-simplify" << endl;
+    Chat() << "re-simplifying assertions..." << std::endl;
+    ScopeCounter depth(d_simplifyAssertionsDepth);
+    noConflict &= simplifyAssertions();
+   
+    if (noConflict) {
+      preproc::RepeatSimpPass pass1(d_resourceManager, &d_topLevelSubstitutions, d_simplifyAssertionsDepth, &noConflict, d_iteSkolemMap, d_realAssertionsEnd); 
+      pass1.apply(&d_assertions);
+      // For some reason this is needed for some benchmarks, such as
+      // http://cvc4.cs.nyu.edu/benchmarks/smtlib2/QF_AUFBV/dwp_formulas/try5_small_difret_functions_dwp_tac.re_node_set_remove_at.il.dwp.smt2
+      // Figure it out later
+      preproc::RemoveITEPass pass2(d_resourceManager, &d_smt, &d_iteSkolemMap, &d_iteRemover);
+      pass2.apply(&d_assertions); 
+      //      Assert(iteRewriteAssertionsEnd == d_assertions.size());
+     }
+   Trace("smt-proc") << "SmtEnginePrivate::processAssertions() : post-repeat-simplify" << std::endl;
+ 
+/*    Trace("smt-proc") << "SmtEnginePrivate::processAssertions() : pre-repeat-simplify" << endl;
     Chat() << "re-simplifying assertions..." << endl;
     ScopeCounter depth(d_simplifyAssertionsDepth);
     noConflict &= simplifyAssertions();
@@ -3750,7 +3762,7 @@ void SmtEnginePrivate::processAssertions() {
       removeITEs();
       //      Assert(iteRewriteAssertionsEnd == d_assertions.size());
     }
-    Trace("smt-proc") << "SmtEnginePrivate::processAssertions() : post-repeat-simplify" << endl;
+    Trace("smt-proc") << "SmtEnginePrivate::processAssertions() : post-repeat-simplify" << endl;*/
   }
   dumpAssertions("post-repeat-simplify", d_assertions);
 
