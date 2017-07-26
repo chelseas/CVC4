@@ -3236,7 +3236,8 @@ bool SmtEnginePrivate::simplifyAssertions()
       Chat() << "...performing nonclausal simplification..." << endl;
       Trace("simplify") << "SmtEnginePrivate::simplify(): "
                         << "performing non-clausal simplification" << endl;
-      bool noConflict = nonClausalSimplify();
+      preproc::NonClausalSimplificationPass pass(d_resourceManager, &d_smt, &d_propagatorNeedsFinish, &d_propagator, d_smt.d_stats->d_nonclausalSimplificationTime, &d_substitutionsIndex, &d_topLevelSubstitutions, &d_nonClausalLearnedLiterals, d_smt.d_stats->d_numConstantProps, d_true, d_realAssertionsEnd);
+     bool noConflict = pass.apply(&d_assertions).d_noConflict; 
       if(!noConflict) {
         return false;
       }
@@ -3322,7 +3323,9 @@ bool SmtEnginePrivate::simplifyAssertions()
       Chat() << "...doing another round of nonclausal simplification..." << endl;
       Trace("simplify") << "SmtEnginePrivate::simplify(): "
                         << " doing repeated simplification" << endl;
-      bool noConflict = nonClausalSimplify();
+      
+     preproc::NonClausalSimplificationPass pass(d_resourceManager, &d_smt, &d_propagatorNeedsFinish, &d_propagator, d_smt.d_stats->d_nonclausalSimplificationTime, &d_substitutionsIndex, &d_topLevelSubstitutions, &d_nonClausalLearnedLiterals, d_smt.d_stats->d_numConstantProps, d_true, d_realAssertionsEnd);
+     bool noConflict = pass.apply(&d_assertions).d_noConflict; 
       if(!noConflict) {
         return false;
       }
@@ -3695,74 +3698,6 @@ void SmtEnginePrivate::processAssertions() {
       //      Assert(iteRewriteAssertionsEnd == d_assertions.size());
      }
    Trace("smt-proc") << "SmtEnginePrivate::processAssertions() : post-repeat-simplify" << std::endl;
- 
-/*    Trace("smt-proc") << "SmtEnginePrivate::processAssertions() : pre-repeat-simplify" << endl;
-    Chat() << "re-simplifying assertions..." << endl;
-    ScopeCounter depth(d_simplifyAssertionsDepth);
-    noConflict &= simplifyAssertions();
-    if (noConflict) {
-      // Need to fix up assertion list to maintain invariants:
-      // Let Sk be the set of Skolem variables introduced by ITE's.  Let <_sk be the order in which these variables were introduced
-      // during ite removal.
-      // For each skolem variable sk, let iteExpr = iteMap(sk) be the ite expr mapped to by sk.
-
-      // cache for expression traversal
-      unordered_map<Node, bool, NodeHashFunction> cache;
-
-      // First, find all skolems that appear in the substitution map - their associated iteExpr will need
-      // to be moved to the main assertion set
-      set<TNode> skolemSet;
-      SubstitutionMap::iterator pos = d_topLevelSubstitutions.begin();
-      for (; pos != d_topLevelSubstitutions.end(); ++pos) {
-        collectSkolems((*pos).first, skolemSet, cache);
-        collectSkolems((*pos).second, skolemSet, cache);
-      }
-
-      // We need to ensure:
-      // 1. iteExpr has the form (ite cond (sk = t) (sk = e))
-      // 2. if some sk' in Sk appears in cond, t, or e, then sk' <_sk sk
-      // If either of these is violated, we must add iteExpr as a proper assertion
-      IteSkolemMap::iterator it = d_iteSkolemMap.begin();
-      IteSkolemMap::iterator iend = d_iteSkolemMap.end();
-      NodeBuilder<> builder(kind::AND);
-      builder << d_assertions[d_realAssertionsEnd - 1];
-      vector<TNode> toErase;
-      for (; it != iend; ++it) {
-        if (skolemSet.find((*it).first) == skolemSet.end()) {
-          TNode iteExpr = d_assertions[(*it).second];
-          if (iteExpr.getKind() == kind::ITE &&
-              iteExpr[1].getKind() == kind::EQUAL &&
-              iteExpr[1][0] == (*it).first &&
-              iteExpr[2].getKind() == kind::EQUAL &&
-              iteExpr[2][0] == (*it).first) {
-            cache.clear();
-            bool bad = checkForBadSkolems(iteExpr[0], (*it).first, cache);
-            bad = bad || checkForBadSkolems(iteExpr[1][1], (*it).first, cache);
-            bad = bad || checkForBadSkolems(iteExpr[2][1], (*it).first, cache);
-            if (!bad) {
-              continue;
-            }
-          }
-        }
-        // Move this iteExpr into the main assertions
-        builder << d_assertions[(*it).second];
-        d_assertions[(*it).second] = NodeManager::currentNM()->mkConst<bool>(true);
-        toErase.push_back((*it).first);
-      }
-      if(builder.getNumChildren() > 1) {
-        while (!toErase.empty()) {
-          d_iteSkolemMap.erase(toErase.back());
-          toErase.pop_back();
-        }
-        d_assertions[d_realAssertionsEnd - 1] = Rewriter::rewrite(Node(builder));
-      }
-      // For some reason this is needed for some benchmarks, such as
-      // http://cvc4.cs.nyu.edu/benchmarks/smtlib2/QF_AUFBV/dwp_formulas/try5_small_difret_functions_dwp_tac.re_node_set_remove_at.il.dwp.smt2
-      // Figure it out later
-      removeITEs();
-      //      Assert(iteRewriteAssertionsEnd == d_assertions.size());
-    }
-    Trace("smt-proc") << "SmtEnginePrivate::processAssertions() : post-repeat-simplify" << endl;*/
   }
   dumpAssertions("post-repeat-simplify", d_assertions);
 

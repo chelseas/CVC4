@@ -251,23 +251,35 @@ class RepeatSimpPass : public PreprocessingPass {
      unsigned d_realAssertionsEnd;
 };     
 
+class NonClausalSimplificationPass : public PreprocessingPass{
+  public:
+    virtual PreprocessingPassResult apply(AssertionPipeline* assertionsToPreprocess);
+    NonClausalSimplificationPass(ResourceManager* resourceManager, SmtEngine* smt, bool* propagatorNeedsFinish, theory::booleans::CircuitPropagator* propagator, TimerStat nonclausalSimplificationTime, context::CDO<unsigned>* substitutionsIndex, theory::SubstitutionMap* topLevelSubstitutions, std::vector<Node>* nonClausalLearnedLiterals, IntStat numConstantProps, Node dtrue, unsigned realAssertionsEnd); 
+
+  private:
+   SmtEngine* d_smt;
+   bool* d_propagatorNeedsFinish;
+   theory::booleans::CircuitPropagator* d_propagator;
+   TimerStat d_nonclausalSimplificationTime;
+   context::CDO<unsigned>* d_substitutionsIndex;
+   theory::SubstitutionMap* d_topLevelSubstitutions;
+   std::vector<Node>* d_nonClausalLearnedLiterals;
+   IntStat d_numConstantProps;//Do I need to pass in a pointer for this?
+   Node d_true;
+   unsigned d_realAssertionsEnd;
+   
+   void addFormula(TNode n, bool inUnsatCore, AssertionPipeline* assertionsToPreprocess, bool inInput = true)
+   throw(TypeCheckingException, LogicException);
+};
+
 /*class SimplifyAssertionsPass : public PreprocessingPass {
   public:
      virtual PreprocessingPassResult apply(AssertionPipeline* assertionsToPreprocess) throw(TypeCheckingException, LogicException,
                                   UnsafeInterruptException);
-     SimplifyAssertionsPass(ResourceManager* resourceManager, unsigned simplifyAssertionsDepth, SmtEngine* smt, bool propagatorNeedsFinish, theory::booleans::CircuitPropagator* propagator, context::CDO<unsigned>* substitutionsIndex, std::vector<Node>* nonClausalLearnedLiterals, Node dtrue, TimerStat nonclausalSimplificationTime, unsigned realAssertionsEnd, theory::SubstitutionMap* topLevelSubstitutions, bool doConstantProp, std::vector<Node>* boolVars, context::Context* fakeContext );
-  private:
+     SimplifyAssertionsPass(ResourceManager* resourceManager, unsigned simplifyAssertionsDepth, SmtEngine* smt, bool propagatorNeedsFinish, theory::booleans::CircuitPropagator* propagator, context::CDO<unsigned>* substitutionsIndex, std::vector<Node>* nonClausalLearnedLiterals, Node dtrue,  unsigned realAssertionsEnd, theory::SubstitutionMap* topLevelSubstitutions, bool doConstantProp, std::vector<Node>* boolVars, context::Context* fakeContext );
+  pToPreprocess->ivate:
    unsigned d_simplifyAssertionsDepth;
    SmtEngine* d_smt;
-   bool d_propagatorNeedsFinish;
-   theory::booleans::CircuitPropagator* d_propagator;
-   context::CDO<unsigned>* d_substitutionsIndex;
-   std::vector<Node>* d_nonClausalLearnedLiterals;
-   Node d_true;
-   TimerStat d_nonclausalSimplificationTime;
-   unsigned d_realAssertionsEnd;
-   theory::SubstitutionMap* d_topLevelSubstitutions;
-   bool d_doConstantProp;
    std::vector<Node>* d_boolVars;
    context::Context* d_fakeContext;
    
@@ -275,8 +287,6 @@ class RepeatSimpPass : public PreprocessingPass {
                              std::vector<TNode>& assertions);
    void doMiplibTrick(AssertionPipeline &d_assertions);
    bool nonClausalSimplify(AssertionPipeline &d_assertions);
-   void addFormula(TNode n, bool inUnsatCore, AssertionPipeline& d_assertions, bool inInput = true)
-    throw(TypeCheckingException, LogicException);
    void compressBeforeRealAssertions(size_t before, AssertionPipeline &d_assertions);
    bool simpITE(AssertionPipeline &d_assertions);
    size_t removeFromConjunction(Node& n,

@@ -102,7 +102,7 @@ namespace preproc{
   class DefinedFunction;
   class DoStaticLearningPass; 
   class QuantifiedPass;
-  class SimplifyAssertionsPass;
+  class NonClausalSimplificationPass;
   class ExpandingDefinitionsPass;
   class ConstrainSubtypesPass;
   class RemoveITEPass;
@@ -353,7 +353,7 @@ class CVC4_PUBLIC SmtEngine {
   friend class ::CVC4::preproc::DefinedFunction; 
   friend class ::CVC4::preproc::DoStaticLearningPass;
   friend class ::CVC4::preproc::QuantifiedPass; 
-  friend class ::CVC4::preproc::SimplifyAssertionsPass;
+  friend class ::CVC4::preproc::NonClausalSimplificationPass;
   friend class ::CVC4::preproc::ExpandingDefinitionsPass;
   friend class ::CVC4::preproc::ConstrainSubtypesPass;
   friend class ::CVC4::preproc::RemoveITEPass;

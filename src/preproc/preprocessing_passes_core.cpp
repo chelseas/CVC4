@@ -1178,27 +1178,12 @@ PreprocessingPassResult RepeatSimpPass::apply(AssertionPipeline* assertionsToPre
        }
  return PreprocessingPassResult(true);
 }
-/*
-SimplifyAssertionsPass::SimplifyAssertionsPass(
-   ResourceManager* resourceManager, unsigned simplifyAssertionsDepth, 
-   SmtEngine* smt, bool propagatorNeedsFinish, 
-   theory::booleans::CircuitPropagator* propagator,
-   context::CDO<unsigned>* substitutionsIndex,
-   std::vector<Node>* nonClausalLearnedLiterals, Node dtrue, 
-   TimerStat nonclausalSimplificationTime, unsigned realAssertionsEnd,
-   theory::SubstitutionMap* topLevelSubstitutions,
-   bool doConstantProp, std::vector<Node>* boolVars, context::Context* fakeContext) : 
-   PreprocessingPass(resourceManager),
-   d_simplifyAssertionsDepth(simplifyAssertionsDepth),
-   d_smt(smt), d_propagatorNeedsFinish(propagatorNeedsFinish), 
-   d_propagator(propagator), d_substitutionsIndex(substitutionsIndex), 
-   d_nonClausalLearnedLiterals(nonClausalLearnedLiterals),
-   d_true(dtrue), d_nonclausalSimplificationTime(nonclausalSimplificationTime),
-   d_realAssertionsEnd(realAssertionsEnd), 
-   d_topLevelSubstitutions(topLevelSubstitutions), d_doConstantProp(doConstantProp), d_boolVars(boolVars), d_fakeContext(fakeContext) {
+
+NonClausalSimplificationPass::NonClausalSimplificationPass(ResourceManager* resourceManager, SmtEngine* smt, bool* propagatorNeedsFinish, theory::booleans::CircuitPropagator* propagator, TimerStat nonclausalSimplificationTime, context::CDO<unsigned>* substitutionsIndex, theory::SubstitutionMap* topLevelSubstitutions, std::vector<Node>* nonClausalLearnedLiterals, IntStat numConstantProps, Node dtrue, unsigned realAssertionsEnd) :
+   PreprocessingPass(resourceManager), d_smt(smt), d_propagatorNeedsFinish(propagatorNeedsFinish), d_propagator(propagator), d_nonclausalSimplificationTime(nonclausalSimplificationTime), d_substitutionsIndex(substitutionsIndex), d_topLevelSubstitutions(topLevelSubstitutions), d_nonClausalLearnedLiterals(nonClausalLearnedLiterals), d_numConstantProps(numConstantProps), d_true(dtrue), d_realAssertionsEnd(realAssertionsEnd){
 }
 
-void SimplifyAssertionsPass::addFormula(TNode n, bool inUnsatCore, AssertionPipeline &d_assertions, bool inInput)
+void NonClausalSimplificationPass::addFormula(TNode n, bool inUnsatCore, AssertionPipeline* assertionsToPreprocess, bool inInput)
   throw(TypeCheckingException, LogicException) {
 
   if (n == d_true) {
@@ -1229,44 +1214,44 @@ void SimplifyAssertionsPass::addFormula(TNode n, bool inUnsatCore, AssertionPipe
   );
 
   // Add the normalized formula to the queue
-  d_assertions.push_back(n);
+  assertionsToPreprocess->push_back(n);
   //d_assertions.push_back(Rewriter::rewrite(n));
 }
 
 // returns false if it learns a conflict
-bool SimplifyAssertionsPass::nonClausalSimplify(AssertionPipeline &d_assertions) {
+PreprocessingPassResult NonClausalSimplificationPass::apply(AssertionPipeline* assertionsToPreprocess) {
   spendResource(options::preprocessStep());
   d_smt->finalOptionsAreSet();
 
   if(options::unsatCores() || options::fewerPreprocessingHoles()) {
-    return true;
+    return PreprocessingPassResult(true);
   }
 
   TimerStat::CodeTimer nonclausalTimer(d_nonclausalSimplificationTime);
 
   Trace("simplify") << "SmtEnginePrivate::nonClausalSimplify()" << endl;
-  for (unsigned i = 0; i < d_assertions.size(); ++ i) {
-    Trace("simplify") << "Assertion #" << i << " : " << d_assertions[i] << std::endl;
+  for (unsigned i = 0; i < assertionsToPreprocess->size(); ++ i) {
+    Trace("simplify") << "Assertion #" << i << " : " << (*assertionsToPreprocess)[i] << std::endl;
   }
 
-  if(d_propagatorNeedsFinish) {
+  if(*d_propagatorNeedsFinish) {
     d_propagator->finish();
-    d_propagatorNeedsFinish = false;
+    *d_propagatorNeedsFinish = false;
   }
   d_propagator->initialize();
 
   // Assert all the assertions to the propagator
   Trace("simplify") << "SmtEnginePrivate::nonClausalSimplify(): "
                     << "asserting to propagator" << endl;
-  for (unsigned i = 0; i < d_assertions.size(); ++ i) {
-    Assert(Rewriter::rewrite(d_assertions[i]) == d_assertions[i]);
+  for (unsigned i = 0; i < assertionsToPreprocess->size(); ++ i) {
+    Assert(Rewriter::rewrite((*assertionsToPreprocess)[i]) == (*assertionsToPreprocess)[i]);
     // Don't reprocess substitutions
     if (*d_substitutionsIndex > 0 && i == *d_substitutionsIndex) {
       continue;
     }
-    Trace("simplify") << "SmtEnginePrivate::nonClausalSimplify(): asserting " << d_assertions[i] << endl;
-    Debug("cores") << "d_propagator assertTrue: " << d_assertions[i] << std::endl;
-    d_propagator->assertTrue(d_assertions[i]);
+    Trace("simplify") << "SmtEnginePrivate::nonClausalSimplify(): asserting " << (*assertionsToPreprocess)[i] << endl;
+    Debug("cores") << "d_propagator assertTrue: " << (*assertionsToPreprocess)[i] << std::endl;
+    d_propagator->assertTrue((*assertionsToPreprocess)[i]);
   }
 
   Trace("simplify") << "SmtEnginePrivate::nonClausalSimplify(): "
@@ -1277,10 +1262,10 @@ bool SimplifyAssertionsPass::nonClausalSimplify(AssertionPipeline &d_assertions)
                       << "conflict in non-clausal propagation" << endl;
     Node falseNode = NodeManager::currentNM()->mkConst<bool>(false);
     Assert(!options::unsatCores() && !options::fewerPreprocessingHoles());
-    d_assertions.clear();
-    addFormula(falseNode, false, d_assertions, false) ;
-    d_propagatorNeedsFinish = true;
-    return false;
+    assertionsToPreprocess->clear();
+    addFormula(falseNode, false, assertionsToPreprocess, false) ;
+    *d_propagatorNeedsFinish = true;
+    return PreprocessingPassResult(false);
   }
 
 
@@ -1306,7 +1291,7 @@ bool SimplifyAssertionsPass::nonClausalSimplify(AssertionPipeline &d_assertions)
       if (learnedLiteralNew == learnedLiteral) {
         break;
       }
-      ++d_smt->d_stats->d_numConstantProps;
+      ++d_numConstantProps;
       learnedLiteral = theory::Rewriter::rewrite(learnedLiteralNew);
     }
     Trace("simplify") << "Process learnedLiteral, after constProp : " << learnedLiteral << std::endl;
@@ -1321,10 +1306,10 @@ bool SimplifyAssertionsPass::nonClausalSimplify(AssertionPipeline &d_assertions)
                           << "conflict with "
                           << (*d_nonClausalLearnedLiterals)[i] << endl;
         Assert(!options::unsatCores());
-        d_assertions.clear();
-        addFormula(NodeManager::currentNM()->mkConst<bool>(false), false, d_assertions, false);
-        d_propagatorNeedsFinish = true;
-        return false;
+        assertionsToPreprocess->clear();
+        addFormula(NodeManager::currentNM()->mkConst<bool>(false), false, assertionsToPreprocess, false);
+        *d_propagatorNeedsFinish = true;
+        return PreprocessingPassResult(false);
       }
     }
 
@@ -1357,12 +1342,13 @@ bool SimplifyAssertionsPass::nonClausalSimplify(AssertionPipeline &d_assertions)
                           << "conflict while solving "
                           << learnedLiteral << endl;
         Assert(!options::unsatCores());
-        d_assertions.clear();
-        addFormula(NodeManager::currentNM()->mkConst<bool>(false), false,d_assertions, false);
-        d_propagatorNeedsFinish = true;
-        return false;
+        assertionsToPreprocess->clear();
+        addFormula(NodeManager::currentNM()->mkConst<bool>(false), false,assertionsToPreprocess, false);
+        *d_propagatorNeedsFinish = true;
+        return PreprocessingPassResult(false);
       default:
-        if (d_doConstantProp && learnedLiteral.getKind() == kind::EQUAL && (learnedLiteral[0].isConst() || learnedLiteral[1].isConst())) {
+        //removed d_doConstantProp
+        if (learnedLiteral.getKind() == kind::EQUAL && (learnedLiteral[0].isConst() || learnedLiteral[1].isConst())) {
           // constant propagation
           TNode t;
           TNode c;
@@ -1439,8 +1425,8 @@ bool SimplifyAssertionsPass::nonClausalSimplify(AssertionPipeline &d_assertions)
 
   unordered_set<TNode, TNodeHashFunction> s;
   Trace("debugging") << "NonClausal simplify pre-preprocess\n";
-  for (unsigned i = 0; i < d_assertions.size(); ++ i) {
-    Node assertion = d_assertions[i];
+  for (unsigned i = 0; i < assertionsToPreprocess->size(); ++ i) {
+    Node assertion = (*assertionsToPreprocess)[i];
     Node assertionNew = newSubstitutions.apply(assertion);
     Trace("debugging") << "assertion = " << assertion << endl;
     Trace("debugging") << "assertionNew = " << assertionNew << endl;
@@ -1454,14 +1440,14 @@ bool SimplifyAssertionsPass::nonClausalSimplify(AssertionPipeline &d_assertions)
       if (assertionNew == assertion) {
         break;
       }
-      ++d_smt->d_stats->d_numConstantProps;
+      ++d_numConstantProps;
       Trace("debugging") << "assertionNew = " << assertionNew << endl;
       assertion = theory::Rewriter::rewrite(assertionNew);
       Trace("debugging") << "assertionNew = " << assertionNew << endl;
     }
     Trace("debugging") << "\n";
     s.insert(assertion);
-    d_assertions.replace(i, assertion);
+    assertionsToPreprocess->replace(i, assertion);
     Trace("simplify") << "SmtEnginePrivate::nonClausalSimplify(): "
                       << "non-clausal preprocessed: "
                       << assertion << endl;
@@ -1470,7 +1456,7 @@ bool SimplifyAssertionsPass::nonClausalSimplify(AssertionPipeline &d_assertions)
   // If in incremental mode, add substitutions to the list of assertions
   if (*d_substitutionsIndex > 0) {
     NodeBuilder<> substitutionsBuilder(kind::AND);
-    substitutionsBuilder << d_assertions[*d_substitutionsIndex];
+    substitutionsBuilder << (*assertionsToPreprocess)[*d_substitutionsIndex];
     pos = newSubstitutions.begin();
     for (; pos != newSubstitutions.end(); ++pos) {
       // Add back this substitution as an assertion
@@ -1480,7 +1466,7 @@ bool SimplifyAssertionsPass::nonClausalSimplify(AssertionPipeline &d_assertions)
       Trace("simplify") << "SmtEnginePrivate::nonClausalSimplify(): will notify SAT layer of substitution: " << n << endl;
     }
     if (substitutionsBuilder.getNumChildren() > 1) {
-      d_assertions.replace(*d_substitutionsIndex,
+      assertionsToPreprocess->replace(*d_substitutionsIndex,
         theory::Rewriter::rewrite(Node(substitutionsBuilder)));
     }
   } else {
@@ -1497,8 +1483,8 @@ bool SimplifyAssertionsPass::nonClausalSimplify(AssertionPipeline &d_assertions)
   }
 
   NodeBuilder<> learnedBuilder(kind::AND);
-  Assert(d_realAssertionsEnd <= d_assertions.size());
-  learnedBuilder << d_assertions[d_realAssertionsEnd - 1];
+  Assert(d_realAssertionsEnd <= assertionsToPreprocess->size());
+  learnedBuilder << (*assertionsToPreprocess)[d_realAssertionsEnd - 1];
 
   for (unsigned i = 0; i < d_nonClausalLearnedLiterals->size(); ++ i) {
     Node learned = (*d_nonClausalLearnedLiterals)[i];
@@ -1513,7 +1499,7 @@ bool SimplifyAssertionsPass::nonClausalSimplify(AssertionPipeline &d_assertions)
       if (learnedNew == learned) {
         break;
       }
-      ++d_smt->d_stats->d_numConstantProps;
+      ++d_numConstantProps;
       learned = theory::Rewriter::rewrite(learnedNew);
     }
     if (s.find(learned) != s.end()) {
@@ -1551,15 +1537,15 @@ bool SimplifyAssertionsPass::nonClausalSimplify(AssertionPipeline &d_assertions)
   d_topLevelSubstitutions->addSubstitutions(newSubstitutions);
 
   if(learnedBuilder.getNumChildren() > 1) {
-    d_assertions.replace(d_realAssertionsEnd - 1,
+    assertionsToPreprocess->replace(d_realAssertionsEnd - 1,
       theory::Rewriter::rewrite(Node(learnedBuilder)));
   }
 
-  d_propagatorNeedsFinish = true;
-  return true;
+  *d_propagatorNeedsFinish = true;
+  return PreprocessingPassResult(true);
 }
 
-void SimplifyAssertionsPass::traceBackToAssertions(const std::vector<Node>& nodes, std::vector<TNode>& assertions) {
+/*void SimplifyAssertionsPass::traceBackToAssertions(const std::vector<Node>& nodes, std::vector<TNode>& assertions) {
   const booleans::CircuitPropagator::BackEdgesMap& backEdges = d_propagator->getBackEdges();
   for(vector<Node>::const_iterator i = nodes.begin(); i != nodes.end(); ++i) {
     booleans::CircuitPropagator::BackEdgesMap::const_iterator j = backEdges.find(*i);
