@@ -134,22 +134,21 @@ class PreprocessingPass {
  // TODO: instead of having a registerPass argument here, we should probably
   // have two different subclasses of PreprocessingPass or a superclass for
   // PreprocessingPass that does not do any registration.
-  PreprocessingPass(ResourceManager* resourceManager, bool registerPass = false)
-      : d_resourceManager(resourceManager) {
+  PreprocessingPass(bool registerPass = false)
+  {
     if (registerPass) {
       PreprocessingPassRegistry::getInstance()->registerPass(this);
     }
   }
 
-  PreprocessingPass(ResourceManager* resourceManager, Node dtrue) : d_resourceManager(resourceManager), d_true(dtrue){
+  PreprocessingPass(Node dtrue) : d_true(dtrue){
   }
 
 private:
-  ResourceManager* d_resourceManager;
 
 protected: 
   void spendResource(unsigned amount) {
-    d_resourceManager->spendResource(amount);
+    NodeManager::currentResourceManager()->spendResource(amount);
   }  // TODO: modify class as needed
   Node d_true;
 };
