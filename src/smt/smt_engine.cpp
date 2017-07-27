@@ -3254,14 +3254,9 @@ bool SmtEnginePrivate::simplifyAssertions()
           // restriction only disables miplib processing during
           // re-simplification, which we don't expect to be useful anyway)
           d_realAssertionsEnd == d_assertions.size() ) {
-        Chat() << "...fixing miplib encodings..." << endl;
-        Trace("simplify") << "SmtEnginePrivate::simplify(): "
-                          << "looking for miplib pseudobooleans..." << endl;
-
-        TimerStat::CodeTimer miplibTimer(d_smt.d_stats->d_miplibPassTime);
-
-        doMiplibTrick();
-      } else {
+            preproc::MiplibTrickPass pass(d_resourceManager, &d_smt, d_smt.d_stats->d_miplibPassTime, &d_propagator, &d_boolVars, d_realAssertionsEnd, d_true, d_smt.d_stats->d_numMiplibAssertionsRemoved, &d_topLevelSubstitutions, &d_fakeContext);
+            pass.apply(&d_assertions);
+     } else {
         Trace("simplify") << "SmtEnginePrivate::simplify(): "
                           << "skipping miplib pseudobooleans pass (either incrementalSolving is on, or miplib pbs are turned off)..." << endl;
       }

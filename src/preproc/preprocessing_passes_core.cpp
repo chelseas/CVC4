@@ -12,13 +12,11 @@
 #include "theory/quantifiers/macros.h"
 #include "theory/quantifiers/quantifiers_rewriter.h"
 #include "theory/sep/theory_sep_rewriter.h"
-#include "theory/theory_model.h"
 #include "options/quantifiers_options.h"
 #include "options/smt_options.h"
 #include "options/bv_bitblast_mode.h"
 #include "options/bv_options.h"
 #include "options/uf_options.h"
-#include "options/proof_options.h"
 #include "options/arith_options.h"
 #include "util/ntuple.h"
 
@@ -1180,42 +1178,7 @@ PreprocessingPassResult RepeatSimpPass::apply(AssertionPipeline* assertionsToPre
 }
 
 NonClausalSimplificationPass::NonClausalSimplificationPass(ResourceManager* resourceManager, SmtEngine* smt, bool* propagatorNeedsFinish, theory::booleans::CircuitPropagator* propagator, TimerStat nonclausalSimplificationTime, context::CDO<unsigned>* substitutionsIndex, theory::SubstitutionMap* topLevelSubstitutions, std::vector<Node>* nonClausalLearnedLiterals, IntStat numConstantProps, Node dtrue, unsigned realAssertionsEnd) :
-   PreprocessingPass(resourceManager), d_smt(smt), d_propagatorNeedsFinish(propagatorNeedsFinish), d_propagator(propagator), d_nonclausalSimplificationTime(nonclausalSimplificationTime), d_substitutionsIndex(substitutionsIndex), d_topLevelSubstitutions(topLevelSubstitutions), d_nonClausalLearnedLiterals(nonClausalLearnedLiterals), d_numConstantProps(numConstantProps), d_true(dtrue), d_realAssertionsEnd(realAssertionsEnd){
-}
-
-void NonClausalSimplificationPass::addFormula(TNode n, bool inUnsatCore, AssertionPipeline* assertionsToPreprocess, bool inInput)
-  throw(TypeCheckingException, LogicException) {
-
-  if (n == d_true) {
-    // nothing to do
-    return;
-  }
-
-  Trace("smt") << "SmtEnginePrivate::addFormula(" << n << "), inUnsatCore = " << inUnsatCore << ", inInput = " << inInput << endl;
-
-  // Give it to proof manager
-  PROOF(
-    if( inInput ){
-      // n is an input assertion
-      if (inUnsatCore || options::unsatCores() || options::dumpUnsatCores() || options::checkUnsatCores() || options::fewerPreprocessingHoles()) {
-
-        ProofManager::currentPM()->addCoreAssertion(n.toExpr());
-      }
-    }else{
-      // n is the result of an unknown preprocessing step, add it to dependency map to null
-      ProofManager::currentPM()->addDependence(n, Node::null());
-    }
-    // rewrite rules are by default in the unsat core because
-    // they need to be applied until saturation
-    if(options::unsatCores() &&
-       n.getKind() == kind::REWRITE_RULE ){
-      ProofManager::currentPM()->addUnsatCore(n.toExpr());
-    }
-  );
-
-  // Add the normalized formula to the queue
-  assertionsToPreprocess->push_back(n);
-  //d_assertions.push_back(Rewriter::rewrite(n));
+   PreprocessingPass(resourceManager, dtrue), d_smt(smt), d_propagatorNeedsFinish(propagatorNeedsFinish), d_propagator(propagator), d_nonclausalSimplificationTime(nonclausalSimplificationTime), d_substitutionsIndex(substitutionsIndex), d_topLevelSubstitutions(topLevelSubstitutions), d_nonClausalLearnedLiterals(nonClausalLearnedLiterals), d_numConstantProps(numConstantProps), d_realAssertionsEnd(realAssertionsEnd){
 }
 
 // returns false if it learns a conflict
@@ -1544,23 +1507,11 @@ PreprocessingPassResult NonClausalSimplificationPass::apply(AssertionPipeline* a
   *d_propagatorNeedsFinish = true;
   return PreprocessingPassResult(true);
 }
-
-/*void SimplifyAssertionsPass::traceBackToAssertions(const std::vector<Node>& nodes, std::vector<TNode>& assertions) {
-  const booleans::CircuitPropagator::BackEdgesMap& backEdges = d_propagator->getBackEdges();
-  for(vector<Node>::const_iterator i = nodes.begin(); i != nodes.end(); ++i) {
-    booleans::CircuitPropagator::BackEdgesMap::const_iterator j = backEdges.find(*i);
-    // term must appear in map, otherwise how did we get here?!
-    Assert(j != backEdges.end());
-    // if term maps to empty, that means it's a top-level assertion
-    if(!(*j).second.empty()) {
-      traceBackToAssertions((*j).second, assertions);
-    } else {
-      assertions.push_back(*i);
-    }
-  }
+MiplibTrickPass::MiplibTrickPass(ResourceManager* resourceManager, SmtEngine* smt, TimerStat miplibPassTime, theory::booleans::CircuitPropagator* propagator, std::vector<Node>* boolVars, unsigned realAssertionsEnd, Node dtrue, IntStat numMiplibAssertionsRemoved, theory::SubstitutionMap* topLevelSubstitutions, context::Context* fakeContext) :
+   PreprocessingPass(resourceManager, dtrue), d_smt(smt), d_miplibPassTime(miplibPassTime), d_propagator(propagator), d_boolVars(boolVars), d_realAssertionsEnd(realAssertionsEnd), d_numMiplibAssertionsRemoved(numMiplibAssertionsRemoved), d_topLevelSubstitutions(topLevelSubstitutions), d_fakeContext(fakeContext){
 }
 
-size_t SimplifyAssertionsPass::removeFromConjunction(Node& n, const std::unordered_set<unsigned long>& toRemove) {
+size_t MiplibTrickPass::removeFromConjunction(Node& n, const std::unordered_set<unsigned long>& toRemove) {
   Assert(n.getKind() == kind::AND);
   size_t removals = 0;
   for(Node::iterator j = n.begin(); j != n.end(); ++j) {
@@ -1609,8 +1560,24 @@ size_t SimplifyAssertionsPass::removeFromConjunction(Node& n, const std::unorder
   return 0;
 }
 
-void SimplifyAssertionsPass::doMiplibTrick(AssertionPipeline &d_assertions) {
-  Assert(d_realAssertionsEnd == d_assertions.size());
+
+void MiplibTrickPass::traceBackToAssertions(const std::vector<Node>& nodes, std::vector<TNode>& assertions) {
+  const booleans::CircuitPropagator::BackEdgesMap& backEdges = d_propagator->getBackEdges();
+  for(vector<Node>::const_iterator i = nodes.begin(); i != nodes.end(); ++i) {
+    booleans::CircuitPropagator::BackEdgesMap::const_iterator j = backEdges.find(*i);
+    // term must appear in map, otherwise how did we get here?!
+    Assert(j != backEdges.end());
+    // if term maps to empty, that means it's a top-level assertion
+    if(!(*j).second.empty()) {
+      traceBackToAssertions((*j).second, assertions);
+    } else {
+      assertions.push_back(*i);
+    }
+  }
+}
+
+void MiplibTrickPass::doMiplibTrick(AssertionPipeline* assertionsToPreprocess) {
+  Assert(d_realAssertionsEnd == assertionsToPreprocess->size());
   Assert(!options::incrementalSolving());
 
   const theory::booleans::CircuitPropagator::BackEdgesMap& backEdges = d_propagator->getBackEdges();
@@ -1841,7 +1808,7 @@ void SimplifyAssertionsPass::doMiplibTrick(AssertionPipeline &d_assertions) {
               Node newVar = nm->mkSkolem(ss.str(), nm->integerType(), "a variable introduced due to scrubbing a miplib encoding", NodeManager::SKOLEM_EXACT_NAME);
               Node geq = theory::Rewriter::rewrite(nm->mkNode(kind::GEQ, newVar, zero));
               Node leq = theory::Rewriter::rewrite(nm->mkNode(kind::LEQ, newVar, one));
-              addFormula(theory::Rewriter::rewrite(geq.andNode(leq)), false, d_assertions, false);
+              addFormula(theory::Rewriter::rewrite(geq.andNode(leq)), false, assertionsToPreprocess, false);
               SubstitutionMap nullMap(d_fakeContext);
               theory::Theory::PPAssertStatus status CVC4_UNUSED; // just for assertions
               status = d_smt->d_theoryEngine->solve(geq, nullMap); Assert(status == theory::Theory::PP_ASSERT_STATUS_UNSOLVED,
@@ -1891,7 +1858,7 @@ void SimplifyAssertionsPass::doMiplibTrick(AssertionPipeline &d_assertions) {
           }
           newAssertion = theory::Rewriter::rewrite(newAssertion);
           Debug("miplib") << "  " << newAssertion << endl;
-          addFormula(newAssertion, false, d_assertions, false);
+          addFormula(newAssertion, false, assertionsToPreprocess, false);
           Debug("miplib") << "  assertions to remove: " << endl;
           for(vector<TNode>::const_iterator k = asserts[pos_var].begin(), k_end = asserts[pos_var].end(); k != k_end; ++k) {
             Debug("miplib") << "    " << *k << endl;
@@ -1904,29 +1871,39 @@ void SimplifyAssertionsPass::doMiplibTrick(AssertionPipeline &d_assertions) {
   if(!removeAssertions.empty()) {
     Debug("miplib") << "SmtEnginePrivate::simplify(): scrubbing miplib encoding..." << endl;
     for(size_t i = 0; i < d_realAssertionsEnd; ++i) {
-      if(removeAssertions.find(d_assertions[i].getId()) != removeAssertions.end()) {
-        Debug("miplib") << "SmtEnginePrivate::simplify(): - removing " << d_assertions[i] << endl;
-        d_assertions[i] = d_true;
-        ++d_smt->d_stats->d_numMiplibAssertionsRemoved;
-      } else if(d_assertions[i].getKind() == kind::AND) {
-        size_t removals = removeFromConjunction(d_assertions[i], removeAssertions);
+      if(removeAssertions.find((*assertionsToPreprocess)[i].getId()) != removeAssertions.end()) {
+        Debug("miplib") << "SmtEnginePrivate::simplify(): - removing " << (*assertionsToPreprocess)[i] << endl;
+        (*assertionsToPreprocess)[i] = d_true;
+        ++d_numMiplibAssertionsRemoved;
+      } else if((*assertionsToPreprocess)[i].getKind() == kind::AND) {
+        size_t removals = removeFromConjunction((*assertionsToPreprocess)[i], removeAssertions);
         if(removals > 0) {
-          Debug("miplib") << "SmtEnginePrivate::simplify(): - reduced " << d_assertions[i] << endl;
+          Debug("miplib") << "SmtEnginePrivate::simplify(): - reduced " << (*assertionsToPreprocess)[i] << endl;
           Debug("miplib") << "SmtEnginePrivate::simplify(): -      by " << removals << " conjuncts" << endl;
-          d_smt->d_stats->d_numMiplibAssertionsRemoved += removals;
+          d_numMiplibAssertionsRemoved += removals;
         }
       }
-      Debug("miplib") << "had: " << d_assertions[i] << endl;
-      d_assertions[i] = theory::Rewriter::rewrite(d_topLevelSubstitutions->apply(d_assertions[i]));
-      Debug("miplib") << "now: " << d_assertions[i] << endl;
+      Debug("miplib") << "had: " << (*assertionsToPreprocess)[i] << endl;
+      (*assertionsToPreprocess)[i] = theory::Rewriter::rewrite(d_topLevelSubstitutions->apply((*assertionsToPreprocess)[i]));
+      Debug("miplib") << "now: " << (*assertionsToPreprocess)[i] << endl;
     }
   } else {
     Debug("miplib") << "SmtEnginePrivate::simplify(): miplib pass found nothing." << endl;
   }
-  d_realAssertionsEnd = d_assertions.size();
+  d_realAssertionsEnd = assertionsToPreprocess->size();
 }
 
-void SimplifyAssertionsPass::compressBeforeRealAssertions(size_t before, AssertionPipeline& d_assertions){
+PreprocessingPassResult MiplibTrickPass::apply(AssertionPipeline* assertionsToPreprocess){
+  Chat() << "...fixing miplib encodings..." << endl;
+  Trace("simplify") << "SmtEnginePrivate::simplify(): "
+                          << "looking for miplib pseudobooleans..." << endl;
+  TimerStat::CodeTimer miplibTimer(d_miplibPassTime);
+  doMiplibTrick(assertionsToPreprocess);
+  return PreprocessingPassResult(true);       
+}
+
+
+/*void SimplifyAssertionsPass::compressBeforeRealAssertions(size_t before, AssertionPipeline& d_assertions){
   size_t curr = d_assertions.size();
   if(before >= curr ||
      d_realAssertionsEnd <= 0 ||
@@ -1958,133 +1935,6 @@ bool SimplifyAssertionsPass::simpITE(AssertionPipeline& d_assertions) {
   return result;
 }
 
-
-// returns false if simplification led to "false"
-PreprocessingPassResult SimplifyAssertionsPass::apply(AssertionPipeline* assertionsToPreprocess)
-  throw(TypeCheckingException, LogicException, UnsafeInterruptException) {
-  spendResource(options::preprocessStep());
-  Assert(d_smt->d_pendingPops == 0);
-  try {
-    ScopeCounter depth(d_simplifyAssertionsDepth);
-
-    Trace("simplify") << "SmtEnginePrivate::simplify()" << endl;
-
-    dumpAssertions("pre-nonclausal", *assertionsToPreprocess);
-
-    if(options::simplificationMode() != SIMPLIFICATION_MODE_NONE) {
-      // Perform non-clausal simplification
-      Chat() << "...performing nonclausal simplification..." << endl;
-      Trace("simplify") << "SmtEnginePrivate::simplify(): "
-                        << "performing non-clausal simplification" << endl;
-      bool noConflict = nonClausalSimplify(*assertionsToPreprocess);
-      if(!noConflict) {
-        return false;
-      }
-
-      // We piggy-back off of the BackEdgesMap in the CircuitPropagator to
-      // do the miplib trick.
-      if( // check that option is on
-          options::arithMLTrick() &&
-          // miplib rewrites aren't safe in incremental mode
-          ! options::incrementalSolving() &&
-          // only useful in arith
-          d_smt->d_logic.isTheoryEnabled(THEORY_ARITH) &&
-          // we add new assertions and need this (in practice, this
-          // restriction only disables miplib processing during
-          // re-simplification, which we don't expect to be useful anyway)
-          d_realAssertionsEnd == assertionsToPreprocess->size() ) {
-        Chat() << "...fixing miplib encodings..." << endl;
-        Trace("simplify") << "SmtEnginePrivate::simplify(): "
-                          << "looking for miplib pseudobooleans..." << endl;
-
-        TimerStat::CodeTimer miplibTimer(d_smt->d_stats->d_miplibPassTime);
-
-        doMiplibTrick(*assertionsToPreprocess);
-      } else {
-        Trace("simplify") << "SmtEnginePrivate::simplify(): "
-                          << "skipping miplib pseudobooleans pass (either incrementalSolving is on, or miplib pbs are turned off)..." << endl;
-      }
-    }
-
-    dumpAssertions("post-nonclausal", *assertionsToPreprocess);
-    Trace("smt") << "POST nonClausalSimplify" << endl;
-    Debug("smt") << " d_assertions     : " << assertionsToPreprocess->size() << endl;
-
-    // before ppRewrite check if only core theory for BV theory
-    d_smt->d_theoryEngine->staticInitializeBVOptions(assertionsToPreprocess->ref());
-
-    dumpAssertions("pre-theorypp", *assertionsToPreprocess);
-
-    // Theory preprocessing
-    if (d_smt->d_earlyTheoryPP) {
-      Chat() << "...doing early theory preprocessing..." << endl;
-      TimerStat::CodeTimer codeTimer(d_smt->d_stats->d_theoryPreprocessTime);
-      // Call the theory preprocessors
-      d_smt->d_theoryEngine->preprocessStart();
-      for (unsigned i = 0; i < assertionsToPreprocess->size(); ++ i) {
-        Assert(theory::Rewriter::rewrite((*assertionsToPreprocess)[i]) == (*assertionsTopreprocess)[i]);
-        assertionsToPreprocess->replace(i, d_smt->d_theoryEngine->preprocess((*assertionsToPreprocess)[i]));
-        Assert(theory::Rewriter::rewrite((*assertionsToPreprocess)[i]) == (*assertionsToPreprocess)[i]);
-      }
-    }
-
-    dumpAssertions("post-theorypp", *assertionsToPreprocess);
-    Trace("smt") << "POST theoryPP" << endl;
-    Debug("smt") << " d_assertions     : " << assertionsToPreprocess->size() << endl;
-
-    // ITE simplification
-    if(options::doITESimp() &&
-       (d_simplifyAssertionsDepth <= 1 || options::doITESimpOnRepeat())) {
-      Chat() << "...doing ITE simplification..." << endl;
-      bool noConflict = simpITE(*assertionsToPreprocess);
-      if(!noConflict){
-        Chat() << "...ITE simplification found unsat..." << endl;
-        return false;
-      }
-    }
-
-    dumpAssertions("post-itesimp", *assertionsToPreprocess);
-    Trace("smt") << "POST iteSimp" << endl;
-    Debug("smt") << " d_assertions     : " << assertionsToPreprocess->size() << endl;
-
-    // Unconstrained simplification
-    if(options::unconstrainedSimp()) {
-      Chat() << "...doing unconstrained simplification..." << endl;
-      preproc::UnconstrainedSimpPass pass(d_resourceManager, d_smt->d_stats->d_unconstrainedSimpTime, d_smt->d_theoryEngine);
-      pass.apply(assertionsToPreprocess);
-   }
-
-    dumpAssertions("post-unconstrained", *assertionsToPreprocess);
-    Trace("smt") << "POST unconstrainedSimp" << endl;
-    Debug("smt") << " d_assertions     : " << assertionsToPreprocess->size() << endl;
-
-    if(options::repeatSimp() && options::simplificationMode() != SIMPLIFICATION_MODE_NONE) {
-      Chat() << "...doing another round of nonclausal simplification..." << endl;
-      Trace("simplify") << "SmtEnginePrivate::simplify(): "
-                        << " doing repeated simplification" << endl;
-      bool noConflict = nonClausalSimplify(*assertionsToPreprocess);
-      if(!noConflict) {
-        return false;
-      }
-    }
-
-    dumpAssertions("post-repeatsimp", *assertionsToPreprocess);
-    Trace("smt") << "POST repeatSimp" << endl;
-    Debug("smt") << " d_assertions     : " << assertionsToPreprocess->size() << endl;
-
-  } catch(TypeCheckingExceptionPrivate& tcep) {
-    // Calls to this function should have already weeded out any
-    // typechecking exceptions via (e.g.) ensureBoolean().  But a
-    // theory could still create a new expression that isn't
-    // well-typed, and we don't want the C++ runtime to abort our
-    // process without any error notice.
-    stringstream ss;
-    ss << "A bad expression was produced.  Original exception follows:\n"
-       << tcep;
-    InternalError(ss.str().c_str());
-  }
-  return PreprocessingPassResult(true); 
-}
 */
 }  // namespace preproc
 }  // namespace CVC4

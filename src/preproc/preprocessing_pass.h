@@ -10,10 +10,14 @@
 #include "smt/dump.h"
 #include "theory/rewriter.h"
 #include "theory/theory_engine.h"
+#include "theory/theory_model.h"
+#include "options/proof_options.h"
 
 using namespace std;
 
 namespace CVC4 {
+
+using namespace theory;
 
 namespace preproc {
 
@@ -79,6 +83,7 @@ struct PreprocessingPassResult {
 class PreprocessingPass {
  public:
   virtual PreprocessingPassResult apply(AssertionPipeline* assertionsToPreprocess) = 0;
+
   void dumpAssertions(const char* key, const AssertionPipeline& assertionList) {
   if( Dump.isOn("assertions") &&
       Dump.isOn(std::string("assertions:") + key) ) {
@@ -90,7 +95,44 @@ class PreprocessingPass {
     }
   }
 
+  void addFormula(TNode n, bool inUnsatCore, AssertionPipeline* assertionsToPreprocess, bool inInput = true)
+   throw(TypeCheckingException, LogicException) {
+  if (n == d_true) {
+    // nothing to do
+    return;
+  }
+
+  Trace("smt") << "SmtEnginePrivate::addFormula(" << n << "), inUnsatCore = " << inUnsatCore << ", inInput = " << inInput << endl;
+
+  // Give it to proof manager
+  PROOF(
+    if( inInput ){
+      // n is an input assertion
+      if (inUnsatCore || options::unsatCores() || options::dumpUnsatCores() || options::checkUnsatCores() || options::fewerPreprocessingHoles()) {
+
+        ProofManager::currentPM()->addCoreAssertion(n.toExpr());
+      }
+    }else{
+      // n is the result of an unknown preprocessing step, add it to dependency map to null
+      ProofManager::currentPM()->addDependence(n, Node::null());
+    }
+    // rewrite rules are by default in the unsat core because
+    // they need to be applied until saturation
+    if(options::unsatCores() &&
+       n.getKind() == kind::REWRITE_RULE ){
+      ProofManager::currentPM()->addUnsatCore(n.toExpr());
+    }
+  );
+
+  // Add the normalized formula to the queue
+  assertionsToPreprocess->push_back(n);
+  //d_assertions.push_back(Rewriter::rewrite(n));
+  }
+
   PreprocessingPass(ResourceManager* resourceManager) : d_resourceManager(resourceManager) {
+  }
+
+  PreprocessingPass(ResourceManager* resourceManager, Node dtrue) : d_resourceManager(resourceManager), d_true(dtrue){
   }
 
 private:
@@ -100,6 +142,7 @@ protected:
   void spendResource(unsigned amount) {
     d_resourceManager->spendResource(amount);
   }  // TODO: modify class as needed
+  Node d_true;
 };
 
 }  // namespace preproc

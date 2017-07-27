@@ -265,23 +265,32 @@ class NonClausalSimplificationPass : public PreprocessingPass{
    theory::SubstitutionMap* d_topLevelSubstitutions;
    std::vector<Node>* d_nonClausalLearnedLiterals;
    IntStat d_numConstantProps;//Do I need to pass in a pointer for this?
-   Node d_true;
    unsigned d_realAssertionsEnd;
-   
-   void addFormula(TNode n, bool inUnsatCore, AssertionPipeline* assertionsToPreprocess, bool inInput = true)
-   throw(TypeCheckingException, LogicException);
 };
 
-/*class SimplifyAssertionsPass : public PreprocessingPass {
+class MiplibTrickPass : public PreprocessingPass {
   public:
-     virtual PreprocessingPassResult apply(AssertionPipeline* assertionsToPreprocess) throw(TypeCheckingException, LogicException,
-                                  UnsafeInterruptException);
-     SimplifyAssertionsPass(ResourceManager* resourceManager, unsigned simplifyAssertionsDepth, SmtEngine* smt, bool propagatorNeedsFinish, theory::booleans::CircuitPropagator* propagator, context::CDO<unsigned>* substitutionsIndex, std::vector<Node>* nonClausalLearnedLiterals, Node dtrue,  unsigned realAssertionsEnd, theory::SubstitutionMap* topLevelSubstitutions, bool doConstantProp, std::vector<Node>* boolVars, context::Context* fakeContext );
-  pToPreprocess->ivate:
+   virtual PreprocessingPassResult apply(AssertionPipeline* assertionsToPreprocess);
+   MiplibTrickPass(ResourceManager* resourceManager, SmtEngine* smt, TimerStat miplibPassTime, theory::booleans::CircuitPropagator* propagator, std::vector<Node>* boolsVars, unsigned realAssertionsEnd, Node dtrue, IntStat numMiplibAssertionsRemoved, theory::SubstitutionMap* topLevelSubstitutions, context::Context* fakeContext); 
+  private:
+   SmtEngine* d_smt;
+   TimerStat d_miplibPassTime;
+   theory::booleans::CircuitPropagator* d_propagator;
+   std::vector<Node>* d_boolVars;
+   unsigned d_realAssertionsEnd;
+   IntStat d_numMiplibAssertionsRemoved;  
+   theory::SubstitutionMap* d_topLevelSubstitutions;
+   context::Context* d_fakeContext;
+   
+   void traceBackToAssertions(const std::vector<Node>& nodes,
+                             std::vector<TNode>& assertions);
+   void doMiplibTrick(AssertionPipeline* assertionsToPreprocess);
+   size_t removeFromConjunction(Node& n ,const std::unordered_set<unsigned long>& toRemove);
+
+};
+/*class SimplifyAssertionsPass : public PreprocessingPass {
    unsigned d_simplifyAssertionsDepth;
    SmtEngine* d_smt;
-   std::vector<Node>* d_boolVars;
-   context::Context* d_fakeContext;
    
    void traceBackToAssertions(const std::vector<Node>& nodes,
                              std::vector<TNode>& assertions);
@@ -289,10 +298,7 @@ class NonClausalSimplificationPass : public PreprocessingPass{
    bool nonClausalSimplify(AssertionPipeline &d_assertions);
    void compressBeforeRealAssertions(size_t before, AssertionPipeline &d_assertions);
    bool simpITE(AssertionPipeline &d_assertions);
-   size_t removeFromConjunction(Node& n,
-                               const std::unordered_set<unsigned long>& toRemove);
-
-};*/
+   };*/
  
 }  // namespace preproc
 }  // namespace CVC4

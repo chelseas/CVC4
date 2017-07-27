@@ -106,6 +106,7 @@ namespace preproc{
   class ExpandingDefinitionsPass;
   class ConstrainSubtypesPass;
   class RemoveITEPass;
+  class MiplibTrickPass;
 }/* CVC4::preproc namespace */
 
 // TODO: SAT layer (esp. CNF- versus non-clausal solvers under the
@@ -357,6 +358,7 @@ class CVC4_PUBLIC SmtEngine {
   friend class ::CVC4::preproc::ExpandingDefinitionsPass;
   friend class ::CVC4::preproc::ConstrainSubtypesPass;
   friend class ::CVC4::preproc::RemoveITEPass;
+  friend class ::CVC4::preproc::MiplibTrickPass;
   friend class ::CVC4::smt::SmtEnginePrivate;
   friend class ::CVC4::smt::SmtScope;
   friend class ::CVC4::smt::BooleanTermConverter;
