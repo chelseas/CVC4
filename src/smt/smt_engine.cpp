@@ -65,6 +65,7 @@
 #include "options/strings_options.h"
 #include "options/theory_options.h"
 #include "options/uf_options.h"
+#include "preproc/preprocessing_pass_registry.h"
 #include "preproc/preprocessing_passes_core.h"
 #include "printer/printer.h"
 #include "proof/proof.h"
@@ -3518,8 +3519,12 @@ void SmtEnginePrivate::processAssertions() {
   Debug("smt") << " d_assertions     : " << d_assertions.size() << endl;
 
   if( options::nlExtPurify() ){
-    preproc::NlExtPurifyPass pass(d_resourceManager);
+    preproc::NlExtPurifyPass pass;
     pass.apply(&d_assertions);
+
+    // TODO: With the PreprocessingPassRegistry, it should be possible to do
+    // something like this:
+    // PreprocessingPassRegistry::getInstance()->getPass("nl-ext-purify")->apply(&d_assertions);
   }
 
   if( options::ceGuidedInst() ){
