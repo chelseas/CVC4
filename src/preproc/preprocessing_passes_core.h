@@ -36,11 +36,15 @@ class ExpandingDefinitionsPass : public PreprocessingPass {
 class NlExtPurifyPass : public PreprocessingPass {
  public:
   virtual PreprocessingPassResult apply(AssertionPipeline* assertionsToPreprocess);
-  NlExtPurifyPass(ResourceManager* resourceManager);
+  NlExtPurifyPass();
+
  private:
   Node purifyNlTerms(TNode n, NodeMap& cache, NodeMap& bcache,
                      std::vector<Node>& var_eq, bool beneathMult = false);
 };
+
+// TODO: Create a static instance of each pass.
+static NlExtPurifyPass nlExtPurifyPass;
 
 class CEGuidedInstPass : public PreprocessingPass {
  public:

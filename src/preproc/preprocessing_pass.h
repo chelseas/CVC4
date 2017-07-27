@@ -7,6 +7,8 @@
 #include <iostream>
 #include <vector>
 #include <string>
+
+#include "preproc/preprocessing_pass_registry.h"
 #include "smt/dump.h"
 #include "theory/rewriter.h"
 #include "theory/theory_engine.h"
@@ -129,7 +131,14 @@ class PreprocessingPass {
   //d_assertions.push_back(Rewriter::rewrite(n));
   }
 
-  PreprocessingPass(ResourceManager* resourceManager) : d_resourceManager(resourceManager) {
+ // TODO: instead of having a registerPass argument here, we should probably
+  // have two different subclasses of PreprocessingPass or a superclass for
+  // PreprocessingPass that does not do any registration.
+  PreprocessingPass(ResourceManager* resourceManager, bool registerPass = false)
+      : d_resourceManager(resourceManager) {
+    if (registerPass) {
+      PreprocessingPassRegistry::getInstance()->registerPass(this);
+    }
   }
 
   PreprocessingPass(ResourceManager* resourceManager, Node dtrue) : d_resourceManager(resourceManager), d_true(dtrue){
