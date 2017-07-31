@@ -85,6 +85,18 @@ struct PreprocessingPassResult {
 
 class PreprocessingPass {
  public:
+/*  void init(){
+  assert(!d_initialized); 
+  smtStatisticsRegistry()->registerStat(&d_timer); 
+ 
+  initInternal(SmtEngine* smt, TheoryEngine* theoryEngine, theory:SubstitutionMap* topLevelSubstitutions, theory::arith::PseudoBooleanPreprocessor* pbsPreprocessor, iteSkolemMap* iteSkolemMap, RemoveTermFormulas* iteRemover, DecisionEngine* decisionEngine, prop::PropEngine* propEngine, unsigned simplifyAssertionsDepth, bool* propagatorNeedsFinish, theory::booleans::CircuitPropagator* propagator, std::vector<Node>* boolsVars, context::CDO<unsigned>* substitutionsIndex, std::vector<Node>* nonClausalLearnedLiterals, Node dtrue, unsigned realAssertionsEnd){
+  
+  d_initialized = true;
+  }
+
+  virtual void initInternal(SmtEngine* smt, TheoryEngine* theoryEngine, theory:SubstitutionMap* topLevelSubstitutions, theory::arith::PseudoBooleanPreprocessor* pbsPreprocessor, iteSkolemMap* iteSkolemMap, RemoveTermFormulas* iteRemover, DecisionEngine* decisionEngine, prop::PropEngine* propEngine, unsigned simplifyAssertionsDepth, bool* propagatorNeedsFinish, theory::booleans::CircuitPropagator* propagator, std::vector<Node>* boolsVars, context::CDO<unsigned>* substitutionsIndex, std::vector<Node>* nonClausalLearnedLiterals, Node dtrue, unsigned realAssertionsEnd){
+  } */
+
   virtual PreprocessingPassResult apply(AssertionPipeline* assertionsToPreprocess) = 0;
 
   void dumpAssertions(const char* key, const AssertionPipeline& assertionList) {
@@ -136,24 +148,24 @@ class PreprocessingPass {
   // have two different subclasses of PreprocessingPass or a superclass for
   // PreprocessingPass that does not do any registration.
 
-  PreprocessingPass(Node dtrue, const std::string& name, bool registerPass = false) : d_true(dtrue), d_name(name), d_timer("preproc::" + name){
+  PreprocessingPass(Node dtrue, const std::string& name, bool registerPass = false) : d_true(dtrue), d_name(name), d_timer("preproc::" + name), d_initialized(false){
    if (registerPass) {
      PreprocessingPassRegistry::getInstance()->registerPass(this);
    }
-   d_timer = TimerStat("preproc::" + d_name);
-   smtStatisticsRegistry()->registerStat(&d_timer);
+ //  d_timer = TimerStat("preproc::" + d_name);
+ //  smtStatisticsRegistry()->registerStat(&d_timer);
   }
 
- PreprocessingPass(const std::string& name, bool registerPass = false) : d_name(name), d_timer("preproc::" + name){
+ PreprocessingPass(const std::string& name, bool registerPass = false) : d_name(name), d_timer("preproc::" + name), d_initialized(false){
    if (registerPass) {
      PreprocessingPassRegistry::getInstance()->registerPass(this);
    }
-   d_timer = TimerStat("preproc::" + d_name);
-   smtStatisticsRegistry()->registerStat(&d_timer);
+//   d_timer = TimerStat("preproc::" + d_name);
+//   smtStatisticsRegistry()->registerStat(&d_timer);
   }
  
  ~PreprocessingPass() {
-   smtStatisticsRegistry()->unregisterStat(&d_timer);
+//   smtStatisticsRegistry()->unregisterStat(&d_timer);
  }
 
 private:
@@ -165,6 +177,7 @@ protected:
   Node d_true;
   std::string d_name;
   TimerStat d_timer; 
+  bool d_initialized;
 };
 
 }  // namespace preproc
