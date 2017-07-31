@@ -10,11 +10,12 @@
 
 #include "preproc/preprocessing_pass_registry.h"
 #include "smt/dump.h"
+#include "smt/smt_statistics_registry.h"
 #include "theory/rewriter.h"
 #include "theory/theory_engine.h"
 #include "theory/theory_model.h"
 #include "options/proof_options.h"
-
+//#include "util/statistics_registry.h"
 using namespace std;
 
 namespace CVC4 {
@@ -134,15 +135,26 @@ class PreprocessingPass {
  // TODO: instead of having a registerPass argument here, we should probably
   // have two different subclasses of PreprocessingPass or a superclass for
   // PreprocessingPass that does not do any registration.
-  PreprocessingPass(bool registerPass = false)
-  {
-    if (registerPass) {
-      PreprocessingPassRegistry::getInstance()->registerPass(this);
-    }
+
+  PreprocessingPass(Node dtrue, const std::string& name, bool registerPass = false) : d_true(dtrue), d_name(name), d_timer("preproc::" + name){
+   if (registerPass) {
+     PreprocessingPassRegistry::getInstance()->registerPass(this);
+   }
+   d_timer = TimerStat("preproc::" + d_name);
+   smtStatisticsRegistry()->registerStat(&d_timer);
   }
 
-  PreprocessingPass(Node dtrue) : d_true(dtrue){
+ PreprocessingPass(const std::string& name, bool registerPass = false) : d_name(name), d_timer("preproc::" + name){
+   if (registerPass) {
+     PreprocessingPassRegistry::getInstance()->registerPass(this);
+   }
+   d_timer = TimerStat("preproc::" + d_name);
+   smtStatisticsRegistry()->registerStat(&d_timer);
   }
+ 
+ ~PreprocessingPass() {
+   smtStatisticsRegistry()->unregisterStat(&d_timer);
+ }
 
 private:
 
@@ -151,6 +163,8 @@ protected:
     NodeManager::currentResourceManager()->spendResource(amount);
   }  // TODO: modify class as needed
   Node d_true;
+  std::string d_name;
+  TimerStat d_timer; 
 };
 
 }  // namespace preproc
