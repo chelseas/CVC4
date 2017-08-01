@@ -10,9 +10,13 @@
 
 #include "preproc/preprocessing_pass_registry.h"
 #include "smt/dump.h"
+#include "decision/decision_engine.h"
 #include "smt/smt_statistics_registry.h"
 #include "theory/rewriter.h"
 #include "theory/theory_engine.h"
+#include "theory/arith/pseudoboolean_proc.h"
+#include "theory/substitutions.h"
+#include "theory/booleans/circuit_propagator.h"
 #include "theory/theory_model.h"
 #include "options/proof_options.h"
 //#include "util/statistics_registry.h"
@@ -58,6 +62,9 @@ class AssertionPipeline {
   std::vector<Node> d_nodes;
 
 public:
+  
+  AssertionPipeline() : d_realAssertionsEnd(0), d_iteSkolemMap(){
+  }
 
   size_t size() const { return d_nodes.size(); }
 
@@ -75,6 +82,23 @@ public:
     PROOF( ProofManager::currentPM()->addDependence(n, d_nodes[i]); );
     d_nodes[i] = n;
   }
+ 
+  unsigned getRealAssertionsEnd() {
+    return d_realAssertionsEnd;
+  }
+ 
+  void setRealAssertionsEnd(unsigned newVal) {
+    d_realAssertionsEnd = newVal;
+  }
+  
+  IteSkolemMap* getSkolemMap() {
+    return &d_iteSkolemMap;
+  } 
+
+private:
+  /** Size of assertions array when preprocessing starts */
+  unsigned d_realAssertionsEnd;
+  IteSkolemMap d_iteSkolemMap; 
 };// class AssertionPipeline 
 
 struct PreprocessingPassResult {
@@ -89,13 +113,21 @@ class PreprocessingPass {
   assert(!d_initialized); 
   smtStatisticsRegistry()->registerStat(&d_timer); 
  
-  initInternal(SmtEngine* smt, TheoryEngine* theoryEngine, theory:SubstitutionMap* topLevelSubstitutions, theory::arith::PseudoBooleanPreprocessor* pbsPreprocessor, iteSkolemMap* iteSkolemMap, RemoveTermFormulas* iteRemover, DecisionEngine* decisionEngine, prop::PropEngine* propEngine, unsigned simplifyAssertionsDepth, bool* propagatorNeedsFinish, theory::booleans::CircuitPropagator* propagator, std::vector<Node>* boolsVars, context::CDO<unsigned>* substitutionsIndex, std::vector<Node>* nonClausalLearnedLiterals, Node dtrue, unsigned realAssertionsEnd){
+  initInternal(SmtEngine* smt, TheoryEngine* theoryEngine, theory:SubstitutionMap* topLevelSubstitutions, theory::arith::PseudoBooleanPreprocessor* pbsPreprocessor, iteSkolemMap* iteSkolemMap, RemoveTermFormulas* iteRemover, DecisionEngine* decisionEngine, prop::PropEngine* propEngine, unsigned simplifyAssertionsDepth, bool* propagatorNeedsFinish, theory::booleans::CircuitPropagator* propagator, std::vector<Node>* boolsVars, context::CDO<unsigned>* substitutionsIndex, std::vector<Node>* nonClausalLearnedLiterals, Node dtrue, unsigned realAssertionsEnd)
   
   d_initialized = true;
-  }
+  }*/
 
-  virtual void initInternal(SmtEngine* smt, TheoryEngine* theoryEngine, theory:SubstitutionMap* topLevelSubstitutions, theory::arith::PseudoBooleanPreprocessor* pbsPreprocessor, iteSkolemMap* iteSkolemMap, RemoveTermFormulas* iteRemover, DecisionEngine* decisionEngine, prop::PropEngine* propEngine, unsigned simplifyAssertionsDepth, bool* propagatorNeedsFinish, theory::booleans::CircuitPropagator* propagator, std::vector<Node>* boolsVars, context::CDO<unsigned>* substitutionsIndex, std::vector<Node>* nonClausalLearnedLiterals, Node dtrue, unsigned realAssertionsEnd){
-  } */
+/*  virtual void initInternal(SmtEngine* smt, TheoryEngine* theoryEngine, 
+     theory::SubstitutionMap* topLevelSubstitutions, 
+     theory::arith::PseudoBooleanProcessor* pbsPreprocessor, 
+     RemoveTermFormulas* iteRemover, 
+     DecisionEngine* decisionEngine, prop::PropEngine* propEngine, 
+     bool* propagatorNeedsFinish, 
+     theory::booleans::CircuitPropagator* propagator, 
+     std::vector<Node>* boolsVars, 
+     context::CDO<unsigned>* substitutionsIndex, 
+     std::vector<Node>* nonClausalLearnedLiterals*/
 
   virtual PreprocessingPassResult apply(AssertionPipeline* assertionsToPreprocess) = 0;
 
@@ -112,7 +144,7 @@ class PreprocessingPass {
 
   void addFormula(TNode n, bool inUnsatCore, AssertionPipeline* assertionsToPreprocess, bool inInput = true)
    throw(TypeCheckingException, LogicException) {
-  if (n == d_true) {
+  if (n == NodeManager::currentNM()->mkConst(true)) {
     // nothing to do
     return;
   }
@@ -148,14 +180,6 @@ class PreprocessingPass {
   // have two different subclasses of PreprocessingPass or a superclass for
   // PreprocessingPass that does not do any registration.
 
-  PreprocessingPass(Node dtrue, const std::string& name, bool registerPass = false) : d_true(dtrue), d_name(name), d_timer("preproc::" + name), d_initialized(false){
-   if (registerPass) {
-     PreprocessingPassRegistry::getInstance()->registerPass(this);
-   }
- //  d_timer = TimerStat("preproc::" + d_name);
- //  smtStatisticsRegistry()->registerStat(&d_timer);
-  }
-
  PreprocessingPass(const std::string& name, bool registerPass = false) : d_name(name), d_timer("preproc::" + name), d_initialized(false){
    if (registerPass) {
      PreprocessingPassRegistry::getInstance()->registerPass(this);
@@ -174,7 +198,6 @@ protected:
   void spendResource(unsigned amount) {
     NodeManager::currentResourceManager()->spendResource(amount);
   }  // TODO: modify class as needed
-  Node d_true;
   std::string d_name;
   TimerStat d_timer; 
   bool d_initialized;

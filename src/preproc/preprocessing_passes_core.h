@@ -4,12 +4,8 @@
 #define __CVC4__PREPROC__PREPROCESSING_PASSES_CORE_H
 
 #include "preproc/preprocessing_pass.h"
-#include "theory/substitutions.h"
-#include "theory/arith/pseudoboolean_proc.h"
-#include "theory/booleans/circuit_propagator.h"
 #include "smt/smt_engine.h"
 #include "smt/term_formula_removal.h"
-#include "decision/decision_engine.h"
 
 namespace CVC4 {
 
@@ -24,10 +20,9 @@ typedef context::CDList<Node> NodeList;
 class ExpandingDefinitionsPass : public PreprocessingPass {
  public:   
   virtual PreprocessingPassResult apply(AssertionPipeline* assertionsToPreprocess);
-  ExpandingDefinitionsPass(SmtEngine* smt, TimerStat definitionExpansionTime);
+  ExpandingDefinitionsPass(SmtEngine* smt); 
  private:
   SmtEngine* d_smt;
-  TimerStat d_definitionExpansionTime;
   Node expandDefinitions(TNode n, NodeToNodeHashMap& cache,
                          bool expandOnly = false)
       throw(TypeCheckingException, LogicException, UnsafeInterruptException);
@@ -94,9 +89,8 @@ class BVAbstractionPass : public PreprocessingPass {
 class UnconstrainedSimpPass : public PreprocessingPass {
  public:
   virtual PreprocessingPassResult apply(AssertionPipeline* assertionsToPreprocess);
-  UnconstrainedSimpPass(TimerStat unconstrainedSimpTime, TheoryEngine* theoryEngine);
+  UnconstrainedSimpPass(TheoryEngine* theoryEngine);
  private:
-  TimerStat d_unconstrainedSimpTime;
   TheoryEngine* d_theoryEngine;
   // Simplify based on unconstrained values
 };
@@ -170,21 +164,19 @@ class PBRewritePass : public PreprocessingPass {
 class RemoveITEPass : public PreprocessingPass {
   public: 
      virtual PreprocessingPassResult apply(AssertionPipeline* assertionsToPreprocess);
-     RemoveITEPass(SmtEngine* smt, IteSkolemMap* iteSkolemMap, RemoveTermFormulas* iteRemover);
+     RemoveITEPass(SmtEngine* smt, RemoveTermFormulas* iteRemover);
   private:
      SmtEngine* d_smt;
-     IteSkolemMap* d_iteSkolemMap;
      RemoveTermFormulas* d_iteRemover;
 };
  
 class DoStaticLearningPass : public PreprocessingPass {
   public:
      virtual PreprocessingPassResult apply(AssertionPipeline* assertionsToPreprocess);
-     DoStaticLearningPass(TheoryEngine* theoryEngine, SmtEngine* smt, TimerStat staticLearningTime);
+     DoStaticLearningPass(TheoryEngine* theoryEngine, SmtEngine* smt);
   private:
      TheoryEngine* d_theoryEngine;
      SmtEngine* d_smt;
-     TimerStat d_staticLearningTime;
      //Performs static learning on the assertions.
      void staticLearning(AssertionPipeline* assertionsToPreprocess);
 };
@@ -192,19 +184,17 @@ class DoStaticLearningPass : public PreprocessingPass {
 class RewriteApplyToConstPass : public PreprocessingPass {
   public:
      virtual PreprocessingPassResult apply(AssertionPipeline* assertionsToPreprocess);
-     RewriteApplyToConstPass(TimerStat rewriteApplyToConstTime);
+     RewriteApplyToConstPass();
   private:
-    TimerStat d_rewriteApplyToConstTime;
     Node rewriteApplyToConst(TNode n);
 };
 
 class TheoryPreprocessPass : public PreprocessingPass {
   public :
       virtual PreprocessingPassResult apply(AssertionPipeline* assertionsToPreprocess);
-      TheoryPreprocessPass(TheoryEngine* theoryEngine, TimerStat theoryPreprocessTime);
+      TheoryPreprocessPass(TheoryEngine* theoryEngine);
   private:
       TheoryEngine* d_theoryEngine;
-      TimerStat d_theoryPreprocessTime;
 };
  
 class BitBlastModeEagerPass : public PreprocessingPass {
@@ -218,66 +208,56 @@ class BitBlastModeEagerPass : public PreprocessingPass {
 class NoConflictPass : public PreprocessingPass {
   public:
       virtual PreprocessingPassResult apply(AssertionPipeline* assertionsToPreprocess);
-      NoConflictPass(DecisionEngine* decisionEngine, unsigned realAssertionsEnd, IteSkolemMap* iteSkolemMap );
+      NoConflictPass(DecisionEngine* decisionEngine);
   private:
      DecisionEngine* d_decisionEngine;
-     unsigned d_realAssertionsEnd;
-     IteSkolemMap* d_iteSkolemMap;
 }; 
 
 class CNFPass : public PreprocessingPass{
   public:
       virtual PreprocessingPassResult apply(AssertionPipeline* assertionsToPreprocess);
-      CNFPass(prop::PropEngine* propEngine, TimerStat cnfConversionTime);
+      CNFPass(prop::PropEngine* propEngine);
   private:
      prop::PropEngine* d_propEngine; 
-     TimerStat d_cnfConversionTime;
 };
 
 class RepeatSimpPass : public PreprocessingPass {
   public:
      virtual PreprocessingPassResult apply(AssertionPipeline* assertionsToPreprocess);
-     RepeatSimpPass(theory::SubstitutionMap* topLevelSubstitutions, unsigned simplifyAssertionsDepth, bool* noConflict, IteSkolemMap iteSkolemMap, unsigned realAssertionsEnd);
+     RepeatSimpPass(theory::SubstitutionMap* topLevelSubstitutions, bool* noConflict);
   private: 
      theory::SubstitutionMap* d_topLevelSubstitutions;
-     void collectSkolems(TNode n, set<TNode>& skolemSet, unordered_map<Node, bool, NodeHashFunction>& cache);
-     bool checkForBadSkolems(TNode n, TNode skolem, unordered_map<Node, bool, NodeHashFunction>& cache);
-     unsigned d_simplifyAssertionsDepth;
+     void collectSkolems(TNode n, set<TNode>& skolemSet, unordered_map<Node, bool, NodeHashFunction>& cache, AssertionPipeline* assertionsToPreprocess);
+     bool checkForBadSkolems(TNode n, TNode skolem, unordered_map<Node, bool, NodeHashFunction>& cache, AssertionPipeline* assertionsToPreprocess);
      bool* noConflict;
-     IteSkolemMap d_iteSkolemMap;
-     unsigned d_realAssertionsEnd;
 };     
 
 class NonClausalSimplificationPass : public PreprocessingPass{
   public:
     virtual PreprocessingPassResult apply(AssertionPipeline* assertionsToPreprocess);
-    NonClausalSimplificationPass(SmtEngine* smt, bool* propagatorNeedsFinish, theory::booleans::CircuitPropagator* propagator, TimerStat nonclausalSimplificationTime, context::CDO<unsigned>* substitutionsIndex, theory::SubstitutionMap* topLevelSubstitutions, std::vector<Node>* nonClausalLearnedLiterals, IntStat numConstantProps, Node dtrue, unsigned realAssertionsEnd); 
+    NonClausalSimplificationPass(SmtEngine* smt, bool* propagatorNeedsFinish, theory::booleans::CircuitPropagator* propagator, context::CDO<unsigned>* substitutionsIndex, theory::SubstitutionMap* topLevelSubstitutions, std::vector<Node>* nonClausalLearnedLiterals); 
 
   private:
    SmtEngine* d_smt;
    bool* d_propagatorNeedsFinish;
    theory::booleans::CircuitPropagator* d_propagator;
-   TimerStat d_nonclausalSimplificationTime;
    context::CDO<unsigned>* d_substitutionsIndex;
    theory::SubstitutionMap* d_topLevelSubstitutions;
    std::vector<Node>* d_nonClausalLearnedLiterals;
    IntStat d_numConstantProps;//Do I need to pass in a pointer for this?
-   unsigned d_realAssertionsEnd;
 };
 
 class MiplibTrickPass : public PreprocessingPass {
   public:
    virtual PreprocessingPassResult apply(AssertionPipeline* assertionsToPreprocess);
-   MiplibTrickPass(SmtEngine* smt, TimerStat miplibPassTime, theory::booleans::CircuitPropagator* propagator, std::vector<Node>* boolsVars, unsigned realAssertionsEnd, Node dtrue, IntStat numMiplibAssertionsRemoved, theory::SubstitutionMap* topLevelSubstitutions, context::Context* fakeContext); 
+   MiplibTrickPass(SmtEngine* smt, theory::booleans::CircuitPropagator* propagator, std::vector<Node>* boolsVars, theory::SubstitutionMap* topLevelSubstitutions); 
   private:
    SmtEngine* d_smt;
-   TimerStat d_miplibPassTime;
    theory::booleans::CircuitPropagator* d_propagator;
    std::vector<Node>* d_boolVars;
-   unsigned d_realAssertionsEnd;
    IntStat d_numMiplibAssertionsRemoved;  
    theory::SubstitutionMap* d_topLevelSubstitutions;
-   context::Context* d_fakeContext;
+   context::Context d_fakeContext;
    
    void traceBackToAssertions(const std::vector<Node>& nodes,
                              std::vector<TNode>& assertions);
@@ -288,20 +268,17 @@ class MiplibTrickPass : public PreprocessingPass {
 class EarlyTheoryPass : public PreprocessingPass {
  public: 
    virtual PreprocessingPassResult apply(AssertionPipeline* assertionsToPreprocess);
-   EarlyTheoryPass(TheoryEngine* theoryEngine, TimerStat theoryPreprocessTime);
+   EarlyTheoryPass(TheoryEngine* theoryEngine); 
  private:
    TheoryEngine* d_theoryEngine;
-   TimerStat d_theoryPreprocessTime;
 };
 
 class SimpITEPass : public PreprocessingPass {
   public: 
    virtual PreprocessingPassResult apply(AssertionPipeline* assertionsToPreprocess);
-   SimpITEPass(unsigned realAssertionsEnd, TimerStat simpITETime, TheoryEngine* theoryEngine);
+   SimpITEPass(TheoryEngine* theoryEngine);
  
   private:
-   unsigned d_realAssertionsEnd;
-   TimerStat d_simpITETime;
    TheoryEngine* d_theoryEngine;
 
    void compressBeforeRealAssertions(size_t before, AssertionPipeline* assertionsToPreprocess);

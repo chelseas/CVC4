@@ -28,7 +28,7 @@ using namespace theory;
 
 namespace preproc {
 
-ExpandingDefinitionsPass::ExpandingDefinitionsPass(SmtEngine* smt, TimerStat definitionExpansionTime) : PreprocessingPass("expandingDefinitions"), d_smt(smt), d_definitionExpansionTime(definitionExpansionTime){
+ExpandingDefinitionsPass::ExpandingDefinitionsPass(SmtEngine* smt) : PreprocessingPass("expandingDefinitions"), d_smt(smt){
 }
 
 Node ExpandingDefinitionsPass::expandDefinitions(TNode n, unordered_map<Node, Node, NodeHashFunction>& cache, bool expandOnly)
@@ -197,7 +197,7 @@ Node ExpandingDefinitionsPass::expandDefinitions(TNode n, unordered_map<Node, No
 PreprocessingPassResult ExpandingDefinitionsPass::apply(AssertionPipeline* assertionsToPreprocess){
   Chat() << "expanding definitions..." << std::endl;
     Trace("simplify") << "SmtEnginePrivate::simplify(): expanding definitions" << endl;
-    TimerStat::CodeTimer codeTimer(d_definitionExpansionTime);
+    TimerStat::CodeTimer codeTimer(d_timer);
     unordered_map<Node, Node, NodeHashFunction> cache;
     for(unsigned i = 0; i < assertionsToPreprocess->size(); ++ i) {
       assertionsToPreprocess->replace(i, expandDefinitions((*assertionsToPreprocess)[i], cache));
@@ -668,14 +668,13 @@ PreprocessingPassResult BVAbstractionPass::apply(AssertionPipeline* assertionsTo
  return PreprocessingPassResult(true);
 } 
 
-UnconstrainedSimpPass::UnconstrainedSimpPass(TimerStat unconstrainedSimpTime, TheoryEngine* theoryEngine) : 
+UnconstrainedSimpPass::UnconstrainedSimpPass(TheoryEngine* theoryEngine) : 
       PreprocessingPass("unconstrainedSimp"),
-      d_unconstrainedSimpTime(unconstrainedSimpTime), 
       d_theoryEngine(theoryEngine){
 }
 
 PreprocessingPassResult UnconstrainedSimpPass::apply(AssertionPipeline* assertionsToPreprocess){
-  TimerStat::CodeTimer unconstrainedSimpTimer(d_unconstrainedSimpTime);
+  TimerStat::CodeTimer unconstrainedSimpTimer(d_timer);
   spendResource(options::preprocessStep());
   Trace("simplify") << "SmtEnginePrivate::unconstrainedSimp()" << std::endl;
   d_theoryEngine->ppUnconstrainedSimp(assertionsToPreprocess->ref());
@@ -858,7 +857,7 @@ PreprocessingPassResult PBRewritePass::apply(AssertionPipeline* assertionsToPrep
  return PreprocessingPassResult(true);
 }
 
-RemoveITEPass::RemoveITEPass(SmtEngine* smt, IteSkolemMap* iteSkolemMap, RemoveTermFormulas* iteRemover) : PreprocessingPass("removeITE"), d_smt(smt), d_iteSkolemMap(iteSkolemMap), d_iteRemover(iteRemover){
+RemoveITEPass::RemoveITEPass(SmtEngine* smt, RemoveTermFormulas* iteRemover) : PreprocessingPass("removeITE"), d_smt(smt), d_iteRemover(iteRemover){
 }
 
 PreprocessingPassResult RemoveITEPass::apply(AssertionPipeline* assertionsToPreprocess){
@@ -867,21 +866,21 @@ PreprocessingPassResult RemoveITEPass::apply(AssertionPipeline* assertionsToPrep
   Trace("simplify") << "SmtEnginePrivate::removeITEs()" << endl;
 
   // Remove all of the ITE occurrences and normalize
-  d_iteRemover->run(assertionsToPreprocess->ref(), *d_iteSkolemMap, true);
+  d_iteRemover->run(assertionsToPreprocess->ref(), *assertionsToPreprocess->getSkolemMap(), true);
   for (unsigned i = 0; i < assertionsToPreprocess->size(); ++ i) {
     assertionsToPreprocess->replace(i, theory::Rewriter::rewrite((*assertionsToPreprocess)[i]));
   }
  return PreprocessingPassResult(true);
 }
 
-DoStaticLearningPass::DoStaticLearningPass(TheoryEngine* theoryEngine, SmtEngine* smt, TimerStat staticLearningTime) : PreprocessingPass("doStaticLearning"), d_theoryEngine(theoryEngine), d_smt(smt), d_staticLearningTime(staticLearningTime){
+DoStaticLearningPass::DoStaticLearningPass(TheoryEngine* theoryEngine, SmtEngine* smt) : PreprocessingPass("doStaticLearning"), d_theoryEngine(theoryEngine), d_smt(smt) {
 }
 
 void DoStaticLearningPass::staticLearning(AssertionPipeline* assertionsToPreprocess){
   d_smt->finalOptionsAreSet();
   spendResource(options::preprocessStep());
 
-  TimerStat::CodeTimer staticLearningTimer(d_staticLearningTime);
+  TimerStat::CodeTimer staticLearningTimer(d_timer);
 
   Trace("simplify") << "SmtEnginePrivate::staticLearning()" << std::endl;
 
@@ -909,7 +908,7 @@ PreprocessingPassResult DoStaticLearningPass::apply(AssertionPipeline* assertion
  return PreprocessingPassResult(true);
 } 
 
-RewriteApplyToConstPass::RewriteApplyToConstPass(TimerStat rewriteApplyToConstTime) : PreprocessingPass("rewriteApplyToConst"), d_rewriteApplyToConstTime(rewriteApplyToConstTime){
+RewriteApplyToConstPass::RewriteApplyToConstPass(): PreprocessingPass("rewriteApplyToConst") {
 }
 
 Node RewriteApplyToConstPass::rewriteApplyToConst(TNode n){
@@ -973,19 +972,19 @@ Node RewriteApplyToConstPass::rewriteApplyToConst(TNode n){
 
 PreprocessingPassResult RewriteApplyToConstPass::apply(AssertionPipeline* assertionsToPreprocess){
    Chat() << "Rewriting applies to constants..." << std::endl;
-    TimerStat::CodeTimer codeTimer(d_rewriteApplyToConstTime);
+    TimerStat::CodeTimer codeTimer(d_timer);
     for (unsigned i = 0; i < assertionsToPreprocess->size(); ++ i) {
       (*assertionsToPreprocess)[i] = theory::Rewriter::rewrite(rewriteApplyToConst((*assertionsToPreprocess)[i]));
     }
  return PreprocessingPassResult(true);
 }
 
-TheoryPreprocessPass::TheoryPreprocessPass(TheoryEngine* theoryEngine, TimerStat theoryPreprocessTime) : PreprocessingPass("theoryPreprocess"), d_theoryEngine(theoryEngine), d_theoryPreprocessTime(theoryPreprocessTime){
+TheoryPreprocessPass::TheoryPreprocessPass(TheoryEngine* theoryEngine) : PreprocessingPass("theoryPreprocess"), d_theoryEngine(theoryEngine) {
 }
 
 PreprocessingPassResult TheoryPreprocessPass::apply(AssertionPipeline* assertionsToPreprocess){
     Chat() << "theory preprocessing..." << endl;
-    TimerStat::CodeTimer codeTimer(d_theoryPreprocessTime);
+    TimerStat::CodeTimer codeTimer(d_timer);
     // Call the theory preprocessors
     d_theoryEngine->preprocessStart();
     for (unsigned i = 0; i < assertionsToPreprocess->size(); ++ i) {
@@ -1008,23 +1007,23 @@ PreprocessingPassResult BitBlastModeEagerPass::apply(AssertionPipeline* assertio
  return PreprocessingPassResult(true);
 }
 
-NoConflictPass::NoConflictPass(DecisionEngine* decisionEngine, unsigned realAssertionsEnd, IteSkolemMap* iteSkolemMap) : PreprocessingPass("noConflict"), d_decisionEngine(decisionEngine), d_realAssertionsEnd(realAssertionsEnd), d_iteSkolemMap(iteSkolemMap){
+NoConflictPass::NoConflictPass(DecisionEngine* decisionEngine) : PreprocessingPass("noConflict"), d_decisionEngine(decisionEngine){
 }
 
 PreprocessingPassResult NoConflictPass::apply(AssertionPipeline* assertionsToPreprocess){
     Chat() << "pushing to decision engine..." << std::endl;
     Assert(iteRewriteAssertionsEnd == assertionsToPreprocess->size());
     d_decisionEngine->addAssertions
-      (assertionsToPreprocess->ref(), d_realAssertionsEnd, *d_iteSkolemMap);
+      (assertionsToPreprocess->ref(), assertionsToPreprocess->getRealAssertionsEnd(), *assertionsToPreprocess->getSkolemMap());
  return PreprocessingPassResult(true);
 }
 
-CNFPass::CNFPass(prop::PropEngine* propEngine, TimerStat cnfConversionTime) : PreprocessingPass("cnf"), d_propEngine(propEngine), d_cnfConversionTime(cnfConversionTime){
+CNFPass::CNFPass(prop::PropEngine* propEngine) : PreprocessingPass("cnf"), d_propEngine(propEngine){
 }
 
 PreprocessingPassResult CNFPass::apply(AssertionPipeline* assertionsToPreprocess){
    Chat() << "converting to CNF..." << endl;
-    TimerStat::CodeTimer codeTimer(d_cnfConversionTime);
+    TimerStat::CodeTimer codeTimer(d_timer);
     for (unsigned i = 0; i < assertionsToPreprocess->size(); ++ i) {
       Chat() << "+ " << (*assertionsToPreprocess)[i] << std::endl;
       d_propEngine->assertFormula((*assertionsToPreprocess)[i]);
@@ -1034,16 +1033,14 @@ PreprocessingPassResult CNFPass::apply(AssertionPipeline* assertionsToPreprocess
 
 RepeatSimpPass::RepeatSimpPass(
     theory::SubstitutionMap* topLevelSubstitutions,
-    unsigned simplifyAssertionsDepth, bool* noConflict, 
-    IteSkolemMap iteSkolemMap, unsigned realAssertionsEnd) :
+    bool* noConflict) :
     PreprocessingPass("repeatSimp"), 
     d_topLevelSubstitutions(topLevelSubstitutions),
-    d_simplifyAssertionsDepth(simplifyAssertionsDepth), 
-    noConflict(noConflict), d_iteSkolemMap(iteSkolemMap),
-    d_realAssertionsEnd(realAssertionsEnd){
+    noConflict(noConflict)
+    {
 }
 
-bool RepeatSimpPass::checkForBadSkolems(TNode n, TNode skolem, unordered_map<Node, bool, NodeHashFunction>& cache)
+bool RepeatSimpPass::checkForBadSkolems(TNode n, TNode skolem, unordered_map<Node, bool, NodeHashFunction>& cache, AssertionPipeline* assertionsToPreprocess)
 {
   unordered_map<Node, bool, NodeHashFunction>::iterator it;
   it = cache.find(n);
@@ -1053,9 +1050,9 @@ bool RepeatSimpPass::checkForBadSkolems(TNode n, TNode skolem, unordered_map<Nod
 
   size_t sz = n.getNumChildren();
   if (sz == 0) {
-    IteSkolemMap::iterator it = d_iteSkolemMap.find(n);
+    IteSkolemMap::iterator it = assertionsToPreprocess->getSkolemMap()->find(n);
     bool bad = false;
-    if (it != d_iteSkolemMap.end()) {
+    if (it != assertionsToPreprocess->getSkolemMap()->end()) {
       if (!((*it).first < n)) {
         bad = true;
       }
@@ -1066,7 +1063,7 @@ bool RepeatSimpPass::checkForBadSkolems(TNode n, TNode skolem, unordered_map<Nod
 
   size_t k = 0;
   for (; k < sz; ++k) {
-    if (checkForBadSkolems(n[k], skolem, cache)) {
+    if (checkForBadSkolems(n[k], skolem, cache, assertionsToPreprocess)) {
       cache[n] = true;
       return true;
     }
@@ -1076,7 +1073,7 @@ bool RepeatSimpPass::checkForBadSkolems(TNode n, TNode skolem, unordered_map<Nod
   return false;
 }
 
-void RepeatSimpPass::collectSkolems(TNode n, set<TNode>& skolemSet, unordered_map<Node, bool, NodeHashFunction>& cache)
+void RepeatSimpPass::collectSkolems(TNode n, set<TNode>& skolemSet, unordered_map<Node, bool, NodeHashFunction>& cache, AssertionPipeline* assertionsToPreprocess)
 {
   unordered_map<Node, bool, NodeHashFunction>::iterator it;
   it = cache.find(n);
@@ -1086,8 +1083,8 @@ void RepeatSimpPass::collectSkolems(TNode n, set<TNode>& skolemSet, unordered_ma
 
   size_t sz = n.getNumChildren();
   if (sz == 0) {
-    IteSkolemMap::iterator it = d_iteSkolemMap.find(n);
-    if (it != d_iteSkolemMap.end()) {
+    IteSkolemMap::iterator it = assertionsToPreprocess->getSkolemMap()->find(n);
+    if (it != assertionsToPreprocess->getSkolemMap()->end()) {
       skolemSet.insert(n);
     }
     cache[n] = true;
@@ -1096,7 +1093,7 @@ void RepeatSimpPass::collectSkolems(TNode n, set<TNode>& skolemSet, unordered_ma
 
   size_t k = 0;
   for (; k < sz; ++k) {
-    collectSkolems(n[k], skolemSet, cache);
+    collectSkolems(n[k], skolemSet, cache, assertionsToPreprocess);
   }
   cache[n] = true;
 }
@@ -1115,18 +1112,18 @@ PreprocessingPassResult RepeatSimpPass::apply(AssertionPipeline* assertionsToPre
       std::set<TNode> skolemSet;
       theory::SubstitutionMap::iterator pos = d_topLevelSubstitutions->begin();
       for (; pos != d_topLevelSubstitutions->end(); ++pos) {
-        collectSkolems((*pos).first, skolemSet, cache);
-        collectSkolems((*pos).second, skolemSet, cache);
+        collectSkolems((*pos).first, skolemSet, cache, assertionsToPreprocess);
+        collectSkolems((*pos).second, skolemSet, cache, assertionsToPreprocess);
       }
 
       // We need to ensure:
       // 1. iteExpr has the form (ite cond (sk = t) (sk = e))
       // 2. if some sk' in Sk appears in cond, t, or e, then sk' <_sk sk
       // If either of these is violated, we must add iteExpr as a proper assertion
-      IteSkolemMap::iterator it = d_iteSkolemMap.begin();
-      IteSkolemMap::iterator iend = d_iteSkolemMap.end();
+      IteSkolemMap::iterator it = assertionsToPreprocess->getSkolemMap()->begin();
+      IteSkolemMap::iterator iend = assertionsToPreprocess->getSkolemMap()->end();
       NodeBuilder<> builder(kind::AND);
-      builder << (*assertionsToPreprocess)[d_realAssertionsEnd - 1];
+      builder << (*assertionsToPreprocess)[assertionsToPreprocess->getRealAssertionsEnd() - 1];
       std::vector<TNode> toErase;
       for (; it != iend; ++it) {
         if (skolemSet.find((*it).first) == skolemSet.end()) {
@@ -1137,9 +1134,9 @@ PreprocessingPassResult RepeatSimpPass::apply(AssertionPipeline* assertionsToPre
               iteExpr[2].getKind() == kind::EQUAL &&
               iteExpr[2][0] == (*it).first) {
             cache.clear();
-            bool bad = checkForBadSkolems(iteExpr[0], (*it).first, cache);
-            bad = bad || checkForBadSkolems(iteExpr[1][1], (*it).first, cache);
-            bad = bad || checkForBadSkolems(iteExpr[2][1], (*it).first, cache);
+            bool bad = checkForBadSkolems(iteExpr[0], (*it).first, cache, assertionsToPreprocess);
+            bad = bad || checkForBadSkolems(iteExpr[1][1], (*it).first, cache, assertionsToPreprocess);
+            bad = bad || checkForBadSkolems(iteExpr[2][1], (*it).first, cache, assertionsToPreprocess);
             if (!bad) {
               continue;
             }
@@ -1152,16 +1149,16 @@ PreprocessingPassResult RepeatSimpPass::apply(AssertionPipeline* assertionsToPre
       }
       if(builder.getNumChildren() > 1) {
         while (!toErase.empty()) {
-          d_iteSkolemMap.erase(toErase.back());
+          assertionsToPreprocess->getSkolemMap()->erase(toErase.back());
           toErase.pop_back();
         }
-        (*assertionsToPreprocess)[d_realAssertionsEnd - 1] = theory::Rewriter::rewrite(Node(builder));
+        (*assertionsToPreprocess)[assertionsToPreprocess->getRealAssertionsEnd() - 1] = theory::Rewriter::rewrite(Node(builder));
        }
  return PreprocessingPassResult(true);
 }
 
-NonClausalSimplificationPass::NonClausalSimplificationPass(SmtEngine* smt, bool* propagatorNeedsFinish, theory::booleans::CircuitPropagator* propagator, TimerStat nonclausalSimplificationTime, context::CDO<unsigned>* substitutionsIndex, theory::SubstitutionMap* topLevelSubstitutions, std::vector<Node>* nonClausalLearnedLiterals, IntStat numConstantProps, Node dtrue, unsigned realAssertionsEnd) :
-   PreprocessingPass(dtrue, "nonClausalSimplification"), d_smt(smt), d_propagatorNeedsFinish(propagatorNeedsFinish), d_propagator(propagator), d_nonclausalSimplificationTime(nonclausalSimplificationTime), d_substitutionsIndex(substitutionsIndex), d_topLevelSubstitutions(topLevelSubstitutions), d_nonClausalLearnedLiterals(nonClausalLearnedLiterals), d_numConstantProps(numConstantProps), d_realAssertionsEnd(realAssertionsEnd){
+NonClausalSimplificationPass::NonClausalSimplificationPass(SmtEngine* smt, bool* propagatorNeedsFinish, theory::booleans::CircuitPropagator* propagator, context::CDO<unsigned>* substitutionsIndex, theory::SubstitutionMap* topLevelSubstitutions, std::vector<Node>* nonClausalLearnedLiterals) :
+   PreprocessingPass("nonClausalSimplification"), d_smt(smt), d_propagatorNeedsFinish(propagatorNeedsFinish), d_propagator(propagator), d_substitutionsIndex(substitutionsIndex), d_topLevelSubstitutions(topLevelSubstitutions), d_nonClausalLearnedLiterals(nonClausalLearnedLiterals), d_numConstantProps("preproc::numConstantProps", 0) {
 }
 
 // returns false if it learns a conflict
@@ -1173,7 +1170,7 @@ PreprocessingPassResult NonClausalSimplificationPass::apply(AssertionPipeline* a
     return PreprocessingPassResult(true);
   }
 
-  TimerStat::CodeTimer nonclausalTimer(d_nonclausalSimplificationTime);
+  TimerStat::CodeTimer nonclausalTimer(d_timer);
 
   Trace("simplify") << "SmtEnginePrivate::nonClausalSimplify()" << endl;
   for (unsigned i = 0; i < assertionsToPreprocess->size(); ++ i) {
@@ -1429,8 +1426,8 @@ PreprocessingPassResult NonClausalSimplificationPass::apply(AssertionPipeline* a
   }
 
   NodeBuilder<> learnedBuilder(kind::AND);
-  Assert(d_realAssertionsEnd <= assertionsToPreprocess->size());
-  learnedBuilder << (*assertionsToPreprocess)[d_realAssertionsEnd - 1];
+  Assert(assertionsToPreprocess->getRealAssertionsEnd() <= assertionsToPreprocess->size());
+  learnedBuilder << (*assertionsToPreprocess)[assertionsToPreprocess->getRealAssertionsEnd() - 1];
 
   for (unsigned i = 0; i < d_nonClausalLearnedLiterals->size(); ++ i) {
     Node learned = (*d_nonClausalLearnedLiterals)[i];
@@ -1483,15 +1480,16 @@ PreprocessingPassResult NonClausalSimplificationPass::apply(AssertionPipeline* a
   d_topLevelSubstitutions->addSubstitutions(newSubstitutions);
 
   if(learnedBuilder.getNumChildren() > 1) {
-    assertionsToPreprocess->replace(d_realAssertionsEnd - 1,
+    assertionsToPreprocess->replace(assertionsToPreprocess->getRealAssertionsEnd() - 1,
       theory::Rewriter::rewrite(Node(learnedBuilder)));
   }
 
   *d_propagatorNeedsFinish = true;
   return PreprocessingPassResult(true);
 }
-MiplibTrickPass::MiplibTrickPass(SmtEngine* smt, TimerStat miplibPassTime, theory::booleans::CircuitPropagator* propagator, std::vector<Node>* boolVars, unsigned realAssertionsEnd, Node dtrue, IntStat numMiplibAssertionsRemoved, theory::SubstitutionMap* topLevelSubstitutions, context::Context* fakeContext) :
-   PreprocessingPass(dtrue, "miplibTrick"), d_smt(smt), d_miplibPassTime(miplibPassTime), d_propagator(propagator), d_boolVars(boolVars), d_realAssertionsEnd(realAssertionsEnd), d_numMiplibAssertionsRemoved(numMiplibAssertionsRemoved), d_topLevelSubstitutions(topLevelSubstitutions), d_fakeContext(fakeContext){
+MiplibTrickPass::MiplibTrickPass(SmtEngine* smt, theory::booleans::CircuitPropagator* propagator, std::vector<Node>* boolVars, theory::SubstitutionMap* topLevelSubstitutions) :
+   PreprocessingPass("miplibTrick"), d_smt(smt), d_propagator(propagator), d_boolVars(boolVars), d_numMiplibAssertionsRemoved("preproc::d_numMiplibAssertionsRemoved", 0), d_topLevelSubstitutions(topLevelSubstitutions), d_fakeContext(){
+  smtStatisticsRegistry()->registerStat(&d_numMiplibAssertionsRemoved);
 }
 
 size_t MiplibTrickPass::removeFromConjunction(Node& n, const std::unordered_set<unsigned long>& toRemove) {
@@ -1526,7 +1524,7 @@ size_t MiplibTrickPass::removeFromConjunction(Node& n, const std::unordered_set<
         }
       }
       if(b.getNumChildren() == 0) {
-        n = d_true;
+        n = NodeManager::currentNM()->mkConst(true);
         b.clear();
       } else if(b.getNumChildren() == 1) {
         n = b[0];
@@ -1560,7 +1558,7 @@ void MiplibTrickPass::traceBackToAssertions(const std::vector<Node>& nodes, std:
 }
 
 void MiplibTrickPass::doMiplibTrick(AssertionPipeline* assertionsToPreprocess) {
-  Assert(d_realAssertionsEnd == assertionsToPreprocess->size());
+  Assert(assertionsToPreprocess->getRealAssertionsEnd() == assertionsToPreprocess->size());
   Assert(!options::incrementalSolving());
 
   const theory::booleans::CircuitPropagator::BackEdgesMap& backEdges = d_propagator->getBackEdges();
@@ -1792,7 +1790,7 @@ void MiplibTrickPass::doMiplibTrick(AssertionPipeline* assertionsToPreprocess) {
               Node geq = theory::Rewriter::rewrite(nm->mkNode(kind::GEQ, newVar, zero));
               Node leq = theory::Rewriter::rewrite(nm->mkNode(kind::LEQ, newVar, one));
               addFormula(theory::Rewriter::rewrite(geq.andNode(leq)), false, assertionsToPreprocess, false);
-              SubstitutionMap nullMap(d_fakeContext);
+              SubstitutionMap nullMap(&d_fakeContext);
               theory::Theory::PPAssertStatus status CVC4_UNUSED; // just for assertions
               status = d_smt->d_theoryEngine->solve(geq, nullMap); Assert(status == theory::Theory::PP_ASSERT_STATUS_UNSOLVED,
                      "unexpected solution from arith's ppAssert()");
@@ -1853,10 +1851,10 @@ void MiplibTrickPass::doMiplibTrick(AssertionPipeline* assertionsToPreprocess) {
   }
   if(!removeAssertions.empty()) {
     Debug("miplib") << "SmtEnginePrivate::simplify(): scrubbing miplib encoding..." << endl;
-    for(size_t i = 0; i < d_realAssertionsEnd; ++i) {
+    for(size_t i = 0; i < assertionsToPreprocess->getRealAssertionsEnd(); ++i) {
       if(removeAssertions.find((*assertionsToPreprocess)[i].getId()) != removeAssertions.end()) {
         Debug("miplib") << "SmtEnginePrivate::simplify(): - removing " << (*assertionsToPreprocess)[i] << endl;
-        (*assertionsToPreprocess)[i] = d_true;
+        (*assertionsToPreprocess)[i] = NodeManager::currentNM()->mkConst(true);
         ++d_numMiplibAssertionsRemoved;
       } else if((*assertionsToPreprocess)[i].getKind() == kind::AND) {
         size_t removals = removeFromConjunction((*assertionsToPreprocess)[i], removeAssertions);
@@ -1873,24 +1871,24 @@ void MiplibTrickPass::doMiplibTrick(AssertionPipeline* assertionsToPreprocess) {
   } else {
     Debug("miplib") << "SmtEnginePrivate::simplify(): miplib pass found nothing." << endl;
   }
-  d_realAssertionsEnd = assertionsToPreprocess->size();
+  assertionsToPreprocess->setRealAssertionsEnd(assertionsToPreprocess->size());
 }
 
 PreprocessingPassResult MiplibTrickPass::apply(AssertionPipeline* assertionsToPreprocess){
   Chat() << "...fixing miplib encodings..." << endl;
   Trace("simplify") << "SmtEnginePrivate::simplify(): "
                           << "looking for miplib pseudobooleans..." << endl;
-  TimerStat::CodeTimer miplibTimer(d_miplibPassTime);
+  TimerStat::CodeTimer miplibTimer(d_timer);
   doMiplibTrick(assertionsToPreprocess);
   return PreprocessingPassResult(true);       
 }
 
-EarlyTheoryPass::EarlyTheoryPass(TheoryEngine* theoryEngine, TimerStat theoryPreprocessTime) : PreprocessingPass("earlyTheory"), d_theoryEngine(theoryEngine), d_theoryPreprocessTime(theoryPreprocessTime){
+EarlyTheoryPass::EarlyTheoryPass(TheoryEngine* theoryEngine) : PreprocessingPass("earlyTheory"), d_theoryEngine(theoryEngine){
 }
 
 PreprocessingPassResult EarlyTheoryPass::apply(AssertionPipeline* assertionsToPreprocess) {
    Chat() << "...doing early theory preprocessing..." << endl;
-      TimerStat::CodeTimer codeTimer(d_theoryPreprocessTime);
+      TimerStat::CodeTimer codeTimer(d_timer);
       // Call the theory preprocessors
       d_theoryEngine->preprocessStart();
       for (unsigned i = 0; i < assertionsToPreprocess->size(); ++ i) {
@@ -1901,20 +1899,20 @@ PreprocessingPassResult EarlyTheoryPass::apply(AssertionPipeline* assertionsToPr
   return PreprocessingPassResult(true);
 }
 
-SimpITEPass::SimpITEPass(unsigned realAssertionsEnd, TimerStat simpITETime, TheoryEngine* theoryEngine) : PreprocessingPass("simpITE"), d_realAssertionsEnd(realAssertionsEnd), d_simpITETime(simpITETime), d_theoryEngine(theoryEngine){
+SimpITEPass::SimpITEPass(TheoryEngine* theoryEngine) : PreprocessingPass("simpITE"), d_theoryEngine(theoryEngine){
 }
  
 void SimpITEPass::compressBeforeRealAssertions(size_t before, AssertionPipeline* assertionsToPreprocess){
   size_t curr = assertionsToPreprocess->size();
   if(before >= curr ||
-     d_realAssertionsEnd <= 0 ||
-     d_realAssertionsEnd >= curr){
+     assertionsToPreprocess->getRealAssertionsEnd() <= 0 ||
+     assertionsToPreprocess->getRealAssertionsEnd() >= curr){
     return;
   }
 }
 
 PreprocessingPassResult SimpITEPass::apply(AssertionPipeline* assertionsToPreprocess) {
-  TimerStat::CodeTimer simpITETimer(d_simpITETime);
+  TimerStat::CodeTimer simpITETimer(d_timer);
 
   spendResource(options::preprocessStep());
 

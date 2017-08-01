@@ -507,9 +507,6 @@ class SmtEnginePrivate : public NodeManagerListener {
   /** Learned literals */
   vector<Node> d_nonClausalLearnedLiterals;
 
-  /** Size of assertions array when preprocessing starts */
-  unsigned d_realAssertionsEnd;
-
   /** A circuit propagator for non-clausal propositional deduction */
   booleans::CircuitPropagator d_propagator;
   bool d_propagatorNeedsFinish;
@@ -559,8 +556,9 @@ public:
    * Map from skolem variables to index in d_assertions containing
    * corresponding introduced Boolean ite
    */
-  IteSkolemMap d_iteSkolemMap;
-
+  AssertionPipeline* getAssertions(){
+    return &d_assertions;
+  }
   /** Instance of the ITE remover */
   RemoveTermFormulas d_iteRemover;
 
@@ -609,7 +607,7 @@ private:
 
   /**
    * Ensures the assertions asserted after before now effectively come before
-   * d_realAssertionsEnd.
+   *d_realAssertionsEnd.
    */
   void compressBeforeRealAssertions(size_t before);
 
@@ -650,7 +648,6 @@ public:
     d_managedReplayLog(),
     d_listenerRegistrations(new ListenerRegistrationList()),
     d_nonClausalLearnedLiterals(),
-    d_realAssertionsEnd(0),
     d_propagator(d_nonClausalLearnedLiterals, true, true),
     d_propagatorNeedsFinish(false),
     d_assertions(),
@@ -661,7 +658,6 @@ public:
     d_abstractValues(),
     d_simplifyAssertionsDepth(0),
     //d_needsExpandDefs(true),  //TODO?
-    d_iteSkolemMap(),
     d_iteRemover(smt.d_userContext),
     d_pbsProcessor(smt.d_userContext),
     d_topLevelSubstitutions(smt.d_userContext)
@@ -802,10 +798,10 @@ public:
    * someone does a push-assert-pop without a check-sat.
    */
   void notifyPop() {
+    d_assertions.getSkolemMap()->clear();
     d_assertions.clear();
     d_nonClausalLearnedLiterals.clear();
-    d_realAssertionsEnd = 0;
-    d_iteSkolemMap.clear();
+    d_assertions.setRealAssertionsEnd(0);
   }
 
   /**
@@ -2418,7 +2414,7 @@ void SmtEnginePrivate::removeITEs() {
   Trace("simplify") << "SmtEnginePrivate::removeITEs()" << endl;
 
   // Remove all of the ITE occurrences and normalize
-  d_iteRemover.run(d_assertions.ref(), d_iteSkolemMap, true);
+  d_iteRemover.run(d_assertions.ref(), *d_assertions.getSkolemMap(), true);
   for (unsigned i = 0; i < d_assertions.size(); ++ i) {
     d_assertions.replace(i, Rewriter::rewrite(d_assertions[i]));
   }
@@ -2721,8 +2717,8 @@ bool SmtEnginePrivate::nonClausalSimplify() {
   }
 
   NodeBuilder<> learnedBuilder(kind::AND);
-  Assert(d_realAssertionsEnd <= d_assertions.size());
-  learnedBuilder << d_assertions[d_realAssertionsEnd - 1];
+  Assert(d_assertions.getRealAssertionsEnd() <= d_assertions.size());
+  learnedBuilder << d_assertions[d_assertions.getRealAssertionsEnd() - 1];
 
   for (unsigned i = 0; i < d_nonClausalLearnedLiterals.size(); ++ i) {
     Node learned = d_nonClausalLearnedLiterals[i];
@@ -2775,7 +2771,7 @@ bool SmtEnginePrivate::nonClausalSimplify() {
   d_topLevelSubstitutions.addSubstitutions(newSubstitutions);
 
   if(learnedBuilder.getNumChildren() > 1) {
-    d_assertions.replace(d_realAssertionsEnd - 1,
+    d_assertions.replace(d_assertions.getRealAssertionsEnd() - 1,
       Rewriter::rewrite(Node(learnedBuilder)));
   }
 
@@ -2809,8 +2805,8 @@ bool SmtEnginePrivate::simpITE() {
 void SmtEnginePrivate::compressBeforeRealAssertions(size_t before){
   size_t curr = d_assertions.size();
   if(before >= curr ||
-     d_realAssertionsEnd <= 0 ||
-     d_realAssertionsEnd >= curr){
+     d_assertions.getRealAssertionsEnd() <= 0 ||
+     d_assertions.getRealAssertionsEnd() >= curr){
     return;
   }
 
@@ -2821,8 +2817,8 @@ void SmtEnginePrivate::compressBeforeRealAssertions(size_t before){
   //  cannot be moved
   // added [before, curr)
   //  can be modified
-  Assert(0 < d_realAssertionsEnd);
-  Assert(d_realAssertionsEnd <= before);
+  Assert(0 < d_assertions.getRealAssertionsEnd());
+  Assert(d_assertions.getRealAssertionsEnd() <= before);
   Assert(before < curr);
 
   std::vector<Node> intoConjunction;
@@ -2830,7 +2826,7 @@ void SmtEnginePrivate::compressBeforeRealAssertions(size_t before){
     intoConjunction.push_back(d_assertions[i]);
   }
   d_assertions.resize(before);
-  size_t lastBeforeItes = d_realAssertionsEnd - 1;
+  size_t lastBeforeItes = d_assertions.getRealAssertionsEnd() - 1;
   intoConjunction.push_back(d_assertions[lastBeforeItes]);
   Node newLast = util::NaryBuilder::mkAssoc(kind::AND, intoConjunction);
   d_assertions.replace(lastBeforeItes, newLast);
@@ -2902,7 +2898,7 @@ size_t SmtEnginePrivate::removeFromConjunction(Node& n, const std::unordered_set
 }
 
 void SmtEnginePrivate::doMiplibTrick() {
-  Assert(d_realAssertionsEnd == d_assertions.size());
+  Assert(d_assertions.getRealAssertionsEnd() == d_assertions.size());
   Assert(!options::incrementalSolving());
 
   const booleans::CircuitPropagator::BackEdgesMap& backEdges = d_propagator.getBackEdges();
@@ -3196,7 +3192,7 @@ void SmtEnginePrivate::doMiplibTrick() {
   }
   if(!removeAssertions.empty()) {
     Debug("miplib") << "SmtEnginePrivate::simplify(): scrubbing miplib encoding..." << endl;
-    for(size_t i = 0; i < d_realAssertionsEnd; ++i) {
+    for(size_t i = 0; i < d_assertions.getRealAssertionsEnd(); ++i) {
       if(removeAssertions.find(d_assertions[i].getId()) != removeAssertions.end()) {
         Debug("miplib") << "SmtEnginePrivate::simplify(): - removing " << d_assertions[i] << endl;
         d_assertions[i] = d_true;
@@ -3216,7 +3212,7 @@ void SmtEnginePrivate::doMiplibTrick() {
   } else {
     Debug("miplib") << "SmtEnginePrivate::simplify(): miplib pass found nothing." << endl;
   }
-  d_realAssertionsEnd = d_assertions.size();
+  d_assertions.setRealAssertionsEnd(d_assertions.size());
 }
 
 
@@ -3237,7 +3233,7 @@ bool SmtEnginePrivate::simplifyAssertions()
       Chat() << "...performing nonclausal simplification..." << endl;
       Trace("simplify") << "SmtEnginePrivate::simplify(): "
                         << "performing non-clausal simplification" << endl;
-      preproc::NonClausalSimplificationPass pass(&d_smt, &d_propagatorNeedsFinish, &d_propagator, d_smt.d_stats->d_nonclausalSimplificationTime, &d_substitutionsIndex, &d_topLevelSubstitutions, &d_nonClausalLearnedLiterals, d_smt.d_stats->d_numConstantProps, d_true, d_realAssertionsEnd);
+      preproc::NonClausalSimplificationPass pass(&d_smt, &d_propagatorNeedsFinish, &d_propagator, &d_substitutionsIndex, &d_topLevelSubstitutions, &d_nonClausalLearnedLiterals);
      bool noConflict = pass.apply(&d_assertions).d_noConflict; 
       if(!noConflict) {
         return false;
@@ -3254,8 +3250,8 @@ bool SmtEnginePrivate::simplifyAssertions()
           // we add new assertions and need this (in practice, this
           // restriction only disables miplib processing during
           // re-simplification, which we don't expect to be useful anyway)
-          d_realAssertionsEnd == d_assertions.size() ) {
-            preproc::MiplibTrickPass pass(&d_smt, d_smt.d_stats->d_miplibPassTime, &d_propagator, &d_boolVars, d_realAssertionsEnd, d_true, d_smt.d_stats->d_numMiplibAssertionsRemoved, &d_topLevelSubstitutions, &d_fakeContext);
+          d_assertions.getRealAssertionsEnd() == d_assertions.size() ) {
+            preproc::MiplibTrickPass pass(&d_smt, &d_propagator, &d_boolVars, &d_topLevelSubstitutions);
             pass.apply(&d_assertions);
      } else {
         Trace("simplify") << "SmtEnginePrivate::simplify(): "
@@ -3274,7 +3270,7 @@ bool SmtEnginePrivate::simplifyAssertions()
 
     // Theory preprocessing
     if (d_smt.d_earlyTheoryPP) {
-       preproc::EarlyTheoryPass pass(d_smt.d_theoryEngine, d_smt.d_stats->d_theoryPreprocessTime);
+       preproc::EarlyTheoryPass pass(d_smt.d_theoryEngine);
        pass.apply(&d_assertions);
    }
 
@@ -3286,7 +3282,7 @@ bool SmtEnginePrivate::simplifyAssertions()
     if(options::doITESimp() &&
        (d_simplifyAssertionsDepth <= 1 || options::doITESimpOnRepeat())) {
       Chat() << "...doing ITE simplification..." << endl;
-      SimpITEPass pass(d_realAssertionsEnd, d_smt.d_stats->d_simpITETime, d_smt.d_theoryEngine);
+      SimpITEPass pass(d_smt.d_theoryEngine);
       bool noConflict = pass.apply(&d_assertions).d_noConflict;
  
       if(!noConflict){
@@ -3302,7 +3298,7 @@ bool SmtEnginePrivate::simplifyAssertions()
     // Unconstrained simplification
     if(options::unconstrainedSimp()) {
       Chat() << "...doing unconstrained simplification..." << endl;
-      preproc::UnconstrainedSimpPass pass(d_smt.d_stats->d_unconstrainedSimpTime, d_smt.d_theoryEngine);
+      preproc::UnconstrainedSimpPass pass(d_smt.d_theoryEngine);
       pass.apply(&d_assertions);
    }
 
@@ -3315,7 +3311,7 @@ bool SmtEnginePrivate::simplifyAssertions()
       Trace("simplify") << "SmtEnginePrivate::simplify(): "
                         << " doing repeated simplification" << endl;
       
-     preproc::NonClausalSimplificationPass pass(&d_smt, &d_propagatorNeedsFinish, &d_propagator, d_smt.d_stats->d_nonclausalSimplificationTime, &d_substitutionsIndex, &d_topLevelSubstitutions, &d_nonClausalLearnedLiterals, d_smt.d_stats->d_numConstantProps, d_true, d_realAssertionsEnd);
+     preproc::NonClausalSimplificationPass pass(&d_smt, &d_propagatorNeedsFinish, &d_propagator, &d_substitutionsIndex, &d_topLevelSubstitutions, &d_nonClausalLearnedLiterals);
      bool noConflict = pass.apply(&d_assertions).d_noConflict; 
       if(!noConflict) {
         return false;
@@ -3370,7 +3366,7 @@ Result SmtEngine::check() {
        (not d_logic.isQuantified() &&
         d_logic.isPure(THEORY_ARITH) && d_logic.isLinear() && !d_logic.isDifferenceLogic() &&  !d_logic.areIntegersUsed()
         )){
-      if(d_private->d_iteSkolemMap.empty()){
+      if(d_private->getAssertions()->getSkolemMap()->empty()){
         options::decisionStopOnly.set(false);
         d_decisionEngine->clearStrategies();
         Trace("smt") << "SmtEngine::check(): turning off stop only" << endl;
@@ -3409,8 +3405,8 @@ void SmtEnginePrivate::collectSkolems(TNode n, set<TNode>& skolemSet, unordered_
 
   size_t sz = n.getNumChildren();
   if (sz == 0) {
-    IteSkolemMap::iterator it = d_iteSkolemMap.find(n);
-    if (it != d_iteSkolemMap.end()) {
+    IteSkolemMap::iterator it = d_assertions.getSkolemMap()->find(n);
+    if (it != d_assertions.getSkolemMap()->end()) {
       skolemSet.insert(n);
     }
     cache[n] = true;
@@ -3434,9 +3430,9 @@ bool SmtEnginePrivate::checkForBadSkolems(TNode n, TNode skolem, unordered_map<N
 
   size_t sz = n.getNumChildren();
   if (sz == 0) {
-    IteSkolemMap::iterator it = d_iteSkolemMap.find(n);
+    IteSkolemMap::iterator it = d_assertions.getSkolemMap()->find(n);
     bool bad = false;
-    if (it != d_iteSkolemMap.end()) {
+    if (it != d_assertions.getSkolemMap()->end()) {
       if (!((*it).first < n)) {
         bad = true;
       }
@@ -3487,14 +3483,14 @@ void SmtEnginePrivate::processAssertions() {
   d_assertions.push_back(NodeManager::currentNM()->mkConst<bool>(true));
   // any assertions added beyond realAssertionsEnd must NOT affect the
   // equisatisfiability
-  d_realAssertionsEnd = d_assertions.size();
+  d_assertions.setRealAssertionsEnd(d_assertions.size());
 
   // Assertions are NOT guaranteed to be rewritten by this point
 
   Trace("smt-proc") << "SmtEnginePrivate::processAssertions() : pre-definition-expansion" << endl;
   dumpAssertions("pre-definition-expansion", d_assertions);
   {
-  preproc::ExpandingDefinitionsPass pass(&d_smt, d_smt.d_stats->d_definitionExpansionTime);
+  preproc::ExpandingDefinitionsPass pass(&d_smt);
   pass.apply(&d_assertions);
  }
 
@@ -3571,7 +3567,7 @@ void SmtEnginePrivate::processAssertions() {
     preproc::RewritePass pass;
     pass.apply(&d_assertions);    
 
-    preproc::UnconstrainedSimpPass pass1(d_smt.d_stats->d_unconstrainedSimpTime, d_smt.d_theoryEngine);
+    preproc::UnconstrainedSimpPass pass1(d_smt.d_theoryEngine);
     pass1.apply(&d_assertions);
  
    Trace("smt-proc") << "SmtEnginePrivate::processAssertions() : post-unconstrained-simp" << std::endl;
@@ -3652,7 +3648,7 @@ void SmtEnginePrivate::processAssertions() {
 
   dumpAssertions("pre-static-learning", d_assertions);
   if(options::doStaticLearning()) {
-    preproc::DoStaticLearningPass pass(d_smt.d_theoryEngine, &d_smt, d_smt.d_stats->d_staticLearningTime);
+    preproc::DoStaticLearningPass pass(d_smt.d_theoryEngine, &d_smt);
     pass.apply(&d_assertions);
  }
 
@@ -3668,7 +3664,7 @@ void SmtEnginePrivate::processAssertions() {
     // Remove ITEs, updating d_iteSkolemMap
     d_smt.d_stats->d_numAssertionsPre += d_assertions.size();
    
-    preproc::RemoveITEPass pass(&d_smt, &d_iteSkolemMap, &d_iteRemover);
+    preproc::RemoveITEPass pass(&d_smt, &d_iteRemover);
     pass.apply(&d_assertions);
 //removeITEs();
     d_smt.d_stats->d_numAssertionsPost += d_assertions.size();
@@ -3683,12 +3679,12 @@ void SmtEnginePrivate::processAssertions() {
     noConflict &= simplifyAssertions();
    
     if (noConflict) {
-      preproc::RepeatSimpPass pass1(&d_topLevelSubstitutions, d_simplifyAssertionsDepth, &noConflict, d_iteSkolemMap, d_realAssertionsEnd); 
+      preproc::RepeatSimpPass pass1(&d_topLevelSubstitutions, &noConflict); 
       pass1.apply(&d_assertions);
       // For some reason this is needed for some benchmarks, such as
       // http://cvc4.cs.nyu.edu/benchmarks/smtlib2/QF_AUFBV/dwp_formulas/try5_small_difret_functions_dwp_tac.re_node_set_remove_at.il.dwp.smt2
       // Figure it out later
-      preproc::RemoveITEPass pass2(&d_smt, &d_iteSkolemMap, &d_iteRemover);
+      preproc::RemoveITEPass pass2(&d_smt, &d_iteRemover);
       pass2.apply(&d_assertions); 
       //      Assert(iteRewriteAssertionsEnd == d_assertions.size());
      }
@@ -3698,7 +3694,7 @@ void SmtEnginePrivate::processAssertions() {
 
   dumpAssertions("pre-rewrite-apply-to-const", d_assertions);
   if(options::rewriteApplyToConst()) {
-    preproc::RewriteApplyToConstPass pass(d_smt.d_stats->d_rewriteApplyToConstTime);
+    preproc::RewriteApplyToConstPass pass;
     pass.apply(&d_assertions);
  }
   dumpAssertions("post-rewrite-apply-to-const", d_assertions);
@@ -3717,7 +3713,7 @@ void SmtEnginePrivate::processAssertions() {
   Trace("smt-proc") << "SmtEnginePrivate::processAssertions() : pre-theory-preprocessing" << endl;
   dumpAssertions("pre-theory-preprocessing", d_assertions);
   {
-    preproc::TheoryPreprocessPass pass(d_smt.d_theoryEngine, d_smt.d_stats->d_theoryPreprocessTime);
+    preproc::TheoryPreprocessPass pass(d_smt.d_theoryEngine);
     pass.apply(&d_assertions);
  }
   Trace("smt-proc") << "SmtEnginePrivate::processAssertions() : post-theory-preprocessing" << endl;
@@ -3735,7 +3731,7 @@ void SmtEnginePrivate::processAssertions() {
 
   // Push the formula to decision engine
   if(noConflict) {
-    preproc::NoConflictPass pass( d_smt.d_decisionEngine, d_realAssertionsEnd, &d_iteSkolemMap);
+    preproc::NoConflictPass pass(d_smt.d_decisionEngine);
     pass.apply(&d_assertions);    
   }
 
@@ -3747,14 +3743,14 @@ void SmtEnginePrivate::processAssertions() {
 
   // Push the formula to SAT
   {
-    preproc::CNFPass pass(d_smt.d_propEngine, d_smt.d_stats->d_cnfConversionTime);
+    preproc::CNFPass pass(d_smt.d_propEngine);
     pass.apply(&d_assertions);
  }
 
   d_assertionsProcessed = true;
 
+  d_assertions.getSkolemMap()->clear();
   d_assertions.clear();
-  d_iteSkolemMap.clear();
 }
 
 void SmtEnginePrivate::addFormula(TNode n, bool inUnsatCore, bool inInput)
