@@ -113,21 +113,20 @@ class PreprocessingPass {
   assert(!d_initialized); 
   smtStatisticsRegistry()->registerStat(&d_timer); 
  
-  initInternal(SmtEngine* smt, TheoryEngine* theoryEngine, theory:SubstitutionMap* topLevelSubstitutions, theory::arith::PseudoBooleanPreprocessor* pbsPreprocessor, iteSkolemMap* iteSkolemMap, RemoveTermFormulas* iteRemover, DecisionEngine* decisionEngine, prop::PropEngine* propEngine, unsigned simplifyAssertionsDepth, bool* propagatorNeedsFinish, theory::booleans::CircuitPropagator* propagator, std::vector<Node>* boolsVars, context::CDO<unsigned>* substitutionsIndex, std::vector<Node>* nonClausalLearnedLiterals, Node dtrue, unsigned realAssertionsEnd)
-  
-  d_initialized = true;
-  }*/
-
-/*  virtual void initInternal(SmtEngine* smt, TheoryEngine* theoryEngine, 
+  initInternal(SmtEngine* smt, TheoryEngine* theoryEngine, 
      theory::SubstitutionMap* topLevelSubstitutions, 
-     theory::arith::PseudoBooleanProcessor* pbsPreprocessor, 
+     theory::arith::PseudoBooleanProcessor* pbsProcessor, 
      RemoveTermFormulas* iteRemover, 
      DecisionEngine* decisionEngine, prop::PropEngine* propEngine, 
      bool* propagatorNeedsFinish, 
      theory::booleans::CircuitPropagator* propagator, 
-     std::vector<Node>* boolsVars, 
+     std::vector<Node>* boolVars, 
      context::CDO<unsigned>* substitutionsIndex, 
-     std::vector<Node>* nonClausalLearnedLiterals*/
+     std::vector<Node>* nonClausalLearnedLiterals)
+
+
+  d_initialized = true;
+  }*/
 
   virtual PreprocessingPassResult apply(AssertionPipeline* assertionsToPreprocess) = 0;
 
@@ -184,18 +183,30 @@ class PreprocessingPass {
    if (registerPass) {
      PreprocessingPassRegistry::getInstance()->registerPass(this);
    }
-//   d_timer = TimerStat("preproc::" + d_name);
 //   smtStatisticsRegistry()->registerStat(&d_timer);
   }
  
  ~PreprocessingPass() {
+//   assert(d_initialized);
 //   smtStatisticsRegistry()->unregisterStat(&d_timer);
  }
 
 private:
 
 protected: 
-  void spendResource(unsigned amount) {
+ 
+  virtual void initInternal(SmtEngine* smt, TheoryEngine* theoryEngine, 
+     theory::SubstitutionMap* topLevelSubstitutions, 
+     theory::arith::PseudoBooleanProcessor* pbsProcessor, 
+     RemoveTermFormulas* iteRemover, 
+     DecisionEngine* decisionEngine, prop::PropEngine* propEngine, 
+     bool* propagatorNeedsFinish, 
+     theory::booleans::CircuitPropagator* propagator, 
+     std::vector<Node>* boolVars, 
+     context::CDO<unsigned>* substitutionsIndex, 
+     std::vector<Node>* nonClausalLearnedLiterals) = 0;
+
+ void spendResource(unsigned amount) {
     NodeManager::currentResourceManager()->spendResource(amount);
   }  // TODO: modify class as needed
   std::string d_name;

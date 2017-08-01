@@ -3679,7 +3679,7 @@ void SmtEnginePrivate::processAssertions() {
     noConflict &= simplifyAssertions();
    
     if (noConflict) {
-      preproc::RepeatSimpPass pass1(&d_topLevelSubstitutions, &noConflict); 
+      preproc::RepeatSimpPass pass1(&d_topLevelSubstitutions); 
       pass1.apply(&d_assertions);
       // For some reason this is needed for some benchmarks, such as
       // http://cvc4.cs.nyu.edu/benchmarks/smtlib2/QF_AUFBV/dwp_formulas/try5_small_difret_functions_dwp_tac.re_node_set_remove_at.il.dwp.smt2

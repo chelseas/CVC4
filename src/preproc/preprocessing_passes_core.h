@@ -19,6 +19,16 @@ typedef context::CDList<Node> NodeList;
 
 class ExpandingDefinitionsPass : public PreprocessingPass {
  public:   
+    virtual void initInternal(SmtEngine* smt, TheoryEngine* theoryEngine, 
+     theory::SubstitutionMap* topLevelSubstitutions, 
+     theory::arith::PseudoBooleanProcessor* pbsProcessor, 
+     RemoveTermFormulas* iteRemover, 
+     DecisionEngine* decisionEngine, prop::PropEngine* propEngine, 
+     bool* propagatorNeedsFinish, 
+     theory::booleans::CircuitPropagator* propagator, 
+     std::vector<Node>* boolVars, 
+     context::CDO<unsigned>* substitutionsIndex, 
+     std::vector<Node>* nonClausalLearnedLiterals);
   virtual PreprocessingPassResult apply(AssertionPipeline* assertionsToPreprocess);
   ExpandingDefinitionsPass(SmtEngine* smt); 
  private:
@@ -30,6 +40,16 @@ class ExpandingDefinitionsPass : public PreprocessingPass {
  
 class NlExtPurifyPass : public PreprocessingPass {
  public:
+    virtual void initInternal(SmtEngine* smt, TheoryEngine* theoryEngine, 
+     theory::SubstitutionMap* topLevelSubstitutions, 
+     theory::arith::PseudoBooleanProcessor* pbsProcessor, 
+     RemoveTermFormulas* iteRemover, 
+     DecisionEngine* decisionEngine, prop::PropEngine* propEngine, 
+     bool* propagatorNeedsFinish, 
+     theory::booleans::CircuitPropagator* propagator, 
+     std::vector<Node>* boolVars, 
+     context::CDO<unsigned>* substitutionsIndex, 
+     std::vector<Node>* nonClausalLearnedLiterals);
   virtual PreprocessingPassResult apply(AssertionPipeline* assertionsToPreprocess);
   NlExtPurifyPass();
 
@@ -43,6 +63,16 @@ static NlExtPurifyPass nlExtPurifyPass;
 
 class CEGuidedInstPass : public PreprocessingPass {
  public:
+    virtual void initInternal(SmtEngine* smt, TheoryEngine* theoryEngine, 
+     theory::SubstitutionMap* topLevelSubstitutions, 
+     theory::arith::PseudoBooleanProcessor* pbsProcessor, 
+     RemoveTermFormulas* iteRemover, 
+     DecisionEngine* decisionEngine, prop::PropEngine* propEngine, 
+     bool* propagatorNeedsFinish, 
+     theory::booleans::CircuitPropagator* propagator, 
+     std::vector<Node>* boolVars, 
+     context::CDO<unsigned>* substitutionsIndex, 
+     std::vector<Node>* nonClausalLearnedLiterals);
   virtual PreprocessingPassResult apply(AssertionPipeline* assertionsToPreprocess);
   CEGuidedInstPass(TheoryEngine* theoryEngine);
  private:
@@ -51,6 +81,16 @@ class CEGuidedInstPass : public PreprocessingPass {
  
 class SolveRealAsIntPass : public PreprocessingPass {
  public:
+    virtual void initInternal(SmtEngine* smt, TheoryEngine* theoryEngine, 
+     theory::SubstitutionMap* topLevelSubstitutions, 
+     theory::arith::PseudoBooleanProcessor* pbsProcessor, 
+     RemoveTermFormulas* iteRemover, 
+     DecisionEngine* decisionEngine, prop::PropEngine* propEngine, 
+     bool* propagatorNeedsFinish, 
+     theory::booleans::CircuitPropagator* propagator, 
+     std::vector<Node>* boolVars, 
+     context::CDO<unsigned>* substitutionsIndex, 
+     std::vector<Node>* nonClausalLearnedLiterals);
   virtual PreprocessingPassResult apply(AssertionPipeline* assertionsToPreprocess);
   SolveRealAsIntPass();
  private:
@@ -59,6 +99,16 @@ class SolveRealAsIntPass : public PreprocessingPass {
 
 class SolveIntAsBVPass : public PreprocessingPass {
  public:
+    virtual void initInternal(SmtEngine* smt, TheoryEngine* theoryEngine, 
+     theory::SubstitutionMap* topLevelSubstitutions, 
+     theory::arith::PseudoBooleanProcessor* pbsProcessor, 
+     RemoveTermFormulas* iteRemover, 
+     DecisionEngine* decisionEngine, prop::PropEngine* propEngine, 
+     bool* propagatorNeedsFinish, 
+     theory::booleans::CircuitPropagator* propagator, 
+     std::vector<Node>* boolVars, 
+     context::CDO<unsigned>* substitutionsIndex, 
+     std::vector<Node>* nonClausalLearnedLiterals);
   virtual PreprocessingPassResult apply(AssertionPipeline* assertionsToPreprocess);
   SolveIntAsBVPass();
  private:
@@ -68,6 +118,16 @@ class SolveIntAsBVPass : public PreprocessingPass {
 
 class BitBlastModePass : public PreprocessingPass {
  public:
+    virtual void initInternal(SmtEngine* smt, TheoryEngine* theoryEngine, 
+     theory::SubstitutionMap* topLevelSubstitutions, 
+     theory::arith::PseudoBooleanProcessor* pbsProcessor, 
+     RemoveTermFormulas* iteRemover, 
+     DecisionEngine* decisionEngine, prop::PropEngine* propEngine, 
+     bool* propagatorNeedsFinish, 
+     theory::booleans::CircuitPropagator* propagator, 
+     std::vector<Node>* boolVars, 
+     context::CDO<unsigned>* substitutionsIndex, 
+     std::vector<Node>* nonClausalLearnedLiterals);
    virtual PreprocessingPassResult apply(AssertionPipeline* assertionsToPreprocess);
    BitBlastModePass(TheoryEngine* theoryEngine); 
  private:
@@ -76,6 +136,16 @@ class BitBlastModePass : public PreprocessingPass {
 
 class BVAbstractionPass : public PreprocessingPass {
  public: 
+    virtual void initInternal(SmtEngine* smt, TheoryEngine* theoryEngine, 
+     theory::SubstitutionMap* topLevelSubstitutions, 
+     theory::arith::PseudoBooleanProcessor* pbsProcessor, 
+     RemoveTermFormulas* iteRemover, 
+     DecisionEngine* decisionEngine, prop::PropEngine* propEngine, 
+     bool* propagatorNeedsFinish, 
+     theory::booleans::CircuitPropagator* propagator, 
+     std::vector<Node>* boolVars, 
+     context::CDO<unsigned>* substitutionsIndex, 
+     std::vector<Node>* nonClausalLearnedLiterals);
   virtual PreprocessingPassResult apply(AssertionPipeline* assertionsToPreprocess);
   BVAbstractionPass(SmtEngine* smt, TheoryEngine* theoryEngine);
  private:
@@ -88,6 +158,16 @@ class BVAbstractionPass : public PreprocessingPass {
 
 class UnconstrainedSimpPass : public PreprocessingPass {
  public:
+    virtual void initInternal(SmtEngine* smt, TheoryEngine* theoryEngine, 
+     theory::SubstitutionMap* topLevelSubstitutions, 
+     theory::arith::PseudoBooleanProcessor* pbsProcessor, 
+     RemoveTermFormulas* iteRemover, 
+     DecisionEngine* decisionEngine, prop::PropEngine* propEngine, 
+     bool* propagatorNeedsFinish, 
+     theory::booleans::CircuitPropagator* propagator, 
+     std::vector<Node>* boolVars, 
+     context::CDO<unsigned>* substitutionsIndex, 
+     std::vector<Node>* nonClausalLearnedLiterals);
   virtual PreprocessingPassResult apply(AssertionPipeline* assertionsToPreprocess);
   UnconstrainedSimpPass(TheoryEngine* theoryEngine);
  private:
@@ -97,12 +177,32 @@ class UnconstrainedSimpPass : public PreprocessingPass {
 
 class RewritePass : public PreprocessingPass {
  public:
+    virtual void initInternal(SmtEngine* smt, TheoryEngine* theoryEngine, 
+     theory::SubstitutionMap* topLevelSubstitutions, 
+     theory::arith::PseudoBooleanProcessor* pbsProcessor, 
+     RemoveTermFormulas* iteRemover, 
+     DecisionEngine* decisionEngine, prop::PropEngine* propEngine, 
+     bool* propagatorNeedsFinish, 
+     theory::booleans::CircuitPropagator* propagator, 
+     std::vector<Node>* boolVars, 
+     context::CDO<unsigned>* substitutionsIndex, 
+     std::vector<Node>* nonClausalLearnedLiterals);
     virtual PreprocessingPassResult apply(AssertionPipeline* assertionsToPreprocess);
     RewritePass();
 };
  
 class NotUnsatCoresPass : public PreprocessingPass {
  public:
+    virtual void initInternal(SmtEngine* smt, TheoryEngine* theoryEngine, 
+     theory::SubstitutionMap* topLevelSubstitutions, 
+     theory::arith::PseudoBooleanProcessor* pbsProcessor, 
+     RemoveTermFormulas* iteRemover, 
+     DecisionEngine* decisionEngine, prop::PropEngine* propEngine, 
+     bool* propagatorNeedsFinish, 
+     theory::booleans::CircuitPropagator* propagator, 
+     std::vector<Node>* boolVars, 
+     context::CDO<unsigned>* substitutionsIndex, 
+     std::vector<Node>* nonClausalLearnedLiterals);
     virtual PreprocessingPassResult apply(AssertionPipeline* assertionsToPreprocess);
     NotUnsatCoresPass(theory::SubstitutionMap* topLevelSubstitutions);
  private:
@@ -111,6 +211,16 @@ class NotUnsatCoresPass : public PreprocessingPass {
  
 class BVToBoolPass : public PreprocessingPass {
  public:
+    virtual void initInternal(SmtEngine* smt, TheoryEngine* theoryEngine, 
+     theory::SubstitutionMap* topLevelSubstitutions, 
+     theory::arith::PseudoBooleanProcessor* pbsProcessor, 
+     RemoveTermFormulas* iteRemover, 
+     DecisionEngine* decisionEngine, prop::PropEngine* propEngine, 
+     bool* propagatorNeedsFinish, 
+     theory::booleans::CircuitPropagator* propagator, 
+     std::vector<Node>* boolVars, 
+     context::CDO<unsigned>* substitutionsIndex, 
+     std::vector<Node>* nonClausalLearnedLiterals);
    virtual PreprocessingPassResult apply(AssertionPipeline* assertionsToPreprocess);
    BVToBoolPass(TheoryEngine* theoryEngine);
  private:
@@ -121,6 +231,16 @@ class BVToBoolPass : public PreprocessingPass {
 
 class BoolToBVPass : public PreprocessingPass {
  public:
+    virtual void initInternal(SmtEngine* smt, TheoryEngine* theoryEngine, 
+     theory::SubstitutionMap* topLevelSubstitutions, 
+     theory::arith::PseudoBooleanProcessor* pbsProcessor, 
+     RemoveTermFormulas* iteRemover, 
+     DecisionEngine* decisionEngine, prop::PropEngine* propEngine, 
+     bool* propagatorNeedsFinish, 
+     theory::booleans::CircuitPropagator* propagator, 
+     std::vector<Node>* boolVars, 
+     context::CDO<unsigned>* substitutionsIndex, 
+     std::vector<Node>* nonClausalLearnedLiterals);
    virtual PreprocessingPassResult apply(AssertionPipeline* assertionsTopreprocess);
    BoolToBVPass(TheoryEngine* theoryEngine);
  private:
@@ -131,12 +251,32 @@ class BoolToBVPass : public PreprocessingPass {
 
 class SepPreSkolemEmpPass : public PreprocessingPass {
   public:
+    virtual void initInternal(SmtEngine* smt, TheoryEngine* theoryEngine, 
+     theory::SubstitutionMap* topLevelSubstitutions, 
+     theory::arith::PseudoBooleanProcessor* pbsProcessor, 
+     RemoveTermFormulas* iteRemover, 
+     DecisionEngine* decisionEngine, prop::PropEngine* propEngine, 
+     bool* propagatorNeedsFinish, 
+     theory::booleans::CircuitPropagator* propagator, 
+     std::vector<Node>* boolVars, 
+     context::CDO<unsigned>* substitutionsIndex, 
+     std::vector<Node>* nonClausalLearnedLiterals);
    virtual PreprocessingPassResult apply(AssertionPipeline* assertionsToPreprocess);
    SepPreSkolemEmpPass();
 };
 
 class QuantifiedPass : public PreprocessingPass {
   public:
+    virtual void initInternal(SmtEngine* smt, TheoryEngine* theoryEngine, 
+     theory::SubstitutionMap* topLevelSubstitutions, 
+     theory::arith::PseudoBooleanProcessor* pbsProcessor, 
+     RemoveTermFormulas* iteRemover, 
+     DecisionEngine* decisionEngine, prop::PropEngine* propEngine, 
+     bool* propagatorNeedsFinish, 
+     theory::booleans::CircuitPropagator* propagator, 
+     std::vector<Node>* boolVars, 
+     context::CDO<unsigned>* substitutionsIndex, 
+     std::vector<Node>* nonClausalLearnedLiterals);
     virtual PreprocessingPassResult apply(AssertionPipeline* assertionsToPreprocess);
     QuantifiedPass(TheoryEngine* theoryEngine, SmtEngine* smt);
   private:
@@ -146,6 +286,16 @@ class QuantifiedPass : public PreprocessingPass {
 
 class InferenceOrFairnessPass : public PreprocessingPass {
   public:
+    virtual void initInternal(SmtEngine* smt, TheoryEngine* theoryEngine, 
+     theory::SubstitutionMap* topLevelSubstitutions, 
+     theory::arith::PseudoBooleanProcessor* pbsProcessor, 
+     RemoveTermFormulas* iteRemover, 
+     DecisionEngine* decisionEngine, prop::PropEngine* propEngine, 
+     bool* propagatorNeedsFinish, 
+     theory::booleans::CircuitPropagator* propagator, 
+     std::vector<Node>* boolVars, 
+     context::CDO<unsigned>* substitutionsIndex, 
+     std::vector<Node>* nonClausalLearnedLiterals);
     virtual PreprocessingPassResult apply(AssertionPipeline* assertionsToPreprocess);
     InferenceOrFairnessPass(TheoryEngine* theoryEngine, SmtEngine* smt);
   private:
@@ -155,6 +305,16 @@ class InferenceOrFairnessPass : public PreprocessingPass {
 
 class PBRewritePass : public PreprocessingPass {
   public:
+    virtual void initInternal(SmtEngine* smt, TheoryEngine* theoryEngine, 
+     theory::SubstitutionMap* topLevelSubstitutions, 
+     theory::arith::PseudoBooleanProcessor* pbsProcessor, 
+     RemoveTermFormulas* iteRemover, 
+     DecisionEngine* decisionEngine, prop::PropEngine* propEngine, 
+     bool* propagatorNeedsFinish, 
+     theory::booleans::CircuitPropagator* propagator, 
+     std::vector<Node>* boolVars, 
+     context::CDO<unsigned>* substitutionsIndex, 
+     std::vector<Node>* nonClausalLearnedLiterals);
      virtual PreprocessingPassResult apply(AssertionPipeline* assertionsToPreprocess);
      PBRewritePass(theory::arith::PseudoBooleanProcessor* pbsProcessor);
   private:
@@ -163,6 +323,16 @@ class PBRewritePass : public PreprocessingPass {
 
 class RemoveITEPass : public PreprocessingPass {
   public: 
+    virtual void initInternal(SmtEngine* smt, TheoryEngine* theoryEngine, 
+     theory::SubstitutionMap* topLevelSubstitutions, 
+     theory::arith::PseudoBooleanProcessor* pbsProcessor, 
+     RemoveTermFormulas* iteRemover, 
+     DecisionEngine* decisionEngine, prop::PropEngine* propEngine, 
+     bool* propagatorNeedsFinish, 
+     theory::booleans::CircuitPropagator* propagator, 
+     std::vector<Node>* boolVars, 
+     context::CDO<unsigned>* substitutionsIndex, 
+     std::vector<Node>* nonClausalLearnedLiterals);
      virtual PreprocessingPassResult apply(AssertionPipeline* assertionsToPreprocess);
      RemoveITEPass(SmtEngine* smt, RemoveTermFormulas* iteRemover);
   private:
@@ -172,6 +342,16 @@ class RemoveITEPass : public PreprocessingPass {
  
 class DoStaticLearningPass : public PreprocessingPass {
   public:
+    virtual void initInternal(SmtEngine* smt, TheoryEngine* theoryEngine, 
+     theory::SubstitutionMap* topLevelSubstitutions, 
+     theory::arith::PseudoBooleanProcessor* pbsProcessor, 
+     RemoveTermFormulas* iteRemover, 
+     DecisionEngine* decisionEngine, prop::PropEngine* propEngine, 
+     bool* propagatorNeedsFinish, 
+     theory::booleans::CircuitPropagator* propagator, 
+     std::vector<Node>* boolVars, 
+     context::CDO<unsigned>* substitutionsIndex, 
+     std::vector<Node>* nonClausalLearnedLiterals);
      virtual PreprocessingPassResult apply(AssertionPipeline* assertionsToPreprocess);
      DoStaticLearningPass(TheoryEngine* theoryEngine, SmtEngine* smt);
   private:
@@ -183,6 +363,16 @@ class DoStaticLearningPass : public PreprocessingPass {
 
 class RewriteApplyToConstPass : public PreprocessingPass {
   public:
+    virtual void initInternal(SmtEngine* smt, TheoryEngine* theoryEngine, 
+     theory::SubstitutionMap* topLevelSubstitutions, 
+     theory::arith::PseudoBooleanProcessor* pbsProcessor, 
+     RemoveTermFormulas* iteRemover, 
+     DecisionEngine* decisionEngine, prop::PropEngine* propEngine, 
+     bool* propagatorNeedsFinish, 
+     theory::booleans::CircuitPropagator* propagator, 
+     std::vector<Node>* boolVars, 
+     context::CDO<unsigned>* substitutionsIndex, 
+     std::vector<Node>* nonClausalLearnedLiterals);
      virtual PreprocessingPassResult apply(AssertionPipeline* assertionsToPreprocess);
      RewriteApplyToConstPass();
   private:
@@ -191,6 +381,16 @@ class RewriteApplyToConstPass : public PreprocessingPass {
 
 class TheoryPreprocessPass : public PreprocessingPass {
   public :
+    virtual void initInternal(SmtEngine* smt, TheoryEngine* theoryEngine, 
+     theory::SubstitutionMap* topLevelSubstitutions, 
+     theory::arith::PseudoBooleanProcessor* pbsProcessor, 
+     RemoveTermFormulas* iteRemover, 
+     DecisionEngine* decisionEngine, prop::PropEngine* propEngine, 
+     bool* propagatorNeedsFinish, 
+     theory::booleans::CircuitPropagator* propagator, 
+     std::vector<Node>* boolVars, 
+     context::CDO<unsigned>* substitutionsIndex, 
+     std::vector<Node>* nonClausalLearnedLiterals);
       virtual PreprocessingPassResult apply(AssertionPipeline* assertionsToPreprocess);
       TheoryPreprocessPass(TheoryEngine* theoryEngine);
   private:
@@ -199,6 +399,16 @@ class TheoryPreprocessPass : public PreprocessingPass {
  
 class BitBlastModeEagerPass : public PreprocessingPass {
   public:
+    virtual void initInternal(SmtEngine* smt, TheoryEngine* theoryEngine, 
+     theory::SubstitutionMap* topLevelSubstitutions, 
+     theory::arith::PseudoBooleanProcessor* pbsProcessor, 
+     RemoveTermFormulas* iteRemover, 
+     DecisionEngine* decisionEngine, prop::PropEngine* propEngine, 
+     bool* propagatorNeedsFinish, 
+     theory::booleans::CircuitPropagator* propagator, 
+     std::vector<Node>* boolVars, 
+     context::CDO<unsigned>* substitutionsIndex, 
+     std::vector<Node>* nonClausalLearnedLiterals);
      virtual PreprocessingPassResult apply(AssertionPipeline* assertionsToPreprocess);
      BitBlastModeEagerPass(TheoryEngine* theoryEngine);
   private:
@@ -207,6 +417,16 @@ class BitBlastModeEagerPass : public PreprocessingPass {
 
 class NoConflictPass : public PreprocessingPass {
   public:
+    virtual void initInternal(SmtEngine* smt, TheoryEngine* theoryEngine, 
+     theory::SubstitutionMap* topLevelSubstitutions, 
+     theory::arith::PseudoBooleanProcessor* pbsProcessor, 
+     RemoveTermFormulas* iteRemover, 
+     DecisionEngine* decisionEngine, prop::PropEngine* propEngine, 
+     bool* propagatorNeedsFinish, 
+     theory::booleans::CircuitPropagator* propagator, 
+     std::vector<Node>* boolVars, 
+     context::CDO<unsigned>* substitutionsIndex, 
+     std::vector<Node>* nonClausalLearnedLiterals);
       virtual PreprocessingPassResult apply(AssertionPipeline* assertionsToPreprocess);
       NoConflictPass(DecisionEngine* decisionEngine);
   private:
@@ -215,6 +435,16 @@ class NoConflictPass : public PreprocessingPass {
 
 class CNFPass : public PreprocessingPass{
   public:
+    virtual void initInternal(SmtEngine* smt, TheoryEngine* theoryEngine, 
+     theory::SubstitutionMap* topLevelSubstitutions, 
+     theory::arith::PseudoBooleanProcessor* pbsProcessor, 
+     RemoveTermFormulas* iteRemover, 
+     DecisionEngine* decisionEngine, prop::PropEngine* propEngine, 
+     bool* propagatorNeedsFinish, 
+     theory::booleans::CircuitPropagator* propagator, 
+     std::vector<Node>* boolVars, 
+     context::CDO<unsigned>* substitutionsIndex, 
+     std::vector<Node>* nonClausalLearnedLiterals);
       virtual PreprocessingPassResult apply(AssertionPipeline* assertionsToPreprocess);
       CNFPass(prop::PropEngine* propEngine);
   private:
@@ -223,17 +453,36 @@ class CNFPass : public PreprocessingPass{
 
 class RepeatSimpPass : public PreprocessingPass {
   public:
+    virtual void initInternal(SmtEngine* smt, TheoryEngine* theoryEngine, 
+     theory::SubstitutionMap* topLevelSubstitutions, 
+     theory::arith::PseudoBooleanProcessor* pbsProcessor, 
+     RemoveTermFormulas* iteRemover, 
+     DecisionEngine* decisionEngine, prop::PropEngine* propEngine, 
+     bool* propagatorNeedsFinish, 
+     theory::booleans::CircuitPropagator* propagator, 
+     std::vector<Node>* boolVars, 
+     context::CDO<unsigned>* substitutionsIndex, 
+     std::vector<Node>* nonClausalLearnedLiterals);
      virtual PreprocessingPassResult apply(AssertionPipeline* assertionsToPreprocess);
-     RepeatSimpPass(theory::SubstitutionMap* topLevelSubstitutions, bool* noConflict);
+     RepeatSimpPass(theory::SubstitutionMap* topLevelSubstitutions);
   private: 
      theory::SubstitutionMap* d_topLevelSubstitutions;
      void collectSkolems(TNode n, set<TNode>& skolemSet, unordered_map<Node, bool, NodeHashFunction>& cache, AssertionPipeline* assertionsToPreprocess);
      bool checkForBadSkolems(TNode n, TNode skolem, unordered_map<Node, bool, NodeHashFunction>& cache, AssertionPipeline* assertionsToPreprocess);
-     bool* noConflict;
 };     
 
 class NonClausalSimplificationPass : public PreprocessingPass{
   public:
+    virtual void initInternal(SmtEngine* smt, TheoryEngine* theoryEngine, 
+     theory::SubstitutionMap* topLevelSubstitutions, 
+     theory::arith::PseudoBooleanProcessor* pbsProcessor, 
+     RemoveTermFormulas* iteRemover, 
+     DecisionEngine* decisionEngine, prop::PropEngine* propEngine, 
+     bool* propagatorNeedsFinish, 
+     theory::booleans::CircuitPropagator* propagator, 
+     std::vector<Node>* boolVars, 
+     context::CDO<unsigned>* substitutionsIndex, 
+     std::vector<Node>* nonClausalLearnedLiterals);
     virtual PreprocessingPassResult apply(AssertionPipeline* assertionsToPreprocess);
     NonClausalSimplificationPass(SmtEngine* smt, bool* propagatorNeedsFinish, theory::booleans::CircuitPropagator* propagator, context::CDO<unsigned>* substitutionsIndex, theory::SubstitutionMap* topLevelSubstitutions, std::vector<Node>* nonClausalLearnedLiterals); 
 
@@ -249,8 +498,18 @@ class NonClausalSimplificationPass : public PreprocessingPass{
 
 class MiplibTrickPass : public PreprocessingPass {
   public:
+    virtual void initInternal(SmtEngine* smt, TheoryEngine* theoryEngine, 
+     theory::SubstitutionMap* topLevelSubstitutions, 
+     theory::arith::PseudoBooleanProcessor* pbsProcessor, 
+     RemoveTermFormulas* iteRemover, 
+     DecisionEngine* decisionEngine, prop::PropEngine* propEngine, 
+     bool* propagatorNeedsFinish, 
+     theory::booleans::CircuitPropagator* propagator, 
+     std::vector<Node>* boolVars, 
+     context::CDO<unsigned>* substitutionsIndex, 
+     std::vector<Node>* nonClausalLearnedLiterals);
    virtual PreprocessingPassResult apply(AssertionPipeline* assertionsToPreprocess);
-   MiplibTrickPass(SmtEngine* smt, theory::booleans::CircuitPropagator* propagator, std::vector<Node>* boolsVars, theory::SubstitutionMap* topLevelSubstitutions); 
+   MiplibTrickPass(SmtEngine* smt, theory::booleans::CircuitPropagator* propagator, std::vector<Node>* boolVars, theory::SubstitutionMap* topLevelSubstitutions); 
   private:
    SmtEngine* d_smt;
    theory::booleans::CircuitPropagator* d_propagator;
@@ -267,6 +526,16 @@ class MiplibTrickPass : public PreprocessingPass {
 
 class EarlyTheoryPass : public PreprocessingPass {
  public: 
+   virtual void initInternal(SmtEngine* smt, TheoryEngine* theoryEngine, 
+     theory::SubstitutionMap* topLevelSubstitutions, 
+     theory::arith::PseudoBooleanProcessor* pbsProcessor, 
+     RemoveTermFormulas* iteRemover, 
+     DecisionEngine* decisionEngine, prop::PropEngine* propEngine, 
+     bool* propagatorNeedsFinish, 
+     theory::booleans::CircuitPropagator* propagator, 
+     std::vector<Node>* boolVars, 
+     context::CDO<unsigned>* substitutionsIndex, 
+     std::vector<Node>* nonClausalLearnedLiterals);
    virtual PreprocessingPassResult apply(AssertionPipeline* assertionsToPreprocess);
    EarlyTheoryPass(TheoryEngine* theoryEngine); 
  private:
@@ -275,6 +544,16 @@ class EarlyTheoryPass : public PreprocessingPass {
 
 class SimpITEPass : public PreprocessingPass {
   public: 
+    virtual void initInternal(SmtEngine* smt, TheoryEngine* theoryEngine, 
+     theory::SubstitutionMap* topLevelSubstitutions, 
+     theory::arith::PseudoBooleanProcessor* pbsProcessor, 
+     RemoveTermFormulas* iteRemover, 
+     DecisionEngine* decisionEngine, prop::PropEngine* propEngine, 
+     bool* propagatorNeedsFinish, 
+     theory::booleans::CircuitPropagator* propagator, 
+     std::vector<Node>* boolVars, 
+     context::CDO<unsigned>* substitutionsIndex, 
+     std::vector<Node>* nonClausalLearnedLiterals);
    virtual PreprocessingPassResult apply(AssertionPipeline* assertionsToPreprocess);
    SimpITEPass(TheoryEngine* theoryEngine);
  

@@ -31,6 +31,21 @@ namespace preproc {
 ExpandingDefinitionsPass::ExpandingDefinitionsPass(SmtEngine* smt) : PreprocessingPass("expandingDefinitions"), d_smt(smt){
 }
 
+void ExpandingDefinitionsPass::initInternal(
+     SmtEngine* smt, TheoryEngine* theoryEngine, 
+     theory::SubstitutionMap* topLevelSubstitutions, 
+     theory::arith::PseudoBooleanProcessor* pbsProcessor, 
+     RemoveTermFormulas* iteRemover, 
+     DecisionEngine* decisionEngine, prop::PropEngine* propEngine, 
+     bool* propagatorNeedsFinish, 
+     theory::booleans::CircuitPropagator* propagator, 
+     std::vector<Node>* boolVars, 
+     context::CDO<unsigned>* substitutionsIndex, 
+     std::vector<Node>* nonClausalLearnedLiterals) {
+  d_smt = smt; 
+}
+ 
+
 Node ExpandingDefinitionsPass::expandDefinitions(TNode n, unordered_map<Node, Node, NodeHashFunction>& cache, bool expandOnly)
  throw(TypeCheckingException, LogicException, UnsafeInterruptException) {
   stack< triple<Node, Node, bool> > worklist;
@@ -186,8 +201,7 @@ Node ExpandingDefinitionsPass::expandDefinitions(TNode n, unordered_map<Node, No
       node = nb;
       cache[n] = n == node ? Node::null() : node;           // Only cache once all subterms are expanded
       result.push(node);
-    }
-  } while(!worklist.empty());
+    } } while(!worklist.empty());
 
   AlwaysAssert(result.size() == 1);
 
@@ -209,6 +223,20 @@ PreprocessingPassResult ExpandingDefinitionsPass::apply(AssertionPipeline* asser
 // constructor anymore
 NlExtPurifyPass::NlExtPurifyPass() : PreprocessingPass("nlExtPurify"){
 }
+
+void NlExtPurifyPass::initInternal(
+     SmtEngine* smt, TheoryEngine* theoryEngine, 
+     theory::SubstitutionMap* topLevelSubstitutions, 
+     theory::arith::PseudoBooleanProcessor* pbsProcessor, 
+     RemoveTermFormulas* iteRemover, 
+     DecisionEngine* decisionEngine, prop::PropEngine* propEngine, 
+     bool* propagatorNeedsFinish, 
+     theory::booleans::CircuitPropagator* propagator, 
+     std::vector<Node>* boolVars, 
+     context::CDO<unsigned>* substitutionsIndex, 
+     std::vector<Node>* nonClausalLearnedLiterals) {
+} 
+
 
 PreprocessingPassResult NlExtPurifyPass::apply(AssertionPipeline* assertionsToPreprocess) {
   std::unordered_map<Node, Node, NodeHashFunction> cache;
@@ -274,6 +302,20 @@ CEGuidedInstPass::CEGuidedInstPass(
     d_theoryEngine(theoryEngine){
 }
 
+ void CEGuidedInstPass::initInternal(
+     SmtEngine* smt, TheoryEngine* theoryEngine, 
+     theory::SubstitutionMap* topLevelSubstitutions, 
+     theory::arith::PseudoBooleanProcessor* pbsProcessor, 
+     RemoveTermFormulas* iteRemover, 
+     DecisionEngine* decisionEngine, prop::PropEngine* propEngine, 
+     bool* propagatorNeedsFinish, 
+     theory::booleans::CircuitPropagator* propagator, 
+     std::vector<Node>* boolVars, 
+     context::CDO<unsigned>* substitutionsIndex, 
+     std::vector<Node>* nonClausalLearnedLiterals){
+ d_theoryEngine = theoryEngine;
+} 
+
 PreprocessingPassResult CEGuidedInstPass::apply(AssertionPipeline* assertionsToPreprocess){
     for (unsigned i = 0; i < assertionsToPreprocess->size(); ++ i) {
       d_theoryEngine->getQuantifiersEngine()->getCegInstantiation()->preregisterAssertion( (*assertionsToPreprocess)[i] );
@@ -283,6 +325,19 @@ PreprocessingPassResult CEGuidedInstPass::apply(AssertionPipeline* assertionsToP
 
 SolveRealAsIntPass::SolveRealAsIntPass() : PreprocessingPass("solveRealAsInt"){
 }
+
+void SolveRealAsIntPass::initInternal(
+     SmtEngine* smt, TheoryEngine* theoryEngine, 
+     theory::SubstitutionMap* topLevelSubstitutions, 
+     theory::arith::PseudoBooleanProcessor* pbsProcessor, 
+     RemoveTermFormulas* iteRemover, 
+     DecisionEngine* decisionEngine, prop::PropEngine* propEngine, 
+     bool* propagatorNeedsFinish, 
+     theory::booleans::CircuitPropagator* propagator, 
+     std::vector<Node>* boolVars, 
+     context::CDO<unsigned>* substitutionsIndex, 
+     std::vector<Node>* nonClausalLearnedLiterals) {
+} 
 
 PreprocessingPassResult SolveRealAsIntPass::apply(AssertionPipeline* assertionsToPreprocess) {
  Chat() << "converting reals to ints..." << std::endl;
@@ -391,6 +446,19 @@ Node SolveRealAsIntPass::realToInt(TNode n, NodeMap& cache, std::vector< Node >&
 
 SolveIntAsBVPass::SolveIntAsBVPass() : PreprocessingPass("solveIntAsbv"){
 }
+
+void SolveIntAsBVPass::initInternal(
+     SmtEngine* smt, TheoryEngine* theoryEngine, 
+     theory::SubstitutionMap* topLevelSubstitutions, 
+     theory::arith::PseudoBooleanProcessor* pbsProcessor, 
+     RemoveTermFormulas* iteRemover, 
+     DecisionEngine* decisionEngine, prop::PropEngine* propEngine, 
+     bool* propagatorNeedsFinish, 
+     theory::booleans::CircuitPropagator* propagator, 
+     std::vector<Node>* boolVars, 
+     context::CDO<unsigned>* substitutionsIndex, 
+     std::vector<Node>* nonClausalLearnedLiterals) {
+} 
 
 PreprocessingPassResult SolveIntAsBVPass::apply(AssertionPipeline* assertionsToPreprocess)
 {
@@ -636,6 +704,20 @@ Node SolveIntAsBVPass::intToBV(TNode n, NodeMap& cache) {
 BitBlastModePass::BitBlastModePass(TheoryEngine* theoryEngine) : PreprocessingPass("bitBlastMode"), d_theoryEngine(theoryEngine){
 }
 
+void BitBlastModePass::initInternal(
+     SmtEngine* smt, TheoryEngine* theoryEngine, 
+     theory::SubstitutionMap* topLevelSubstitutions, 
+     theory::arith::PseudoBooleanProcessor* pbsProcessor, 
+     RemoveTermFormulas* iteRemover, 
+     DecisionEngine* decisionEngine, prop::PropEngine* propEngine, 
+     bool* propagatorNeedsFinish, 
+     theory::booleans::CircuitPropagator* propagator, 
+     std::vector<Node>* boolVars, 
+     context::CDO<unsigned>* substitutionsIndex, 
+     std::vector<Node>* nonClausalLearnedLiterals) {
+ d_theoryEngine = theoryEngine;
+} 
+
 PreprocessingPassResult BitBlastModePass::apply(AssertionPipeline* assertionsToPreprocess){
   d_theoryEngine->mkAckermanizationAsssertions(assertionsToPreprocess->ref());
  return PreprocessingPassResult(true);
@@ -643,6 +725,21 @@ PreprocessingPassResult BitBlastModePass::apply(AssertionPipeline* assertionsToP
 
 BVAbstractionPass::BVAbstractionPass(SmtEngine* smt, TheoryEngine* theoryEngine) : PreprocessingPass("bvAbstraction"), d_smt(smt), d_theoryEngine(theoryEngine){
 }
+
+void BVAbstractionPass::initInternal(
+     SmtEngine* smt, TheoryEngine* theoryEngine, 
+     theory::SubstitutionMap* topLevelSubstitutions, 
+     theory::arith::PseudoBooleanProcessor* pbsProcessor, 
+     RemoveTermFormulas* iteRemover, 
+     DecisionEngine* decisionEngine, prop::PropEngine* propEngine, 
+     bool* propagatorNeedsFinish, 
+     theory::booleans::CircuitPropagator* propagator, 
+     std::vector<Node>* boolVars, 
+     context::CDO<unsigned>* substitutionsIndex, 
+     std::vector<Node>* nonClausalLearnedLiterals) {
+ d_smt = smt;
+ d_theoryEngine = theoryEngine;
+} 
 
 void BVAbstractionPass::bvAbstraction(AssertionPipeline* assertionsToPreprocess){
   Trace("bv-abstraction") << "SmtEnginePrivate::bvAbstraction()" << std::endl;
@@ -668,10 +765,23 @@ PreprocessingPassResult BVAbstractionPass::apply(AssertionPipeline* assertionsTo
  return PreprocessingPassResult(true);
 } 
 
-UnconstrainedSimpPass::UnconstrainedSimpPass(TheoryEngine* theoryEngine) : 
-      PreprocessingPass("unconstrainedSimp"),
+UnconstrainedSimpPass::UnconstrainedSimpPass(TheoryEngine* theoryEngine) :      PreprocessingPass("unconstrainedSimp"),
       d_theoryEngine(theoryEngine){
 }
+
+void UnconstrainedSimpPass::initInternal(
+     SmtEngine* smt, TheoryEngine* theoryEngine, 
+     theory::SubstitutionMap* topLevelSubstitutions, 
+     theory::arith::PseudoBooleanProcessor* pbsProcessor, 
+     RemoveTermFormulas* iteRemover, 
+     DecisionEngine* decisionEngine, prop::PropEngine* propEngine, 
+     bool* propagatorNeedsFinish, 
+     theory::booleans::CircuitPropagator* propagator, 
+     std::vector<Node>* boolVars, 
+     context::CDO<unsigned>* substitutionsIndex, 
+     std::vector<Node>* nonClausalLearnedLiterals){
+ d_theoryEngine = theoryEngine; 
+} 
 
 PreprocessingPassResult UnconstrainedSimpPass::apply(AssertionPipeline* assertionsToPreprocess){
   TimerStat::CodeTimer unconstrainedSimpTimer(d_timer);
@@ -684,6 +794,19 @@ PreprocessingPassResult UnconstrainedSimpPass::apply(AssertionPipeline* assertio
 RewritePass::RewritePass() : PreprocessingPass("rewritePass"){
 }
 
+void RewritePass::initInternal(
+     SmtEngine* smt, TheoryEngine* theoryEngine, 
+     theory::SubstitutionMap* topLevelSubstitutions, 
+     theory::arith::PseudoBooleanProcessor* pbsProcessor, 
+     RemoveTermFormulas* iteRemover, 
+     DecisionEngine* decisionEngine, prop::PropEngine* propEngine, 
+     bool* propagatorNeedsFinish, 
+     theory::booleans::CircuitPropagator* propagator, 
+     std::vector<Node>* boolVars, 
+     context::CDO<unsigned>* substitutionsIndex, 
+     std::vector<Node>* nonClausalLearnedLiterals) {
+} 
+
 PreprocessingPassResult RewritePass::apply(AssertionPipeline* assertionsToPreprocess){
    for (unsigned i = 0; i < assertionsToPreprocess->size(); ++ i) {
     assertionsToPreprocess->replace(i, theory::Rewriter::rewrite((*assertionsToPreprocess)[i]));
@@ -693,6 +816,20 @@ PreprocessingPassResult RewritePass::apply(AssertionPipeline* assertionsToPrepro
 
 NotUnsatCoresPass::NotUnsatCoresPass(theory::SubstitutionMap* topLevelSubstitutions) : PreprocessingPass("notUnsatCores"), d_topLevelSubstitutions(topLevelSubstitutions){
 }
+
+void NotUnsatCoresPass::initInternal(
+     SmtEngine* smt, TheoryEngine* theoryEngine, 
+     theory::SubstitutionMap* topLevelSubstitutions, 
+     theory::arith::PseudoBooleanProcessor* pbsProcessor, 
+     RemoveTermFormulas* iteRemover, 
+     DecisionEngine* decisionEngine, prop::PropEngine* propEngine, 
+     bool* propagatorNeedsFinish, 
+     theory::booleans::CircuitPropagator* propagator, 
+     std::vector<Node>* boolVars, 
+     context::CDO<unsigned>* substitutionsIndex, 
+     std::vector<Node>* nonClausalLearnedLiterals) {
+ d_topLevelSubstitutions = topLevelSubstitutions;
+} 
 
 PreprocessingPassResult NotUnsatCoresPass::apply(AssertionPipeline* assertionsToPreprocess){
   Chat() << "applying substitutions..." << std::endl;
@@ -709,6 +846,20 @@ PreprocessingPassResult NotUnsatCoresPass::apply(AssertionPipeline* assertionsTo
      
 BVToBoolPass::BVToBoolPass(TheoryEngine* theoryEngine) : PreprocessingPass("bvToBool"), d_theoryEngine(theoryEngine){
 }
+
+void BVToBoolPass::initInternal(
+     SmtEngine* smt, TheoryEngine* theoryEngine, 
+     theory::SubstitutionMap* topLevelSubstitutions, 
+     theory::arith::PseudoBooleanProcessor* pbsProcessor, 
+     RemoveTermFormulas* iteRemover, 
+     DecisionEngine* decisionEngine, prop::PropEngine* propEngine, 
+     bool* propagatorNeedsFinish, 
+     theory::booleans::CircuitPropagator* propagator, 
+     std::vector<Node>* boolVars, 
+     context::CDO<unsigned>* substitutionsIndex, 
+     std::vector<Node>* nonClausalLearnedLiterals) {
+  d_theoryEngine = theoryEngine;
+} 
 
 PreprocessingPassResult BVToBoolPass::apply(AssertionPipeline* assertionsToPreprocess){
   dumpAssertions("pre-bv-to-bool", *assertionsToPreprocess);
@@ -733,7 +884,21 @@ void BVToBoolPass::bvToBool(AssertionPipeline* assertionsToPreprocess) {
 
 BoolToBVPass::BoolToBVPass(TheoryEngine* theoryEngine) : PreprocessingPass("boolTobv"), d_theoryEngine(theoryEngine){
 }
-  
+ 
+void BoolToBVPass::initInternal(
+     SmtEngine* smt, TheoryEngine* theoryEngine, 
+     theory::SubstitutionMap* topLevelSubstitutions, 
+     theory::arith::PseudoBooleanProcessor* pbsProcessor, 
+     RemoveTermFormulas* iteRemover, 
+     DecisionEngine* decisionEngine, prop::PropEngine* propEngine, 
+     bool* propagatorNeedsFinish, 
+     theory::booleans::CircuitPropagator* propagator, 
+     std::vector<Node>* boolVars, 
+     context::CDO<unsigned>* substitutionsIndex, 
+     std::vector<Node>* nonClausalLearnedLiterals) {
+ d_theoryEngine = theoryEngine;
+} 
+
 void BoolToBVPass::boolToBv(AssertionPipeline* assertionsToPreprocess) {
   Trace("bool-to-bv") << "SmtEnginePrivate::boolToBv()" << std::endl;
   spendResource(options::preprocessStep());
@@ -756,6 +921,19 @@ PreprocessingPassResult BoolToBVPass::apply(AssertionPipeline* assertionsToPrepr
 
 SepPreSkolemEmpPass::SepPreSkolemEmpPass() : PreprocessingPass("sepPreSkolem") {
 }
+ 
+void SepPreSkolemEmpPass::initInternal(
+     SmtEngine* smt, TheoryEngine* theoryEngine, 
+     theory::SubstitutionMap* topLevelSubstitutions, 
+     theory::arith::PseudoBooleanProcessor* pbsProcessor, 
+     RemoveTermFormulas* iteRemover, 
+     DecisionEngine* decisionEngine, prop::PropEngine* propEngine, 
+     bool* propagatorNeedsFinish, 
+     theory::booleans::CircuitPropagator* propagator, 
+     std::vector<Node>* boolVars, 
+     context::CDO<unsigned>* substitutionsIndex, 
+     std::vector<Node>* nonClausalLearnedLiterals) {
+} 
 
 PreprocessingPassResult SepPreSkolemEmpPass::apply(AssertionPipeline* assertionsToPreprocess){
   for (unsigned i = 0; i < assertionsToPreprocess->size(); ++ i) {
@@ -772,6 +950,21 @@ PreprocessingPassResult SepPreSkolemEmpPass::apply(AssertionPipeline* assertions
 
 QuantifiedPass::QuantifiedPass(TheoryEngine* theoryEngine, SmtEngine* smt) : PreprocessingPass("quantified"), d_theoryEngine(theoryEngine), d_smt(smt) { 
 }
+
+void QuantifiedPass::initInternal(
+     SmtEngine* smt, TheoryEngine* theoryEngine, 
+     theory::SubstitutionMap* topLevelSubstitutions, 
+     theory::arith::PseudoBooleanProcessor* pbsProcessor, 
+     RemoveTermFormulas* iteRemover, 
+     DecisionEngine* decisionEngine, prop::PropEngine* propEngine, 
+     bool* propagatorNeedsFinish, 
+     theory::booleans::CircuitPropagator* propagator, 
+     std::vector<Node>* boolVars, 
+     context::CDO<unsigned>* substitutionsIndex, 
+     std::vector<Node>* nonClausalLearnedLiterals) {
+ d_theoryEngine = theoryEngine;
+ d_smt = smt;
+} 
 
 PreprocessingPassResult QuantifiedPass::apply(AssertionPipeline* assertionsToPreprocess){
     Trace("smt-proc") << "SmtEnginePrivate::processAssertions() : pre-quant-preprocess" << std::endl;
@@ -835,6 +1028,21 @@ PreprocessingPassResult QuantifiedPass::apply(AssertionPipeline* assertionsToPre
 InferenceOrFairnessPass::InferenceOrFairnessPass(TheoryEngine* theoryEngine, SmtEngine* smt) : PreprocessingPass("inferenceOrFairness"), d_theoryEngine(theoryEngine), d_smt(smt){
 }
 
+void InferenceOrFairnessPass::initInternal(
+     SmtEngine* smt, TheoryEngine* theoryEngine, 
+     theory::SubstitutionMap* topLevelSubstitutions, 
+     theory::arith::PseudoBooleanProcessor* pbsProcessor, 
+     RemoveTermFormulas* iteRemover, 
+     DecisionEngine* decisionEngine, prop::PropEngine* propEngine, 
+     bool* propagatorNeedsFinish, 
+     theory::booleans::CircuitPropagator* propagator, 
+     std::vector<Node>* boolVars, 
+     context::CDO<unsigned>* substitutionsIndex, 
+     std::vector<Node>* nonClausalLearnedLiterals) {
+ d_theoryEngine = theoryEngine;
+ d_smt = smt;
+} 
+
 PreprocessingPassResult InferenceOrFairnessPass::apply(AssertionPipeline* assertionsToPreprocess){
      //sort inference technique
     SortInference * si = d_theoryEngine->getSortInference();
@@ -849,6 +1057,20 @@ return PreprocessingPassResult(true);
 PBRewritePass::PBRewritePass(theory::arith::PseudoBooleanProcessor* pbsProcessor) : PreprocessingPass("pbRewrite"), d_pbsProcessor(pbsProcessor){
 }
 
+void PBRewritePass::initInternal(
+     SmtEngine* smt, TheoryEngine* theoryEngine, 
+     theory::SubstitutionMap* topLevelSubstitutions, 
+     theory::arith::PseudoBooleanProcessor* pbsProcessor, 
+     RemoveTermFormulas* iteRemover, 
+     DecisionEngine* decisionEngine, prop::PropEngine* propEngine, 
+     bool* propagatorNeedsFinish, 
+     theory::booleans::CircuitPropagator* propagator, 
+     std::vector<Node>* boolVars, 
+     context::CDO<unsigned>* substitutionsIndex, 
+     std::vector<Node>* nonClausalLearnedLiterals){
+ d_pbsProcessor = pbsProcessor; 
+} 
+
 PreprocessingPassResult PBRewritePass::apply(AssertionPipeline* assertionsToPreprocess){
   d_pbsProcessor->learn(assertionsToPreprocess->ref());
     if(d_pbsProcessor->likelyToHelp()){
@@ -859,6 +1081,21 @@ PreprocessingPassResult PBRewritePass::apply(AssertionPipeline* assertionsToPrep
 
 RemoveITEPass::RemoveITEPass(SmtEngine* smt, RemoveTermFormulas* iteRemover) : PreprocessingPass("removeITE"), d_smt(smt), d_iteRemover(iteRemover){
 }
+
+void RemoveITEPass::initInternal(
+     SmtEngine* smt, TheoryEngine* theoryEngine, 
+     theory::SubstitutionMap* topLevelSubstitutions, 
+     theory::arith::PseudoBooleanProcessor* pbsProcessor, 
+     RemoveTermFormulas* iteRemover, 
+     DecisionEngine* decisionEngine, prop::PropEngine* propEngine, 
+     bool* propagatorNeedsFinish, 
+     theory::booleans::CircuitPropagator* propagator, 
+     std::vector<Node>* boolVars, 
+     context::CDO<unsigned>* substitutionsIndex, 
+     std::vector<Node>* nonClausalLearnedLiterals) {
+ d_smt = smt;
+ d_iteRemover = iteRemover; 
+} 
 
 PreprocessingPassResult RemoveITEPass::apply(AssertionPipeline* assertionsToPreprocess){
   d_smt->finalOptionsAreSet();
@@ -875,6 +1112,21 @@ PreprocessingPassResult RemoveITEPass::apply(AssertionPipeline* assertionsToPrep
 
 DoStaticLearningPass::DoStaticLearningPass(TheoryEngine* theoryEngine, SmtEngine* smt) : PreprocessingPass("doStaticLearning"), d_theoryEngine(theoryEngine), d_smt(smt) {
 }
+
+void DoStaticLearningPass::initInternal(
+     SmtEngine* smt, TheoryEngine* theoryEngine, 
+     theory::SubstitutionMap* topLevelSubstitutions, 
+     theory::arith::PseudoBooleanProcessor* pbsProcessor, 
+     RemoveTermFormulas* iteRemover, 
+     DecisionEngine* decisionEngine, prop::PropEngine* propEngine, 
+     bool* propagatorNeedsFinish, 
+     theory::booleans::CircuitPropagator* propagator, 
+     std::vector<Node>* boolVars, 
+     context::CDO<unsigned>* substitutionsIndex, 
+     std::vector<Node>* nonClausalLearnedLiterals) {
+ d_smt = smt;
+ d_theoryEngine = theoryEngine; 
+} 
 
 void DoStaticLearningPass::staticLearning(AssertionPipeline* assertionsToPreprocess){
   d_smt->finalOptionsAreSet();
@@ -910,6 +1162,19 @@ PreprocessingPassResult DoStaticLearningPass::apply(AssertionPipeline* assertion
 
 RewriteApplyToConstPass::RewriteApplyToConstPass(): PreprocessingPass("rewriteApplyToConst") {
 }
+
+void RewriteApplyToConstPass::initInternal(
+     SmtEngine* smt, TheoryEngine* theoryEngine, 
+     theory::SubstitutionMap* topLevelSubstitutions, 
+     theory::arith::PseudoBooleanProcessor* pbsProcessor, 
+     RemoveTermFormulas* iteRemover, 
+     DecisionEngine* decisionEngine, prop::PropEngine* propEngine, 
+     bool* propagatorNeedsFinish, 
+     theory::booleans::CircuitPropagator* propagator, 
+     std::vector<Node>* boolVars, 
+     context::CDO<unsigned>* substitutionsIndex, 
+     std::vector<Node>* nonClausalLearnedLiterals) {
+} 
 
 Node RewriteApplyToConstPass::rewriteApplyToConst(TNode n){
     NodeToNodeHashMap d_rewriteApplyToConstCache;
@@ -982,6 +1247,20 @@ PreprocessingPassResult RewriteApplyToConstPass::apply(AssertionPipeline* assert
 TheoryPreprocessPass::TheoryPreprocessPass(TheoryEngine* theoryEngine) : PreprocessingPass("theoryPreprocess"), d_theoryEngine(theoryEngine) {
 }
 
+void TheoryPreprocessPass::initInternal(
+     SmtEngine* smt, TheoryEngine* theoryEngine, 
+     theory::SubstitutionMap* topLevelSubstitutions, 
+     theory::arith::PseudoBooleanProcessor* pbsProcessor, 
+     RemoveTermFormulas* iteRemover, 
+     DecisionEngine* decisionEngine, prop::PropEngine* propEngine, 
+     bool* propagatorNeedsFinish, 
+     theory::booleans::CircuitPropagator* propagator, 
+     std::vector<Node>* boolVars, 
+     context::CDO<unsigned>* substitutionsIndex, 
+     std::vector<Node>* nonClausalLearnedLiterals){
+ d_theoryEngine = theoryEngine; 
+} 
+
 PreprocessingPassResult TheoryPreprocessPass::apply(AssertionPipeline* assertionsToPreprocess){
     Chat() << "theory preprocessing..." << endl;
     TimerStat::CodeTimer codeTimer(d_timer);
@@ -995,6 +1274,20 @@ PreprocessingPassResult TheoryPreprocessPass::apply(AssertionPipeline* assertion
 
 BitBlastModeEagerPass::BitBlastModeEagerPass(TheoryEngine* theoryEngine) : PreprocessingPass("bitBlastModeEager"), d_theoryEngine(theoryEngine){
 }
+
+void BitBlastModeEagerPass::initInternal(
+     SmtEngine* smt, TheoryEngine* theoryEngine, 
+     theory::SubstitutionMap* topLevelSubstitutions, 
+     theory::arith::PseudoBooleanProcessor* pbsProcessor, 
+     RemoveTermFormulas* iteRemover, 
+     DecisionEngine* decisionEngine, prop::PropEngine* propEngine, 
+     bool* propagatorNeedsFinish, 
+     theory::booleans::CircuitPropagator* propagator, 
+     std::vector<Node>* boolVars, 
+     context::CDO<unsigned>* substitutionsIndex, 
+     std::vector<Node>* nonClausalLearnedLiterals){
+ d_theoryEngine = theoryEngine; 
+} 
 
 PreprocessingPassResult BitBlastModeEagerPass::apply(AssertionPipeline* assertionsToPreprocess){
     for (unsigned i = 0; i < assertionsToPreprocess->size(); ++i) {
@@ -1010,6 +1303,20 @@ PreprocessingPassResult BitBlastModeEagerPass::apply(AssertionPipeline* assertio
 NoConflictPass::NoConflictPass(DecisionEngine* decisionEngine) : PreprocessingPass("noConflict"), d_decisionEngine(decisionEngine){
 }
 
+void NoConflictPass::initInternal(
+     SmtEngine* smt, TheoryEngine* theoryEngine, 
+     theory::SubstitutionMap* topLevelSubstitutions, 
+     theory::arith::PseudoBooleanProcessor* pbsProcessor, 
+     RemoveTermFormulas* iteRemover, 
+     DecisionEngine* decisionEngine, prop::PropEngine* propEngine, 
+     bool* propagatorNeedsFinish, 
+     theory::booleans::CircuitPropagator* propagator, 
+     std::vector<Node>* boolVars, 
+     context::CDO<unsigned>* substitutionsIndex, 
+     std::vector<Node>* nonClausalLearnedLiterals) {
+ d_decisionEngine = decisionEngine; 
+} 
+
 PreprocessingPassResult NoConflictPass::apply(AssertionPipeline* assertionsToPreprocess){
     Chat() << "pushing to decision engine..." << std::endl;
     Assert(iteRewriteAssertionsEnd == assertionsToPreprocess->size());
@@ -1020,6 +1327,20 @@ PreprocessingPassResult NoConflictPass::apply(AssertionPipeline* assertionsToPre
 
 CNFPass::CNFPass(prop::PropEngine* propEngine) : PreprocessingPass("cnf"), d_propEngine(propEngine){
 }
+
+void CNFPass::initInternal(
+     SmtEngine* smt, TheoryEngine* theoryEngine, 
+     theory::SubstitutionMap* topLevelSubstitutions, 
+     theory::arith::PseudoBooleanProcessor* pbsProcessor, 
+     RemoveTermFormulas* iteRemover, 
+     DecisionEngine* decisionEngine, prop::PropEngine* propEngine, 
+     bool* propagatorNeedsFinish, 
+     theory::booleans::CircuitPropagator* propagator, 
+     std::vector<Node>* boolVars, 
+     context::CDO<unsigned>* substitutionsIndex, 
+     std::vector<Node>* nonClausalLearnedLiterals){
+ d_propEngine = propEngine; 
+} 
 
 PreprocessingPassResult CNFPass::apply(AssertionPipeline* assertionsToPreprocess){
    Chat() << "converting to CNF..." << endl;
@@ -1032,13 +1353,25 @@ PreprocessingPassResult CNFPass::apply(AssertionPipeline* assertionsToPreprocess
 }
 
 RepeatSimpPass::RepeatSimpPass(
-    theory::SubstitutionMap* topLevelSubstitutions,
-    bool* noConflict) :
+    theory::SubstitutionMap* topLevelSubstitutions) :
     PreprocessingPass("repeatSimp"), 
-    d_topLevelSubstitutions(topLevelSubstitutions),
-    noConflict(noConflict)
+    d_topLevelSubstitutions(topLevelSubstitutions)
     {
 }
+
+void RepeatSimpPass::initInternal(
+     SmtEngine* smt, TheoryEngine* theoryEngine, 
+     theory::SubstitutionMap* topLevelSubstitutions, 
+     theory::arith::PseudoBooleanProcessor* pbsProcessor, 
+     RemoveTermFormulas* iteRemover, 
+     DecisionEngine* decisionEngine, prop::PropEngine* propEngine, 
+     bool* propagatorNeedsFinish, 
+     theory::booleans::CircuitPropagator* propagator, 
+     std::vector<Node>* boolVars, 
+     context::CDO<unsigned>* substitutionsIndex, 
+     std::vector<Node>* nonClausalLearnedLiterals){
+ d_topLevelSubstitutions = topLevelSubstitutions; 
+} 
 
 bool RepeatSimpPass::checkForBadSkolems(TNode n, TNode skolem, unordered_map<Node, bool, NodeHashFunction>& cache, AssertionPipeline* assertionsToPreprocess)
 {
@@ -1159,6 +1492,25 @@ PreprocessingPassResult RepeatSimpPass::apply(AssertionPipeline* assertionsToPre
 
 NonClausalSimplificationPass::NonClausalSimplificationPass(SmtEngine* smt, bool* propagatorNeedsFinish, theory::booleans::CircuitPropagator* propagator, context::CDO<unsigned>* substitutionsIndex, theory::SubstitutionMap* topLevelSubstitutions, std::vector<Node>* nonClausalLearnedLiterals) :
    PreprocessingPass("nonClausalSimplification"), d_smt(smt), d_propagatorNeedsFinish(propagatorNeedsFinish), d_propagator(propagator), d_substitutionsIndex(substitutionsIndex), d_topLevelSubstitutions(topLevelSubstitutions), d_nonClausalLearnedLiterals(nonClausalLearnedLiterals), d_numConstantProps("preproc::numConstantProps", 0) {
+}
+
+void NonClausalSimplificationPass::initInternal(
+     SmtEngine* smt, TheoryEngine* theoryEngine, 
+     theory::SubstitutionMap* topLevelSubstitutions, 
+     theory::arith::PseudoBooleanProcessor* pbsProcessor, 
+     RemoveTermFormulas* iteRemover, 
+     DecisionEngine* decisionEngine, prop::PropEngine* propEngine, 
+     bool* propagatorNeedsFinish, 
+     theory::booleans::CircuitPropagator* propagator, 
+     std::vector<Node>* boolVars, 
+     context::CDO<unsigned>* substitutionsIndex, 
+     std::vector<Node>* nonClausalLearnedLiterals){
+ d_smt = smt;
+ d_propagatorNeedsFinish = propagatorNeedsFinish;
+ d_propagator = propagator;
+ d_substitutionsIndex = substitutionsIndex;
+ d_topLevelSubstitutions = topLevelSubstitutions;
+ d_nonClausalLearnedLiterals = nonClausalLearnedLiterals;
 }
 
 // returns false if it learns a conflict
@@ -1490,6 +1842,23 @@ PreprocessingPassResult NonClausalSimplificationPass::apply(AssertionPipeline* a
 MiplibTrickPass::MiplibTrickPass(SmtEngine* smt, theory::booleans::CircuitPropagator* propagator, std::vector<Node>* boolVars, theory::SubstitutionMap* topLevelSubstitutions) :
    PreprocessingPass("miplibTrick"), d_smt(smt), d_propagator(propagator), d_boolVars(boolVars), d_numMiplibAssertionsRemoved("preproc::d_numMiplibAssertionsRemoved", 0), d_topLevelSubstitutions(topLevelSubstitutions), d_fakeContext(){
   smtStatisticsRegistry()->registerStat(&d_numMiplibAssertionsRemoved);
+}
+
+void MiplibTrickPass::initInternal(
+     SmtEngine* smt, TheoryEngine* theoryEngine, 
+     theory::SubstitutionMap* topLevelSubstitutions, 
+     theory::arith::PseudoBooleanProcessor* pbsProcessor, 
+     RemoveTermFormulas* iteRemover, 
+     DecisionEngine* decisionEngine, prop::PropEngine* propEngine, 
+     bool* propagatorNeedsFinish, 
+     theory::booleans::CircuitPropagator* propagator, 
+     std::vector<Node>* boolVars, 
+     context::CDO<unsigned>* substitutionsIndex, 
+     std::vector<Node>* nonClausalLearnedLiterals){
+ d_smt = smt;
+ d_propagator = propagator;
+ d_boolVars = boolVars;
+ d_topLevelSubstitutions = topLevelSubstitutions;
 }
 
 size_t MiplibTrickPass::removeFromConjunction(Node& n, const std::unordered_set<unsigned long>& toRemove) {
@@ -1886,6 +2255,20 @@ PreprocessingPassResult MiplibTrickPass::apply(AssertionPipeline* assertionsToPr
 EarlyTheoryPass::EarlyTheoryPass(TheoryEngine* theoryEngine) : PreprocessingPass("earlyTheory"), d_theoryEngine(theoryEngine){
 }
 
+void EarlyTheoryPass::initInternal(
+     SmtEngine* smt, TheoryEngine* theoryEngine, 
+     theory::SubstitutionMap* topLevelSubstitutions, 
+     theory::arith::PseudoBooleanProcessor* pbsProcessor, 
+     RemoveTermFormulas* iteRemover, 
+     DecisionEngine* decisionEngine, prop::PropEngine* propEngine, 
+     bool* propagatorNeedsFinish, 
+     theory::booleans::CircuitPropagator* propagator, 
+     std::vector<Node>* boolVars, 
+     context::CDO<unsigned>* substitutionsIndex, 
+     std::vector<Node>* nonClausalLearnedLiterals) { 
+ d_theoryEngine = theoryEngine;
+}
+
 PreprocessingPassResult EarlyTheoryPass::apply(AssertionPipeline* assertionsToPreprocess) {
    Chat() << "...doing early theory preprocessing..." << endl;
       TimerStat::CodeTimer codeTimer(d_timer);
@@ -1902,6 +2285,20 @@ PreprocessingPassResult EarlyTheoryPass::apply(AssertionPipeline* assertionsToPr
 SimpITEPass::SimpITEPass(TheoryEngine* theoryEngine) : PreprocessingPass("simpITE"), d_theoryEngine(theoryEngine){
 }
  
+void SimpITEPass::initInternal(
+     SmtEngine* smt, TheoryEngine* theoryEngine, 
+     theory::SubstitutionMap* topLevelSubstitutions, 
+     theory::arith::PseudoBooleanProcessor* pbsProcessor, 
+     RemoveTermFormulas* iteRemover, 
+     DecisionEngine* decisionEngine, prop::PropEngine* propEngine, 
+     bool* propagatorNeedsFinish, 
+     theory::booleans::CircuitPropagator* propagator, 
+     std::vector<Node>* boolVars, 
+     context::CDO<unsigned>* substitutionsIndex, 
+     std::vector<Node>* nonClausalLearnedLiterals) { 
+ d_theoryEngine = theoryEngine; 
+}
+
 void SimpITEPass::compressBeforeRealAssertions(size_t before, AssertionPipeline* assertionsToPreprocess){
   size_t curr = assertionsToPreprocess->size();
   if(before >= curr ||
