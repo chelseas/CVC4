@@ -10,13 +10,9 @@
 
 #include "preproc/preprocessing_pass_registry.h"
 #include "smt/dump.h"
-#include "decision/decision_engine.h"
 #include "smt/smt_statistics_registry.h"
 #include "theory/rewriter.h"
-#include "theory/theory_engine.h"
-#include "theory/arith/pseudoboolean_proc.h"
 #include "theory/substitutions.h"
-#include "theory/booleans/circuit_propagator.h"
 #include "theory/theory_model.h"
 #include "options/proof_options.h"
 //#include "util/statistics_registry.h"
@@ -107,13 +103,12 @@ struct PreprocessingPassResult {
 }
 };
 
+class PreprocessingPassRegistry;
+
 class PreprocessingPass {
+ friend class PreprocessingPassRegistry;
  public:
-/*  void init(){
-  assert(!d_initialized); 
-  smtStatisticsRegistry()->registerStat(&d_timer); 
- 
-  initInternal(SmtEngine* smt, TheoryEngine* theoryEngine, 
+ void init(SmtEngine* smt, TheoryEngine* theoryEngine, 
      theory::SubstitutionMap* topLevelSubstitutions, 
      theory::arith::PseudoBooleanProcessor* pbsProcessor, 
      RemoveTermFormulas* iteRemover, 
@@ -122,11 +117,14 @@ class PreprocessingPass {
      theory::booleans::CircuitPropagator* propagator, 
      std::vector<Node>* boolVars, 
      context::CDO<unsigned>* substitutionsIndex, 
-     std::vector<Node>* nonClausalLearnedLiterals)
-
+     std::vector<Node>* nonClausalLearnedLiterals) {
+  assert(!d_initialized); 
+  smtStatisticsRegistry()->registerStat(&d_timer); 
+ 
+  initInternal(smt, theoryEngine, topLevelSubstitutions, pbsProcessor, iteRemover, decisionEngine, propEngine, propagatorNeedsFinish, propagator, boolVars, substitutionsIndex, nonClausalLearnedLiterals);
 
   d_initialized = true;
-  }*/
+ }
 
   virtual PreprocessingPassResult apply(AssertionPipeline* assertionsToPreprocess) = 0;
 
@@ -181,14 +179,13 @@ class PreprocessingPass {
 
  PreprocessingPass(const std::string& name, bool registerPass = false) : d_name(name), d_timer("preproc::" + name), d_initialized(false){
    if (registerPass) {
-     PreprocessingPassRegistry::getInstance()->registerPass(this);
+     PreprocessingPassRegistry::getInstance()->registerPass(name, this);
    }
-//   smtStatisticsRegistry()->registerStat(&d_timer);
   }
  
  ~PreprocessingPass() {
-//   assert(d_initialized);
-//   smtStatisticsRegistry()->unregisterStat(&d_timer);
+   assert(d_initialized);
+   smtStatisticsRegistry()->unregisterStat(&d_timer);
  }
 
 private:

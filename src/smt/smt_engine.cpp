@@ -3233,8 +3233,9 @@ bool SmtEnginePrivate::simplifyAssertions()
       Chat() << "...performing nonclausal simplification..." << endl;
       Trace("simplify") << "SmtEnginePrivate::simplify(): "
                         << "performing non-clausal simplification" << endl;
-      preproc::NonClausalSimplificationPass pass(&d_smt, &d_propagatorNeedsFinish, &d_propagator, &d_substitutionsIndex, &d_topLevelSubstitutions, &d_nonClausalLearnedLiterals);
-     bool noConflict = pass.apply(&d_assertions).d_noConflict; 
+/*      preproc::NonClausalSimplificationPass pass;
+      bool noConflict = pass.apply(&d_assertions).d_noConflict; */
+      bool noConflict =  PreprocessingPassRegistry::getInstance()->getPass("nonClausalSimplification")->apply(&d_assertions).d_noConflict;
       if(!noConflict) {
         return false;
       }
@@ -3251,8 +3252,9 @@ bool SmtEnginePrivate::simplifyAssertions()
           // restriction only disables miplib processing during
           // re-simplification, which we don't expect to be useful anyway)
           d_assertions.getRealAssertionsEnd() == d_assertions.size() ) {
-            preproc::MiplibTrickPass pass(&d_smt, &d_propagator, &d_boolVars, &d_topLevelSubstitutions);
-            pass.apply(&d_assertions);
+/*            preproc::MiplibTrickPass pass;
+            pass.apply(&d_assertions);*/
+          PreprocessingPassRegistry::getInstance()->getPass("miplibTrick")->apply(&d_assertions);
      } else {
         Trace("simplify") << "SmtEnginePrivate::simplify(): "
                           << "skipping miplib pseudobooleans pass (either incrementalSolving is on, or miplib pbs are turned off)..." << endl;
@@ -3270,8 +3272,10 @@ bool SmtEnginePrivate::simplifyAssertions()
 
     // Theory preprocessing
     if (d_smt.d_earlyTheoryPP) {
-       preproc::EarlyTheoryPass pass(d_smt.d_theoryEngine);
-       pass.apply(&d_assertions);
+/*       preproc::EarlyTheoryPass pass;
+       pass.apply(&d_assertions);*/
+
+       PreprocessingPassRegistry::getInstance()->getPass("earlyTheory")->apply(&d_assertions);
    }
 
     dumpAssertions("post-theorypp", d_assertions);
@@ -3282,8 +3286,10 @@ bool SmtEnginePrivate::simplifyAssertions()
     if(options::doITESimp() &&
        (d_simplifyAssertionsDepth <= 1 || options::doITESimpOnRepeat())) {
       Chat() << "...doing ITE simplification..." << endl;
-      SimpITEPass pass(d_smt.d_theoryEngine);
-      bool noConflict = pass.apply(&d_assertions).d_noConflict;
+/*      SimpITEPass pass;
+      bool noConflict = pass.apply(&d_assertions).d_noConflict;*/
+
+      bool noConflict = PreprocessingPassRegistry::getInstance()->getPass("simpITE")->apply(&d_assertions).d_noConflict;
  
       if(!noConflict){
         Chat() << "...ITE simplification found unsat..." << endl;
@@ -3298,8 +3304,10 @@ bool SmtEnginePrivate::simplifyAssertions()
     // Unconstrained simplification
     if(options::unconstrainedSimp()) {
       Chat() << "...doing unconstrained simplification..." << endl;
-      preproc::UnconstrainedSimpPass pass(d_smt.d_theoryEngine);
-      pass.apply(&d_assertions);
+/*      preproc::UnconstrainedSimpPass pass;
+      pass.apply(&d_assertons);*/
+      PreprocessingPassRegistry::getInstance()->getPass("unconstrainedSimp")->apply(&d_assertions);
+ 
    }
 
     dumpAssertions("post-unconstrained", d_assertions);
@@ -3311,8 +3319,9 @@ bool SmtEnginePrivate::simplifyAssertions()
       Trace("simplify") << "SmtEnginePrivate::simplify(): "
                         << " doing repeated simplification" << endl;
       
-     preproc::NonClausalSimplificationPass pass(&d_smt, &d_propagatorNeedsFinish, &d_propagator, &d_substitutionsIndex, &d_topLevelSubstitutions, &d_nonClausalLearnedLiterals);
-     bool noConflict = pass.apply(&d_assertions).d_noConflict; 
+/*     preproc::NonClausalSimplificationPass pass;
+     bool noConflict = pass.apply(&d_assertions).d_noConflict; */
+      bool noConflict = PreprocessingPassRegistry::getInstance()->getPass("nlExtPurify")->apply(&d_assertions).d_noConflict;
       if(!noConflict) {
         return false;
       }
@@ -3454,6 +3463,7 @@ bool SmtEnginePrivate::checkForBadSkolems(TNode n, TNode skolem, unordered_map<N
 }
 
 void SmtEnginePrivate::processAssertions() {
+  PreprocessingPassRegistry::getInstance()->init(&d_smt, d_smt.d_theoryEngine, &d_topLevelSubstitutions, &d_pbsProcessor, &d_iteRemover, d_smt.d_decisionEngine, d_smt.d_propEngine, &d_propagatorNeedsFinish, &d_propagator, &d_boolVars, &d_substitutionsIndex, &d_nonClausalLearnedLiterals);
   TimerStat::CodeTimer paTimer(d_smt.d_stats->d_processAssertionsTime);
   spendResource(options::preprocessStep());
   Assert(d_smt.d_fullyInited);
@@ -3490,8 +3500,10 @@ void SmtEnginePrivate::processAssertions() {
   Trace("smt-proc") << "SmtEnginePrivate::processAssertions() : pre-definition-expansion" << endl;
   dumpAssertions("pre-definition-expansion", d_assertions);
   {
-  preproc::ExpandingDefinitionsPass pass(&d_smt);
-  pass.apply(&d_assertions);
+/*  preroc::ExpandingDefinitionsPass pass;
+  pass.apply(&d_assertions);*/
+     PreprocessingPassRegistry::getInstance()->getPass("expandingDefinitions")->apply(&d_assertions);
+ 
  }
 
   Trace("smt-proc") << "SmtEnginePrivate::processAssertions() : post-definition-expansion" << endl;
@@ -3508,28 +3520,35 @@ void SmtEnginePrivate::processAssertions() {
   Debug("smt") << " d_assertions     : " << d_assertions.size() << endl;
 
   if( options::nlExtPurify() ){
-    preproc::NlExtPurifyPass pass;
-    pass.apply(&d_assertions);
+  //  preproc::NlExtPurifyPass pass;
+  //  pass.apply(&d_assertions);
 
     // TODO: With the PreprocessingPassRegistry, it should be possible to do
     // something like this:
-    // PreprocessingPassRegistry::getInstance()->getPass("nl-ext-purify")->apply(&d_assertions);
+     PreprocessingPassRegistry::getInstance()->getPass("nlExtPurify")->apply(&d_assertions);
   }
 
   if( options::ceGuidedInst() ){
     //register sygus conjecture pre-rewrite (motivated by solution reconstruction)
-    preproc::CEGuidedInstPass pass(d_smt.d_theoryEngine);
-    pass.apply(&d_assertions);
+   /* preproc::CEGuidedInstPass pass;
+    pass.apply(&d_assertions);*/
+     PreprocessingPassRegistry::getInstance()->getPass("ceGuidedInst")->apply(&d_assertions);
+ 
  }
 
   if (options::solveRealAsInt()) {
-   preproc::SolveRealAsIntPass pass;
-   pass.apply(&d_assertions);   
-  } 
+  /* preproc::SolveRealAsIntPass pass;
+   pass.apply(&d_assertions);   */
+ 
+     PreprocessingPassRegistry::getInstance()->getPass("solveRealAsInt")->apply(&d_assertions);
+
+ } 
 
   if (options::solveIntAsBV() > 0) {
-   preproc::SolveIntAsBVPass pass;
-   pass.apply(&d_assertions);   
+/*   preproc::SolveIntAsBVPass pass;
+   pass.apply(&d_assertions);   */
+
+     PreprocessingPassRegistry::getInstance()->getPass("solveIntAsbv")->apply(&d_assertions);
   }
 
   if (options::bitblastMode() == theory::bv::BITBLAST_MODE_EAGER &&
@@ -3542,17 +3561,22 @@ void SmtEnginePrivate::processAssertions() {
   }
 
   if (options::bitblastMode() == theory::bv::BITBLAST_MODE_EAGER) {
-    preproc::BitBlastModePass pass(d_smt.d_theoryEngine);
-    pass.apply(&d_assertions);
+/*    preproc::BitBlastModePass pass;
+    pass.apply(&d_assertions);*/
+   
+     PreprocessingPassRegistry::getInstance()->getPass("bitBlastMode")->apply(&d_assertions);
   }
 
   if ( options::bvAbstraction() &&
       !options::incrementalSolving()) {
-    preproc::BVAbstractionPass pass(&d_smt, d_smt.d_theoryEngine);
-    pass.apply(&d_assertions);
+/*    preproc::BVAbstractionPass pass;
+    pass.apply(&d_assertions);*/
 
-    preproc::RewritePass pass1;
-    pass1.apply(&d_assertions);
+     PreprocessingPassRegistry::getInstance()->getPass("bvAbstraction")->apply(&d_assertions);
+/*    preproc::RewritePass pass1;
+    pass1.apply(&d_assertions);*/
+
+     PreprocessingPassRegistry::getInstance()->getPass("rewrite")->apply(&d_assertions);
  }
  
  Debug("smt") << "d_assertions    :" << d_assertions.size() << endl;
@@ -3564,11 +3588,15 @@ void SmtEnginePrivate::processAssertions() {
     dumpAssertions("pre-unconstrained-simp", d_assertions);
     Chat() << "...doing unconstrained simplification..." << std::endl;
    
-    preproc::RewritePass pass;
-    pass.apply(&d_assertions);    
+/*    preproc::RewritePass pass;
+    pass.apply(&d_assertions);    */
 
-    preproc::UnconstrainedSimpPass pass1(d_smt.d_theoryEngine);
-    pass1.apply(&d_assertions);
+     PreprocessingPassRegistry::getInstance()->getPass("rewrite")->apply(&d_assertions);
+
+/*    preproc::UnconstrainedSimpPass pass1;
+    pass1.apply(&d_assertions);*/
+
+     PreprocessingPassRegistry::getInstance()->getPass("unconstrainedSimp")->apply(&d_assertions);
  
    Trace("smt-proc") << "SmtEnginePrivate::processAssertions() : post-unconstrained-simp" << std::endl;
     dumpAssertions("post-unconstrained-simp", d_assertions);
@@ -3583,13 +3611,17 @@ void SmtEnginePrivate::processAssertions() {
 
   if(options::unsatCores()) {
     // special rewriting pass for unsat cores, since many of the passes below are skipped
-    preproc::RewritePass pass;
-    pass.apply(&d_assertions);
+/*    preproc::RewritePass pass;
+    pass.apply(&d_assertions);*/
+
+     PreprocessingPassRegistry::getInstance()->getPass("rewrite")->apply(&d_assertions);
   } else {
     // Apply the substitutions we already have, and normalize
     //unsatCore check removed for redundancy
-    preproc::NotUnsatCoresPass pass1(&d_topLevelSubstitutions);
-    pass1.apply(&d_assertions); 
+/*    preproc::NotUnsatCoresPass pass1;
+    pass1.apply(&d_assertions); */
+
+     PreprocessingPassRegistry::getInstance()->getPass("notUnsatCores")->apply(&d_assertions);
   }
 
   Trace("smt-proc") << "SmtEnginePrivate::processAssertions() : post-substitution" << endl;
@@ -3599,41 +3631,55 @@ void SmtEnginePrivate::processAssertions() {
 
   // Lift bit-vectors of size 1 to bool
   if(options::bitvectorToBool()) {
-    preproc::BVToBoolPass pass(d_smt.d_theoryEngine);
-    pass.apply(&d_assertions);
+/*    preproc::BVToBoolPass pass;
+    pass.apply(&d_assertions);*/
 
-    preproc::RewritePass pass1;
-    pass1.apply(&d_assertions);
+     PreprocessingPassRegistry::getInstance()->getPass("bvToBool")->apply(&d_assertions);
+
+/*    preproc::RewritePass pass1;
+    pass1.apply(&d_assertions);*/
+
+     PreprocessingPassRegistry::getInstance()->getPass("rewrite")->apply(&d_assertions);
   }
 
   // Convert non-top-level Booleans to bit-vectors of size 1
   if(options::boolToBitvector()) {
-    preproc::BoolToBVPass pass(d_smt.d_theoryEngine);
-    pass.apply(&d_assertions);
+/*    preproc::BoolToBVPass pass;
+    pass.apply(&d_assertions);*/
 
-    preproc::RewritePass pass1;
-    pass1.apply(&d_assertions);
+     PreprocessingPassRegistry::getInstance()->getPass("boolTobv")->apply(&d_assertions);
+/*    preproc::RewritePass pass1;
+    pass1.apply(&d_assertions);*/
+
+     PreprocessingPassRegistry::getInstance()->getPass("rewrite")->apply(&d_assertions);
   }
 
   if(options::sepPreSkolemEmp()) {
-    preproc::SepPreSkolemEmpPass pass;
-    pass.apply(&d_assertions);
+/*    preproc::SepPreSkolemEmpPass pass;
+    pass.apply(&d_assertions);*/
+
+     PreprocessingPassRegistry::getInstance()->getPass("sepPreSkolem")->apply(&d_assertions);
  }
 
   if( d_smt.d_logic.isQuantified() ){
-    preproc::QuantifiedPass pass(d_smt.d_theoryEngine, &d_smt);
-    pass.apply(&d_assertions);
+/*    preproc::QuantifiedPass pass;
+    pass.apply(&d_assertions);*/
+
+     PreprocessingPassRegistry::getInstance()->getPass("quantified")->apply(&d_assertions);
 }
 
   if( options::sortInference() || options::ufssFairnessMonotone() ){
     //sort inference technique
-    preproc::InferenceOrFairnessPass pass(d_smt.d_theoryEngine, &d_smt);
-    pass.apply(&d_assertions); 
+/*    preproc::InferenceOrFairnessPass pass;
+    pass.apply(&d_assertions); */
+     PreprocessingPassRegistry::getInstance()->getPass("inferenceOrFairness")->apply(&d_assertions);
  }
 
   if( options::pbRewrites() ){
-   preproc::PBRewritePass pass(&d_pbsProcessor);
-   pass.apply(&d_assertions);
+/*   preproc::PBRewritePass pass;
+   pass.apply(&d_assertions);*/
+
+     PreprocessingPassRegistry::getInstance()->getPass("pbRewrite")->apply(&d_assertions);
  }
 
   Trace("smt-proc") << "SmtEnginePrivate::processAssertions() : pre-simplify" << endl;
@@ -3648,8 +3694,10 @@ void SmtEnginePrivate::processAssertions() {
 
   dumpAssertions("pre-static-learning", d_assertions);
   if(options::doStaticLearning()) {
-    preproc::DoStaticLearningPass pass(d_smt.d_theoryEngine, &d_smt);
-    pass.apply(&d_assertions);
+/*    preproc::DoStaticLearningPass pass;
+    pass.apply(&d_assertions);*/
+
+     PreprocessingPassRegistry::getInstance()->getPass("doStaticLearning")->apply(&d_assertions);
  }
 
   dumpAssertions("post-static-learning", d_assertions);
@@ -3664,8 +3712,10 @@ void SmtEnginePrivate::processAssertions() {
     // Remove ITEs, updating d_iteSkolemMap
     d_smt.d_stats->d_numAssertionsPre += d_assertions.size();
    
-    preproc::RemoveITEPass pass(&d_smt, &d_iteRemover);
-    pass.apply(&d_assertions);
+/*    preproc::RemoveITEPass pass;
+    pass.apply(&d_assertions);*/
+
+     PreprocessingPassRegistry::getInstance()->getPass("removeITE")->apply(&d_assertions);
 //removeITEs();
     d_smt.d_stats->d_numAssertionsPost += d_assertions.size();
   }
@@ -3679,13 +3729,17 @@ void SmtEnginePrivate::processAssertions() {
     noConflict &= simplifyAssertions();
    
     if (noConflict) {
-      preproc::RepeatSimpPass pass1(&d_topLevelSubstitutions); 
-      pass1.apply(&d_assertions);
+/*      preproc::RepeatSimpPass pass1; 
+      pass1.apply(&d_assertions);*/
+
+     PreprocessingPassRegistry::getInstance()->getPass("repeatSimp")->apply(&d_assertions);
       // For some reason this is needed for some benchmarks, such as
       // http://cvc4.cs.nyu.edu/benchmarks/smtlib2/QF_AUFBV/dwp_formulas/try5_small_difret_functions_dwp_tac.re_node_set_remove_at.il.dwp.smt2
       // Figure it out later
-      preproc::RemoveITEPass pass2(&d_smt, &d_iteRemover);
-      pass2.apply(&d_assertions); 
+/*      preproc::RemoveITEPass pass2;
+      pass2.apply(&d_assertions); */
+
+     PreprocessingPassRegistry::getInstance()->getPass("removeITE")->apply(&d_assertions);
       //      Assert(iteRewriteAssertionsEnd == d_assertions.size());
      }
    Trace("smt-proc") << "SmtEnginePrivate::processAssertions() : post-repeat-simplify" << std::endl;
@@ -3694,8 +3748,10 @@ void SmtEnginePrivate::processAssertions() {
 
   dumpAssertions("pre-rewrite-apply-to-const", d_assertions);
   if(options::rewriteApplyToConst()) {
-    preproc::RewriteApplyToConstPass pass;
-    pass.apply(&d_assertions);
+/*    preproc::RewriteApplyToConstPass pass;
+    pass.apply(&d_assertions);*/
+
+     PreprocessingPassRegistry::getInstance()->getPass("rewriteApplyToConst")->apply(&d_assertions);
  }
   dumpAssertions("post-rewrite-apply-to-const", d_assertions);
 
@@ -3713,8 +3769,10 @@ void SmtEnginePrivate::processAssertions() {
   Trace("smt-proc") << "SmtEnginePrivate::processAssertions() : pre-theory-preprocessing" << endl;
   dumpAssertions("pre-theory-preprocessing", d_assertions);
   {
-    preproc::TheoryPreprocessPass pass(d_smt.d_theoryEngine);
-    pass.apply(&d_assertions);
+/*    preproc::TheoryPreprocessPass pass;
+    pass.apply(&d_assertions);*/
+
+     PreprocessingPassRegistry::getInstance()->getPass("theoryPreprocess")->apply(&d_assertions);
  }
   Trace("smt-proc") << "SmtEnginePrivate::processAssertions() : post-theory-preprocessing" << endl;
   dumpAssertions("post-theory-preprocessing", d_assertions);
@@ -3722,8 +3780,9 @@ void SmtEnginePrivate::processAssertions() {
   // If we are using eager bit-blasting wrap assertions in fake atom so that
   // everything gets bit-blasted to internal SAT solver
   if (options::bitblastMode() == theory::bv::BITBLAST_MODE_EAGER) {
-    preproc::BitBlastModeEagerPass pass(d_smt.d_theoryEngine);
-    pass.apply(&d_assertions);
+/*    preproc::BitBlastModeEagerPass pass;
+    pass.apply(&d_assertions);*/
+     PreprocessingPassRegistry::getInstance()->getPass("bitBlastModeEager")->apply(&d_assertions);
  }
 
   //notify theory engine new preprocessed assertions
@@ -3731,8 +3790,9 @@ void SmtEnginePrivate::processAssertions() {
 
   // Push the formula to decision engine
   if(noConflict) {
-    preproc::NoConflictPass pass(d_smt.d_decisionEngine);
-    pass.apply(&d_assertions);    
+/*    preproc::NoConflictPass pass;
+    pass.apply(&d_assertions);    */
+     PreprocessingPassRegistry::getInstance()->getPass("noConflict")->apply(&d_assertions);
   }
 
   // end: INVARIANT to maintain: no reordering of assertions or
@@ -3743,8 +3803,9 @@ void SmtEnginePrivate::processAssertions() {
 
   // Push the formula to SAT
   {
-    preproc::CNFPass pass(d_smt.d_propEngine);
-    pass.apply(&d_assertions);
+/*    preproc::CNFPass pass;
+    pass.apply(&d_assertions);*/
+     PreprocessingPassRegistry::getInstance()->getPass("cnf")->apply(&d_assertions);
  }
 
   d_assertionsProcessed = true;
