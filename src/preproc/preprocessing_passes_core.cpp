@@ -1315,7 +1315,7 @@ void NoConflictPass::initInternal(
 
 PreprocessingPassResult NoConflictPass::apply(AssertionPipeline* assertionsToPreprocess){
     Chat() << "pushing to decision engine..." << std::endl;
-    Assert(iteRewriteAssertionsEnd == assertionsToPreprocess->size());
+    //Assert moved to outside    
     d_decisionEngine->addAssertions
       (assertionsToPreprocess->ref(), assertionsToPreprocess->getRealAssertionsEnd(), *assertionsToPreprocess->getSkolemMap());
  return PreprocessingPassResult(true);
@@ -1484,7 +1484,7 @@ PreprocessingPassResult RepeatSimpPass::apply(AssertionPipeline* assertionsToPre
 }
 
 NonClausalSimplificationPass::NonClausalSimplificationPass() :
-   PreprocessingPass("preproc::nonClausalSimplification", true), d_numConstantProps("preproc::d_numConstantProps", 0) {
+   PreprocessingPass("nonClausalSimplification", true), d_numConstantProps("preproc::d_numConstantProps", 0) {
 }
 
 void NonClausalSimplificationPass::initInternal(
@@ -1849,10 +1849,7 @@ void MiplibTrickPass::initInternal(
      context::CDO<unsigned>* substitutionsIndex, 
      std::vector<Node>* nonClausalLearnedLiterals){
 
- smtStatisticsRegistry()->registerStat(&d_numMiplibAssertionsRemoved);
- d_smt = smt;
- d_propagator = propagator;
- d_boolVars = boolVars;
+ smtStatisticsRegistry()->registerStat(&d_numMiplibAssertionsRemoved); d_smt = smt; d_propagator = propagator; d_boolVars = boolVars;
  d_topLevelSubstitutions = topLevelSubstitutions;
 }
 
@@ -2270,7 +2267,7 @@ PreprocessingPassResult EarlyTheoryPass::apply(AssertionPipeline* assertionsToPr
       // Call the theory preprocessors
       d_theoryEngine->preprocessStart();
       for (unsigned i = 0; i < assertionsToPreprocess->size(); ++ i) {
-        Assert(Rewriter::rewrite((assertionsToPreprocess)[i]) == (*assertionsToPreprocess)[i]);
+        Assert(Rewriter::rewrite((*assertionsToPreprocess)[i]) == (*assertionsToPreprocess)[i]);
         assertionsToPreprocess->replace(i, d_theoryEngine->preprocess((*assertionsToPreprocess)[i]));
         Assert(Rewriter::rewrite((*assertionsToPreprocess)[i]) == (*assertionsToPreprocess)[i]);
       }

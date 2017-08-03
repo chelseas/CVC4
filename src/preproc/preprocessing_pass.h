@@ -11,6 +11,7 @@
 #include "preproc/preprocessing_pass_registry.h"
 #include "smt/dump.h"
 #include "smt/smt_statistics_registry.h"
+#include "smt/smt_engine_scope.h"
 #include "theory/rewriter.h"
 #include "theory/substitutions.h"
 #include "theory/theory_model.h"
@@ -118,8 +119,9 @@ class PreprocessingPass {
      std::vector<Node>* boolVars, 
      context::CDO<unsigned>* substitutionsIndex, 
      std::vector<Node>* nonClausalLearnedLiterals) {
-  assert(!d_initialized); 
-  smtStatisticsRegistry()->registerStat(&d_timer); 
+  if(!d_initialized) {
+     smtStatisticsRegistry()->registerStat(&d_timer); 
+  }
  
   initInternal(smt, theoryEngine, topLevelSubstitutions, pbsProcessor, iteRemover, decisionEngine, propEngine, propagatorNeedsFinish, propagator, boolVars, substitutionsIndex, nonClausalLearnedLiterals);
 
@@ -184,8 +186,9 @@ class PreprocessingPass {
   }
  
  ~PreprocessingPass() {
-   assert(d_initialized);
-   smtStatisticsRegistry()->unregisterStat(&d_timer);
+   if(d_initialized && smt::smtEngineInScope()) {
+     smtStatisticsRegistry()->unregisterStat(&d_timer);
+   }
  }
 
 private:

@@ -563,6 +563,7 @@ public:
   RemoveTermFormulas d_iteRemover;
 
 private:
+  bool d_initialized;
 
   theory::arith::PseudoBooleanProcessor d_pbsProcessor;
 
@@ -659,6 +660,7 @@ public:
     d_simplifyAssertionsDepth(0),
     //d_needsExpandDefs(true),  //TODO?
     d_iteRemover(smt.d_userContext),
+    d_initialized(false), 
     d_pbsProcessor(smt.d_userContext),
     d_topLevelSubstitutions(smt.d_userContext)
   {
@@ -3235,7 +3237,7 @@ bool SmtEnginePrivate::simplifyAssertions()
                         << "performing non-clausal simplification" << endl;
 /*      preproc::NonClausalSimplificationPass pass;
       bool noConflict = pass.apply(&d_assertions).d_noConflict; */
-      bool noConflict =  PreprocessingPassRegistry::getInstance()->getPass("nonClausalSimplification")->apply(&d_assertions).d_noConflict;
+      bool noConflict =  (PreprocessingPassRegistry::getInstance()->getPass("nonClausalSimplification")->apply(&d_assertions)).d_noConflict;
       if(!noConflict) {
         return false;
       }
@@ -3289,7 +3291,7 @@ bool SmtEnginePrivate::simplifyAssertions()
 /*      SimpITEPass pass;
       bool noConflict = pass.apply(&d_assertions).d_noConflict;*/
 
-      bool noConflict = PreprocessingPassRegistry::getInstance()->getPass("simpITE")->apply(&d_assertions).d_noConflict;
+      bool noConflict = (PreprocessingPassRegistry::getInstance()->getPass("simpITE")->apply(&d_assertions)).d_noConflict;
  
       if(!noConflict){
         Chat() << "...ITE simplification found unsat..." << endl;
@@ -3321,7 +3323,7 @@ bool SmtEnginePrivate::simplifyAssertions()
       
 /*     preproc::NonClausalSimplificationPass pass;
      bool noConflict = pass.apply(&d_assertions).d_noConflict; */
-      bool noConflict = PreprocessingPassRegistry::getInstance()->getPass("nlExtPurify")->apply(&d_assertions).d_noConflict;
+      bool noConflict = (PreprocessingPassRegistry::getInstance()->getPass("nlExtPurify")->apply(&d_assertions)).d_noConflict;
       if(!noConflict) {
         return false;
       }
@@ -3463,7 +3465,10 @@ bool SmtEnginePrivate::checkForBadSkolems(TNode n, TNode skolem, unordered_map<N
 }
 
 void SmtEnginePrivate::processAssertions() {
-  PreprocessingPassRegistry::getInstance()->init(&d_smt, d_smt.d_theoryEngine, &d_topLevelSubstitutions, &d_pbsProcessor, &d_iteRemover, d_smt.d_decisionEngine, d_smt.d_propEngine, &d_propagatorNeedsFinish, &d_propagator, &d_boolVars, &d_substitutionsIndex, &d_nonClausalLearnedLiterals);
+  if(!d_initialized) {
+     PreprocessingPassRegistry::getInstance()->init(&d_smt, d_smt.d_theoryEngine, &d_topLevelSubstitutions, &d_pbsProcessor, &d_iteRemover, d_smt.d_decisionEngine, d_smt.d_propEngine, &d_propagatorNeedsFinish, &d_propagator, &d_boolVars, &d_substitutionsIndex, &d_nonClausalLearnedLiterals);
+     d_initialized = true;
+  }
   TimerStat::CodeTimer paTimer(d_smt.d_stats->d_processAssertionsTime);
   spendResource(options::preprocessStep());
   Assert(d_smt.d_fullyInited);
@@ -3790,6 +3795,7 @@ void SmtEnginePrivate::processAssertions() {
 
   // Push the formula to decision engine
   if(noConflict) {
+    Assert(iteRewriteAssertionsEnd == d_assertions.size());
 /*    preproc::NoConflictPass pass;
     pass.apply(&d_assertions);    */
      PreprocessingPassRegistry::getInstance()->getPass("noConflict")->apply(&d_assertions);
