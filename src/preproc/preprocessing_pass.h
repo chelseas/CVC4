@@ -136,9 +136,9 @@ class PreprocessingPass {
     }
     Trace("simplify") << "preproc::" << d_name << std::endl;
     Chat() << d_name << "..." << std::endl;
-    dumpAssertions("pre-bv-abstraction", *assertionsToPreprocess);
+    dumpAssertions(("pre-" + d_name).c_str(), *assertionsToPreprocess);
     PreprocessingPassResult result = applyInternal(assertionsToPreprocess);
-    dumpAssertions("post-bv-abstraction", *assertionsToPreprocess);
+    dumpAssertions(("post-" + d_name).c_str(), *assertionsToPreprocess);
     Trace("preproc") << "POST " << d_name << std::endl;
     return result; 
   }
@@ -223,7 +223,7 @@ protected:
 
  void spendResource(unsigned amount) {
     NodeManager::currentResourceManager()->spendResource(amount);
-  }  // TODO: modify class as needed
+  }
   std::string d_name;
   TimerStat d_timer; 
   bool d_initialized;

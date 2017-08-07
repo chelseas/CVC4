@@ -364,6 +364,7 @@ class RemoveITEPass : public PreprocessingPass {
      std::vector<Node>* nonClausalLearnedLiterals);
      virtual PreprocessingPassResult applyInternal(AssertionPipeline* assertionsToPreprocess);
      RemoveITEPass();
+     ~RemoveITEPass();
   private:
      SmtEngine* d_smt;
      RemoveTermFormulas* d_iteRemover;
@@ -532,7 +533,7 @@ class NonClausalSimplificationPass : public PreprocessingPass{
      std::vector<Node>* nonClausalLearnedLiterals);
     virtual PreprocessingPassResult applyInternal(AssertionPipeline* assertionsToPreprocess);
     NonClausalSimplificationPass(); 
-
+    ~NonClausalSimplificationPass(); 
   private:
    SmtEngine* d_smt;
    bool* d_propagatorNeedsFinish;
@@ -540,7 +541,7 @@ class NonClausalSimplificationPass : public PreprocessingPass{
    context::CDO<unsigned>* d_substitutionsIndex;
    theory::SubstitutionMap* d_topLevelSubstitutions;
    std::vector<Node>* d_nonClausalLearnedLiterals;
-   IntStat d_numConstantProps;//Do I need to pass in a pointer for this?
+   IntStat d_numConstantProps;
 };
 
 static NonClausalSimplificationPass nonClausalSimplifiicationpass;
@@ -559,6 +560,7 @@ class MiplibTrickPass : public PreprocessingPass {
      std::vector<Node>* nonClausalLearnedLiterals);
    virtual PreprocessingPassResult applyInternal(AssertionPipeline* assertionsToPreprocess);
    MiplibTrickPass(); 
+   ~MiplibTrickPass(); 
   private:
    SmtEngine* d_smt;
    theory::booleans::CircuitPropagator* d_propagator;

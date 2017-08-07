@@ -991,7 +991,6 @@ PreprocessingPassResult QuantifiedPass::applyInternal(AssertionPipeline* asserti
         d_smt->d_fmfRecFunctionsDefined->push_back( f );
       }
     }
-    Trace("smt-proc") << "SmtEnginePrivate::processAssertions() : post-quant-preprocess" << std::endl;
  return PreprocessingPassResult(true);
 }
 
@@ -1052,6 +1051,13 @@ PreprocessingPassResult PBRewritePass::applyInternal(AssertionPipeline* assertio
 RemoveITEPass::RemoveITEPass() : PreprocessingPass("removeITE", true), d_numAssertionsPre("preproc::numAssertionsPre", 0), d_numAssertionsPost("preproc::numAssertionsPost", 0) {
 }
 
+RemoveITEPass::~RemoveITEPass() {
+    if(d_initialized && smt::smtEngineInScope()) {
+     smtStatisticsRegistry()->unregisterStat(&d_numAssertionsPre);
+     smtStatisticsRegistry()->unregisterStat(&d_numAssertionsPost);
+   }
+}
+ 
 void RemoveITEPass::initInternal(
      SmtEngine* smt, TheoryEngine* theoryEngine, 
      theory::SubstitutionMap* topLevelSubstitutions, 
@@ -1063,6 +1069,10 @@ void RemoveITEPass::initInternal(
      std::vector<Node>* boolVars, 
      context::CDO<unsigned>* substitutionsIndex, 
      std::vector<Node>* nonClausalLearnedLiterals) {
+ if(!d_initialized) {
+    smtStatisticsRegistry()->registerStat(&d_numAssertionsPre);
+    smtStatisticsRegistry()->registerStat(&d_numAssertionsPost);
+ } 
  d_smt = smt;
  d_iteRemover = iteRemover; 
 } 
@@ -1477,6 +1487,12 @@ NonClausalSimplificationPass::NonClausalSimplificationPass() :
    PreprocessingPass("nonClausalSimplification", true), d_numConstantProps("preproc::d_numConstantProps", 0) {
 }
 
+NonClausalSimplificationPass::~NonClausalSimplificationPass() {
+    if(d_initialized && smt::smtEngineInScope()) {
+     smtStatisticsRegistry()->unregisterStat(&d_numConstantProps);
+   }
+}
+ 
 void NonClausalSimplificationPass::initInternal(
      SmtEngine* smt, TheoryEngine* theoryEngine, 
      theory::SubstitutionMap* topLevelSubstitutions, 
@@ -1488,7 +1504,9 @@ void NonClausalSimplificationPass::initInternal(
      std::vector<Node>* boolVars, 
      context::CDO<unsigned>* substitutionsIndex, 
      std::vector<Node>* nonClausalLearnedLiterals){
- smtStatisticsRegistry()->registerStat(&d_numConstantProps);
+ if(!d_initialized) {
+   smtStatisticsRegistry()->registerStat(&d_numConstantProps);
+ }
  d_smt = smt;
  d_propagatorNeedsFinish = propagatorNeedsFinish;
  d_propagator = propagator;
@@ -1824,6 +1842,12 @@ MiplibTrickPass::MiplibTrickPass() :
    PreprocessingPass("miplibTrick", true), d_numMiplibAssertionsRemoved("preproc::d_numMiplibAssertionsRemoved", 0), d_fakeContext() {
 }
 
+MiplibTrickPass::~MiplibTrickPass() {
+    if(d_initialized && smt::smtEngineInScope()) {
+     smtStatisticsRegistry()->unregisterStat(&d_numMiplibAssertionsRemoved);
+   }
+}
+ 
 void MiplibTrickPass::initInternal(
      SmtEngine* smt, TheoryEngine* theoryEngine, 
      theory::SubstitutionMap* topLevelSubstitutions, 
@@ -1836,7 +1860,12 @@ void MiplibTrickPass::initInternal(
      context::CDO<unsigned>* substitutionsIndex, 
      std::vector<Node>* nonClausalLearnedLiterals){
 
- smtStatisticsRegistry()->registerStat(&d_numMiplibAssertionsRemoved); d_smt = smt; d_propagator = propagator; d_boolVars = boolVars;
+ if(!d_initialized) {
+   smtStatisticsRegistry()->registerStat(&d_numMiplibAssertionsRemoved); 
+ }
+ d_smt = smt;
+ d_propagator = propagator;
+ d_boolVars = boolVars;
  d_topLevelSubstitutions = topLevelSubstitutions;
 }
 
