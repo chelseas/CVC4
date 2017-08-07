@@ -128,7 +128,20 @@ class PreprocessingPass {
   d_initialized = true;
  }
 
-  virtual PreprocessingPassResult apply(AssertionPipeline* assertionsToPreprocess) = 0;
+  PreprocessingPassResult apply(AssertionPipeline* assertionsToPreprocess) 
+  {
+    if(!d_timerRunning) {    
+      TimerStat::CodeTimer simpITETimer(d_timer);
+      d_timerRunning = true;
+    }
+    Trace("simplify") << "preproc::" << d_name << std::endl;
+    Chat() << d_name << "..." << std::endl;
+    dumpAssertions("pre-bv-abstraction", *assertionsToPreprocess);
+    PreprocessingPassResult result = applyInternal(assertionsToPreprocess);
+    dumpAssertions("post-bv-abstraction", *assertionsToPreprocess);
+    Trace("preproc") << "POST " << d_name << std::endl;
+    return result; 
+  }
 
   void dumpAssertions(const char* key, const AssertionPipeline& assertionList) {
   if( Dump.isOn("assertions") &&
@@ -179,7 +192,7 @@ class PreprocessingPass {
   // have two different subclasses of PreprocessingPass or a superclass for
   // PreprocessingPass that does not do any registration.
 
- PreprocessingPass(const std::string& name, bool registerPass = false) : d_name(name), d_timer("preproc::" + name), d_initialized(false){
+ PreprocessingPass(const std::string& name, bool registerPass = false) : d_name(name), d_timer("preproc::" + name), d_initialized(false), d_timerRunning(false){
    if (registerPass) {
      PreprocessingPassRegistry::getInstance()->registerPass(name, this);
    }
@@ -206,12 +219,15 @@ protected:
      context::CDO<unsigned>* substitutionsIndex, 
      std::vector<Node>* nonClausalLearnedLiterals) = 0;
 
+  virtual PreprocessingPassResult applyInternal(AssertionPipeline* assertionsToPreprocess) = 0;
+
  void spendResource(unsigned amount) {
     NodeManager::currentResourceManager()->spendResource(amount);
   }  // TODO: modify class as needed
   std::string d_name;
   TimerStat d_timer; 
   bool d_initialized;
+  bool d_timerRunning;
 };
 
 }  // namespace preproc

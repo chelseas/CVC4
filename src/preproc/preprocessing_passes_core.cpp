@@ -207,10 +207,7 @@ Node ExpandingDefinitionsPass::expandDefinitions(TNode n, unordered_map<Node, No
   return result.top();
 }
 
-PreprocessingPassResult ExpandingDefinitionsPass::apply(AssertionPipeline* assertionsToPreprocess){
-  Chat() << "expanding definitions..." << std::endl;
-    Trace("simplify") << "SmtEnginePrivate::simplify(): expanding definitions" << endl;
-    TimerStat::CodeTimer codeTimer(d_timer);
+PreprocessingPassResult ExpandingDefinitionsPass::applyInternal(AssertionPipeline* assertionsToPreprocess){
     unordered_map<Node, Node, NodeHashFunction> cache;
     for(unsigned i = 0; i < assertionsToPreprocess->size(); ++ i) {
       assertionsToPreprocess->replace(i, expandDefinitions((*assertionsToPreprocess)[i], cache));
@@ -218,8 +215,6 @@ PreprocessingPassResult ExpandingDefinitionsPass::apply(AssertionPipeline* asser
   return PreprocessingPassResult(true);
 }
 
-// TODO: Change PreprocessingPass to not expect a ResourceManager* in the
-// constructor anymore
 NlExtPurifyPass::NlExtPurifyPass() : PreprocessingPass("nlExtPurify", true) {
 }
 
@@ -237,7 +232,7 @@ void NlExtPurifyPass::initInternal(
 } 
 
 
-PreprocessingPassResult NlExtPurifyPass::apply(AssertionPipeline* assertionsToPreprocess) {
+PreprocessingPassResult NlExtPurifyPass::applyInternal(AssertionPipeline* assertionsToPreprocess) {
   std::unordered_map<Node, Node, NodeHashFunction> cache;
   std::unordered_map<Node, Node, NodeHashFunction> bcache;
   std::vector<Node> var_eq;
@@ -313,7 +308,7 @@ CEGuidedInstPass::CEGuidedInstPass() : PreprocessingPass("ceGuidedInst", true) {
  d_theoryEngine = theoryEngine;
 } 
 
-PreprocessingPassResult CEGuidedInstPass::apply(AssertionPipeline* assertionsToPreprocess){
+PreprocessingPassResult CEGuidedInstPass::applyInternal(AssertionPipeline* assertionsToPreprocess){
     for (unsigned i = 0; i < assertionsToPreprocess->size(); ++ i) {
       d_theoryEngine->getQuantifiersEngine()->getCegInstantiation()->preregisterAssertion( (*assertionsToPreprocess)[i] );
     }
@@ -336,8 +331,7 @@ void SolveRealAsIntPass::initInternal(
      std::vector<Node>* nonClausalLearnedLiterals) {
 } 
 
-PreprocessingPassResult SolveRealAsIntPass::apply(AssertionPipeline* assertionsToPreprocess) {
- Chat() << "converting reals to ints..." << std::endl;
+PreprocessingPassResult SolveRealAsIntPass::applyInternal(AssertionPipeline* assertionsToPreprocess) {
  std::unordered_map<Node, Node, NodeHashFunction> cache;
  std::vector<Node> var_eq;
  for(unsigned i = 0; i < assertionsToPreprocess->size(); ++ i) {
@@ -457,9 +451,8 @@ void SolveIntAsBVPass::initInternal(
      std::vector<Node>* nonClausalLearnedLiterals) {
 } 
 
-PreprocessingPassResult SolveIntAsBVPass::apply(AssertionPipeline* assertionsToPreprocess)
+PreprocessingPassResult SolveIntAsBVPass::applyInternal(AssertionPipeline* assertionsToPreprocess)
 {
-  Chat() << "converting ints to bit-vectors..." << std::endl;
   std::unordered_map<Node, Node, NodeHashFunction> cache;
   for(unsigned i = 0; i < assertionsToPreprocess->size(); ++ i) {
   assertionsToPreprocess->replace(i, intToBV((*assertionsToPreprocess)[i], cache) );
@@ -715,7 +708,7 @@ void BitBlastModePass::initInternal(
  d_theoryEngine = theoryEngine;
 } 
 
-PreprocessingPassResult BitBlastModePass::apply(AssertionPipeline* assertionsToPreprocess){
+PreprocessingPassResult BitBlastModePass::applyInternal(AssertionPipeline* assertionsToPreprocess){
   d_theoryEngine->mkAckermanizationAsssertions(assertionsToPreprocess->ref());
  return PreprocessingPassResult(true);
 }
@@ -755,10 +748,8 @@ void BVAbstractionPass::bvAbstraction(AssertionPipeline* assertionsToPreprocess)
   }
 }
  
-PreprocessingPassResult BVAbstractionPass::apply(AssertionPipeline* assertionsToPreprocess){
-    dumpAssertions("pre-bv-abstraction", *assertionsToPreprocess);
+PreprocessingPassResult BVAbstractionPass::applyInternal(AssertionPipeline* assertionsToPreprocess){
     bvAbstraction(assertionsToPreprocess);
-    dumpAssertions("post-bv-abstraction", *assertionsToPreprocess);
  return PreprocessingPassResult(true);
 } 
 
@@ -779,10 +770,8 @@ void UnconstrainedSimpPass::initInternal(
  d_theoryEngine = theoryEngine; 
 } 
 
-PreprocessingPassResult UnconstrainedSimpPass::apply(AssertionPipeline* assertionsToPreprocess){
-  TimerStat::CodeTimer unconstrainedSimpTimer(d_timer);
+PreprocessingPassResult UnconstrainedSimpPass::applyInternal(AssertionPipeline* assertionsToPreprocess){
   spendResource(options::preprocessStep());
-  Trace("simplify") << "SmtEnginePrivate::unconstrainedSimp()" << std::endl;
   d_theoryEngine->ppUnconstrainedSimp(assertionsToPreprocess->ref());
  return PreprocessingPassResult(true);
 }
@@ -803,7 +792,7 @@ void RewritePass::initInternal(
      std::vector<Node>* nonClausalLearnedLiterals) {
 } 
 
-PreprocessingPassResult RewritePass::apply(AssertionPipeline* assertionsToPreprocess){
+PreprocessingPassResult RewritePass::applyInternal(AssertionPipeline* assertionsToPreprocess){
    for (unsigned i = 0; i < assertionsToPreprocess->size(); ++ i) {
     assertionsToPreprocess->replace(i, theory::Rewriter::rewrite((*assertionsToPreprocess)[i]));
     }
@@ -827,10 +816,7 @@ void NotUnsatCoresPass::initInternal(
  d_topLevelSubstitutions = topLevelSubstitutions;
 } 
 
-PreprocessingPassResult NotUnsatCoresPass::apply(AssertionPipeline* assertionsToPreprocess){
-  Chat() << "applying substitutions..." << std::endl;
-      Trace("simplify") << "SmtEnginePrivate::nonClausalSimplify(): "
-                        << "applying substitutions" << std::endl;
+PreprocessingPassResult NotUnsatCoresPass::applyInternal(AssertionPipeline* assertionsToPreprocess){
       for (unsigned i = 0; i < assertionsToPreprocess->size(); ++ i) {
         Trace("simplify") << "applying to " << (*assertionsToPreprocess)[i] << std::endl;
         spendResource(options::preprocessStep());
@@ -857,13 +843,9 @@ void BVToBoolPass::initInternal(
   d_theoryEngine = theoryEngine;
 } 
 
-PreprocessingPassResult BVToBoolPass::apply(AssertionPipeline* assertionsToPreprocess){
-  dumpAssertions("pre-bv-to-bool", *assertionsToPreprocess);
-  Chat() << "...doing bvToBool..." << std::endl;
+PreprocessingPassResult BVToBoolPass::applyInternal(AssertionPipeline* assertionsToPreprocess){
   bvToBool(assertionsToPreprocess);
   //A rewrite pass was formerly here that has been moved to after the dump
-  dumpAssertions("post-bv-to-bool", *assertionsToPreprocess);
-  Trace("smt") << "POST bvToBool" << std::endl;
  return PreprocessingPassResult(true);
 }
 
@@ -906,12 +888,8 @@ void BoolToBVPass::boolToBv(AssertionPipeline* assertionsToPreprocess) {
   assertionsToPreprocess->ref().swap(new_assertions);
 }
 
-PreprocessingPassResult BoolToBVPass::apply(AssertionPipeline* assertionsToPreprocess){
-    dumpAssertions("pre-bool-to-bv", *assertionsToPreprocess);
-    Chat() << "...doing boolToBv..." << std::endl;
+PreprocessingPassResult BoolToBVPass::applyInternal(AssertionPipeline* assertionsToPreprocess){
     boolToBv(assertionsToPreprocess);
-    dumpAssertions("post-bool-to-bv", *assertionsToPreprocess);
-    Trace("smt") << "POST boolToBv" << std::endl;
  return PreprocessingPassResult(true);
 }
 
@@ -931,7 +909,7 @@ void SepPreSkolemEmpPass::initInternal(
      std::vector<Node>* nonClausalLearnedLiterals) {
 } 
 
-PreprocessingPassResult SepPreSkolemEmpPass::apply(AssertionPipeline* assertionsToPreprocess){
+PreprocessingPassResult SepPreSkolemEmpPass::applyInternal(AssertionPipeline* assertionsToPreprocess){
   for (unsigned i = 0; i < assertionsToPreprocess->size(); ++ i) {
       Node prev = (*assertionsToPreprocess)[i];
       Node next = theory::sep::TheorySepRewriter::preprocess( prev );
@@ -962,10 +940,7 @@ void QuantifiedPass::initInternal(
  d_smt = smt;
 } 
 
-PreprocessingPassResult QuantifiedPass::apply(AssertionPipeline* assertionsToPreprocess){
-    Trace("smt-proc") << "SmtEnginePrivate::processAssertions() : pre-quant-preprocess" << std::endl;
-
-    dumpAssertions("pre-skolem-quant", *assertionsToPreprocess);
+PreprocessingPassResult QuantifiedPass::applyInternal(AssertionPipeline* assertionsToPreprocess){
     //remove rewrite rules, apply pre-skolemization to existential quantifiers
     for (unsigned i = 0; i < assertionsToPreprocess->size(); ++ i) {
       Node prev = (*assertionsToPreprocess)[i];
@@ -976,7 +951,6 @@ PreprocessingPassResult QuantifiedPass::apply(AssertionPipeline* assertionsToPre
         Trace("quantifiers-preprocess") << "   ...got " << (*assertionsToPreprocess)[i] << std::endl;
       }
     }
-    dumpAssertions("post-skolem-quant", *assertionsToPreprocess);
     if( options::macrosQuant() ){
       //quantifiers macro expansion
       theory::quantifiers::QuantifierMacros qm( d_theoryEngine->getQuantifiersEngine() );
@@ -1039,7 +1013,7 @@ void InferenceOrFairnessPass::initInternal(
  d_smt = smt;
 } 
 
-PreprocessingPassResult InferenceOrFairnessPass::apply(AssertionPipeline* assertionsToPreprocess){
+PreprocessingPassResult InferenceOrFairnessPass::applyInternal(AssertionPipeline* assertionsToPreprocess){
      //sort inference technique
     SortInference * si = d_theoryEngine->getSortInference();
     si->simplify( assertionsToPreprocess->ref(), options::sortInference(), options::ufssFairnessMonotone() );
@@ -1067,7 +1041,7 @@ void PBRewritePass::initInternal(
  d_pbsProcessor = pbsProcessor; 
 } 
 
-PreprocessingPassResult PBRewritePass::apply(AssertionPipeline* assertionsToPreprocess){
+PreprocessingPassResult PBRewritePass::applyInternal(AssertionPipeline* assertionsToPreprocess){
   d_pbsProcessor->learn(assertionsToPreprocess->ref());
     if(d_pbsProcessor->likelyToHelp()){
       d_pbsProcessor->applyReplacements(assertionsToPreprocess->ref());
@@ -1075,7 +1049,7 @@ PreprocessingPassResult PBRewritePass::apply(AssertionPipeline* assertionsToPrep
  return PreprocessingPassResult(true);
 }
 
-RemoveITEPass::RemoveITEPass() : PreprocessingPass("removeITE", true) {
+RemoveITEPass::RemoveITEPass() : PreprocessingPass("removeITE", true), d_numAssertionsPre("preproc::numAssertionsPre", 0), d_numAssertionsPost("preproc::numAssertionsPost", 0) {
 }
 
 void RemoveITEPass::initInternal(
@@ -1093,16 +1067,27 @@ void RemoveITEPass::initInternal(
  d_iteRemover = iteRemover; 
 } 
 
-PreprocessingPassResult RemoveITEPass::apply(AssertionPipeline* assertionsToPreprocess){
+/**
+   * Remove ITEs from the assertions.
+   */
+PreprocessingPassResult RemoveITEPass::applyInternal(AssertionPipeline* assertionsToPreprocess){
+  // Remove ITEs, updating d_iteSkolemMap
+ 
+  //statistics moved into removeITE
+  d_numAssertionsPre += assertionsToPreprocess->size();
+ 
   d_smt->finalOptionsAreSet();
   spendResource(options::preprocessStep());
-  Trace("simplify") << "SmtEnginePrivate::removeITEs()" << endl;
 
   // Remove all of the ITE occurrences and normalize
   d_iteRemover->run(assertionsToPreprocess->ref(), *assertionsToPreprocess->getSkolemMap(), true);
   for (unsigned i = 0; i < assertionsToPreprocess->size(); ++ i) {
     assertionsToPreprocess->replace(i, theory::Rewriter::rewrite((*assertionsToPreprocess)[i]));
   }
+  
+  //statistics moved into removeITE pass 
+  d_numAssertionsPost += assertionsToPreprocess->size();
+ 
  return PreprocessingPassResult(true);
 }
 
@@ -1124,6 +1109,9 @@ void DoStaticLearningPass::initInternal(
  d_theoryEngine = theoryEngine; 
 } 
 
+ /**
+   * Performs static learning on the assertions.
+   */
 void DoStaticLearningPass::staticLearning(AssertionPipeline* assertionsToPreprocess){
   d_smt->finalOptionsAreSet();
   spendResource(options::preprocessStep());
@@ -1145,14 +1133,9 @@ void DoStaticLearningPass::staticLearning(AssertionPipeline* assertionsToPreproc
   } 
 }
 
-PreprocessingPassResult DoStaticLearningPass::apply(AssertionPipeline* assertionsToPreprocess){
-    Trace("smt-proc") << "SmtEnginePrivate::processAssertions() : pre-static-learning" << std::endl;
+PreprocessingPassResult DoStaticLearningPass::applyInternal(AssertionPipeline* assertionsToPreprocess){
     // Perform static learning
-    Chat() << "doing static learning..." << std::endl;
-    Trace("simplify") << "SmtEnginePrivate::simplify(): "
-                      << "performing static learning" << std::endl;
     staticLearning(assertionsToPreprocess);
-    Trace("smt-proc") << "SmtEnginePrivate::processAssertions() : post-static-learning" << std::endl;
  return PreprocessingPassResult(true);
 } 
 
@@ -1231,9 +1214,7 @@ Node RewriteApplyToConstPass::rewriteApplyToConst(TNode n){
     return rewr;
 }
 
-PreprocessingPassResult RewriteApplyToConstPass::apply(AssertionPipeline* assertionsToPreprocess){
-   Chat() << "Rewriting applies to constants..." << std::endl;
-    TimerStat::CodeTimer codeTimer(d_timer);
+PreprocessingPassResult RewriteApplyToConstPass::applyInternal(AssertionPipeline* assertionsToPreprocess){
     for (unsigned i = 0; i < assertionsToPreprocess->size(); ++ i) {
       (*assertionsToPreprocess)[i] = theory::Rewriter::rewrite(rewriteApplyToConst((*assertionsToPreprocess)[i]));
     }
@@ -1257,9 +1238,7 @@ void TheoryPreprocessPass::initInternal(
  d_theoryEngine = theoryEngine; 
 } 
 
-PreprocessingPassResult TheoryPreprocessPass::apply(AssertionPipeline* assertionsToPreprocess){
-    Chat() << "theory preprocessing..." << endl;
-    TimerStat::CodeTimer codeTimer(d_timer);
+PreprocessingPassResult TheoryPreprocessPass::applyInternal(AssertionPipeline* assertionsToPreprocess){
     // Call the theory preprocessors
     d_theoryEngine->preprocessStart();
     for (unsigned i = 0; i < assertionsToPreprocess->size(); ++ i) {
@@ -1285,7 +1264,7 @@ void BitBlastModeEagerPass::initInternal(
  d_theoryEngine = theoryEngine; 
 } 
 
-PreprocessingPassResult BitBlastModeEagerPass::apply(AssertionPipeline* assertionsToPreprocess){
+PreprocessingPassResult BitBlastModeEagerPass::applyInternal(AssertionPipeline* assertionsToPreprocess){
     for (unsigned i = 0; i < assertionsToPreprocess->size(); ++i) {
       TNode atom = (*assertionsToPreprocess)[i];
       Node eager_atom = NodeManager::currentNM()->mkNode(kind::BITVECTOR_EAGER_ATOM, atom);
@@ -1313,8 +1292,7 @@ void NoConflictPass::initInternal(
  d_decisionEngine = decisionEngine; 
 } 
 
-PreprocessingPassResult NoConflictPass::apply(AssertionPipeline* assertionsToPreprocess){
-    Chat() << "pushing to decision engine..." << std::endl;
+PreprocessingPassResult NoConflictPass::applyInternal(AssertionPipeline* assertionsToPreprocess){
     //Assert moved to outside    
     d_decisionEngine->addAssertions
       (assertionsToPreprocess->ref(), assertionsToPreprocess->getRealAssertionsEnd(), *assertionsToPreprocess->getSkolemMap());
@@ -1338,9 +1316,7 @@ void CNFPass::initInternal(
  d_propEngine = propEngine; 
 } 
 
-PreprocessingPassResult CNFPass::apply(AssertionPipeline* assertionsToPreprocess){
-   Chat() << "converting to CNF..." << endl;
-    TimerStat::CodeTimer codeTimer(d_timer);
+PreprocessingPassResult CNFPass::applyInternal(AssertionPipeline* assertionsToPreprocess){
     for (unsigned i = 0; i < assertionsToPreprocess->size(); ++ i) {
       Chat() << "+ " << (*assertionsToPreprocess)[i] << std::endl;
       d_propEngine->assertFormula((*assertionsToPreprocess)[i]);
@@ -1366,6 +1342,10 @@ void RepeatSimpPass::initInternal(
  d_topLevelSubstitutions = topLevelSubstitutions; 
 } 
 
+  /**
+   * Helper function to fix up assertion list to restore invariants needed after
+   * ite removal.
+   */
 bool RepeatSimpPass::checkForBadSkolems(TNode n, TNode skolem, unordered_map<Node, bool, NodeHashFunction>& cache, AssertionPipeline* assertionsToPreprocess)
 {
   unordered_map<Node, bool, NodeHashFunction>::iterator it;
@@ -1399,6 +1379,10 @@ bool RepeatSimpPass::checkForBadSkolems(TNode n, TNode skolem, unordered_map<Nod
   return false;
 }
 
+  /**
+   * Helper function to fix up assertion list to restore invariants needed after
+   * ite removal.
+   */
 void RepeatSimpPass::collectSkolems(TNode n, set<TNode>& skolemSet, unordered_map<Node, bool, NodeHashFunction>& cache, AssertionPipeline* assertionsToPreprocess)
 {
   unordered_map<Node, bool, NodeHashFunction>::iterator it;
@@ -1425,7 +1409,7 @@ void RepeatSimpPass::collectSkolems(TNode n, set<TNode>& skolemSet, unordered_ma
 }
 
 
-PreprocessingPassResult RepeatSimpPass::apply(AssertionPipeline* assertionsToPreprocess){
+PreprocessingPassResult RepeatSimpPass::applyInternal(AssertionPipeline* assertionsToPreprocess){
       // Need to fix up assertion list to maintain invariants:
       // Let Sk be the set of Skolem variables introduced by ITE's.  Let <_sk be the order in which these variables were introduced
       // during ite removal.
@@ -1483,6 +1467,12 @@ PreprocessingPassResult RepeatSimpPass::apply(AssertionPipeline* assertionsToPre
  return PreprocessingPassResult(true);
 }
 
+ /**
+   * Runs the nonclausal solver and tries to solve all the assigned
+   * theory literals.
+   *
+   * Returns false if the formula simplifies to "false"
+   */
 NonClausalSimplificationPass::NonClausalSimplificationPass() :
    PreprocessingPass("nonClausalSimplification", true), d_numConstantProps("preproc::d_numConstantProps", 0) {
 }
@@ -1508,7 +1498,7 @@ void NonClausalSimplificationPass::initInternal(
 }
 
 // returns false if it learns a conflict
-PreprocessingPassResult NonClausalSimplificationPass::apply(AssertionPipeline* assertionsToPreprocess) {
+PreprocessingPassResult NonClausalSimplificationPass::applyInternal(AssertionPipeline* assertionsToPreprocess) {
   spendResource(options::preprocessStep());
   d_smt->finalOptionsAreSet();
 
@@ -1516,9 +1506,6 @@ PreprocessingPassResult NonClausalSimplificationPass::apply(AssertionPipeline* a
     return PreprocessingPassResult(true);
   }
 
-  TimerStat::CodeTimer nonclausalTimer(d_timer);
-
-  Trace("simplify") << "SmtEnginePrivate::nonClausalSimplify()" << endl;
   for (unsigned i = 0; i < assertionsToPreprocess->size(); ++ i) {
     Trace("simplify") << "Assertion #" << i << " : " << (*assertionsToPreprocess)[i] << std::endl;
   }
@@ -1853,6 +1840,10 @@ void MiplibTrickPass::initInternal(
  d_topLevelSubstitutions = topLevelSubstitutions;
 }
 
+  /**
+   * Remove conjuncts in toRemove from conjunction n. Return # of removed
+   * conjuncts.
+   */
 size_t MiplibTrickPass::removeFromConjunction(Node& n, const std::unordered_set<unsigned long>& toRemove) {
   Assert(n.getKind() == kind::AND);
   size_t removals = 0;
@@ -1902,7 +1893,10 @@ size_t MiplibTrickPass::removeFromConjunction(Node& n, const std::unordered_set<
   return 0;
 }
 
-
+  /**
+   * Trace nodes back to their assertions using CircuitPropagator's
+   * BackEdgesMap.
+   */
 void MiplibTrickPass::traceBackToAssertions(const std::vector<Node>& nodes, std::vector<TNode>& assertions) {
   const booleans::CircuitPropagator::BackEdgesMap& backEdges = d_propagator->getBackEdges();
   for(vector<Node>::const_iterator i = nodes.begin(); i != nodes.end(); ++i) {
@@ -2235,11 +2229,7 @@ void MiplibTrickPass::doMiplibTrick(AssertionPipeline* assertionsToPreprocess) {
   assertionsToPreprocess->setRealAssertionsEnd(assertionsToPreprocess->size());
 }
 
-PreprocessingPassResult MiplibTrickPass::apply(AssertionPipeline* assertionsToPreprocess){
-  Chat() << "...fixing miplib encodings..." << endl;
-  Trace("simplify") << "SmtEnginePrivate::simplify(): "
-                          << "looking for miplib pseudobooleans..." << endl;
-  TimerStat::CodeTimer miplibTimer(d_timer);
+PreprocessingPassResult MiplibTrickPass::applyInternal(AssertionPipeline* assertionsToPreprocess){
   doMiplibTrick(assertionsToPreprocess);
   return PreprocessingPassResult(true);       
 }
@@ -2261,9 +2251,7 @@ void EarlyTheoryPass::initInternal(
  d_theoryEngine = theoryEngine;
 }
 
-PreprocessingPassResult EarlyTheoryPass::apply(AssertionPipeline* assertionsToPreprocess) {
-   Chat() << "...doing early theory preprocessing..." << endl;
-      TimerStat::CodeTimer codeTimer(d_timer);
+PreprocessingPassResult EarlyTheoryPass::applyInternal(AssertionPipeline* assertionsToPreprocess) {
       // Call the theory preprocessors
       d_theoryEngine->preprocessStart();
       for (unsigned i = 0; i < assertionsToPreprocess->size(); ++ i) {
@@ -2291,6 +2279,10 @@ void SimpITEPass::initInternal(
  d_theoryEngine = theoryEngine; 
 }
 
+  /**
+   * Ensures the assertions asserted after before now effectively come before
+   *d_realAssertionsEnd.
+   */
 void SimpITEPass::compressBeforeRealAssertions(size_t before, AssertionPipeline* assertionsToPreprocess){
   size_t curr = assertionsToPreprocess->size();
   if(before >= curr ||
@@ -2300,13 +2292,9 @@ void SimpITEPass::compressBeforeRealAssertions(size_t before, AssertionPipeline*
   }
 }
 
-PreprocessingPassResult SimpITEPass::apply(AssertionPipeline* assertionsToPreprocess) {
-  TimerStat::CodeTimer simpITETimer(d_timer);
-
+ // Simplify ITE structure
+PreprocessingPassResult SimpITEPass::applyInternal(AssertionPipeline* assertionsToPreprocess) {
   spendResource(options::preprocessStep());
-
-  Trace("simplify") << "SmtEnginePrivate::simpITE()" << endl;
-
   unsigned numAssertionOnEntry = assertionsToPreprocess->size();
   for (unsigned i = 0; i < assertionsToPreprocess->size(); ++i) {
     spendResource(options::preprocessStep());

@@ -141,12 +141,6 @@ void DeleteAndClearCommandVector(std::vector<Command*>& commands) {
 */
  
 struct SmtEngineStatistics {
-  /** time spent removing ITEs */
-  TimerStat d_iteRemovalTime;
-  /** Num of assertions before ite removal */
-  IntStat d_numAssertionsPre;
-  /** Num of assertions after ite removal */
-  IntStat d_numAssertionsPost;
   /** time spent in checkModel() */
   TimerStat d_checkModelTime;
   /** time spent in checkProof() */
@@ -166,9 +160,6 @@ struct SmtEngineStatistics {
   ReferenceStat<uint64_t> d_resourceUnitsUsed;
 
   SmtEngineStatistics() :
-    d_iteRemovalTime("smt::SmtEngine::iteRemovalTime"),
-    d_numAssertionsPre("smt::SmtEngine::numAssertionsPreITERemoval", 0),
-    d_numAssertionsPost("smt::SmtEngine::numAssertionsPostITERemoval", 0),
     d_checkModelTime("smt::SmtEngine::checkModelTime"),
     d_checkProofTime("smt::SmtEngine::checkProofTime"),
     d_checkUnsatCoreTime("smt::SmtEngine::checkUnsatCoreTime"),
@@ -179,9 +170,6 @@ struct SmtEngineStatistics {
     d_resourceUnitsUsed("smt::SmtEngine::resourceUnitsUsed")
  {
 
-    smtStatisticsRegistry()->registerStat(&d_iteRemovalTime);
-    smtStatisticsRegistry()->registerStat(&d_numAssertionsPre);
-    smtStatisticsRegistry()->registerStat(&d_numAssertionsPost);
     smtStatisticsRegistry()->registerStat(&d_checkModelTime);
     smtStatisticsRegistry()->registerStat(&d_checkProofTime);
     smtStatisticsRegistry()->registerStat(&d_checkUnsatCoreTime);
@@ -193,9 +181,6 @@ struct SmtEngineStatistics {
   }
 
   ~SmtEngineStatistics() {
-    smtStatisticsRegistry()->unregisterStat(&d_iteRemovalTime);
-    smtStatisticsRegistry()->unregisterStat(&d_numAssertionsPre);
-    smtStatisticsRegistry()->unregisterStat(&d_numAssertionsPost);
     smtStatisticsRegistry()->unregisterStat(&d_checkModelTime);
     smtStatisticsRegistry()->unregisterStat(&d_checkProofTime);
     smtStatisticsRegistry()->unregisterStat(&d_checkUnsatCoreTime);
@@ -2627,16 +2612,11 @@ void SmtEnginePrivate::processAssertions() {
 
   Trace("smt-proc") << "SmtEnginePrivate::processAssertions() : pre-ite-removal" << endl;
   dumpAssertions("pre-ite-removal", d_assertions);
-  {
-    Chat() << "removing term ITEs..." << endl;
-    TimerStat::CodeTimer codeTimer(d_smt.d_stats->d_iteRemovalTime);
-    // Remove ITEs, updating d_iteSkolemMap
-    d_smt.d_stats->d_numAssertionsPre += d_assertions.size();
-   
-     PreprocessingPassRegistry::getInstance()->getPass("removeITE")->apply(&d_assertions);
 
-    d_smt.d_stats->d_numAssertionsPost += d_assertions.size();
+  {
+     PreprocessingPassRegistry::getInstance()->getPass("removeITE")->apply(&d_assertions);
   }
+
   Trace("smt-proc") << "SmtEnginePrivate::processAssertions() : post-ite-removal" << endl;
   dumpAssertions("post-ite-removal", d_assertions);
 
