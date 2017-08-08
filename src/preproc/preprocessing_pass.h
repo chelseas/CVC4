@@ -66,7 +66,7 @@ public:
   size_t size() const { return d_nodes.size(); }
 
   void resize(size_t n) { d_nodes.resize(n); }
-  void clear() { d_nodes.clear(); }
+  void clear() { d_iteSkolemMap.clear(); d_nodes.clear(); }
 
   Node& operator[](size_t i) { return d_nodes[i]; }
   const Node& operator[](size_t i) const { return d_nodes[i]; }
@@ -130,10 +130,8 @@ class PreprocessingPass {
 
   PreprocessingPassResult apply(AssertionPipeline* assertionsToPreprocess) 
   {
-    if(!d_timerRunning) {    
+  //  if(!d_initialized) {
       TimerStat::CodeTimer simpITETimer(d_timer);
-      d_timerRunning = true;
-    }
     Trace("simplify") << "preproc::" << d_name << std::endl;
     Chat() << d_name << "..." << std::endl;
     dumpAssertions(("pre-" + d_name).c_str(), *assertionsToPreprocess);
@@ -192,7 +190,7 @@ class PreprocessingPass {
   // have two different subclasses of PreprocessingPass or a superclass for
   // PreprocessingPass that does not do any registration.
 
- PreprocessingPass(const std::string& name, bool registerPass = false) : d_name(name), d_timer("preproc::" + name), d_initialized(false), d_timerRunning(false){
+ PreprocessingPass(const std::string& name, bool registerPass = false) : d_name(name), d_timer("preproc::" + name), d_initialized(false){
    if (registerPass) {
      PreprocessingPassRegistry::getInstance()->registerPass(name, this);
    }
@@ -227,7 +225,6 @@ protected:
   std::string d_name;
   TimerStat d_timer; 
   bool d_initialized;
-  bool d_timerRunning;
 };
 
 }  // namespace preproc

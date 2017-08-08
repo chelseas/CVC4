@@ -623,7 +623,6 @@ public:
    * someone does a push-assert-pop without a check-sat.
    */
   void notifyPop() {
-    d_assertions.getSkolemMap()->clear();
     d_assertions.clear();
     d_nonClausalLearnedLiterals.clear();
     d_assertions.setRealAssertionsEnd(0);
@@ -2612,8 +2611,6 @@ void SmtEnginePrivate::processAssertions() {
  }
 
   d_assertionsProcessed = true;
-
-  d_assertions.getSkolemMap()->clear();
   d_assertions.clear();
 }
 

@@ -1126,10 +1126,7 @@ void DoStaticLearningPass::staticLearning(AssertionPipeline* assertionsToPreproc
   d_smt->finalOptionsAreSet();
   spendResource(options::preprocessStep());
 
-  TimerStat::CodeTimer staticLearningTimer(d_timer);
-
   Trace("simplify") << "SmtEnginePrivate::staticLearning()" << std::endl;
-
   for (unsigned i = 0; i < assertionsToPreprocess->size(); ++ i) {
 
     NodeBuilder<> learned(kind::AND);
