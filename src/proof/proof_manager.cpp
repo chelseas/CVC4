@@ -25,6 +25,7 @@
 #include "proof/clause_id.h"
 #include "proof/cnf_proof.h"
 #include "proof/proof_utils.h"
+#include "proof/quantifiers_proof.h"
 #include "proof/sat_proof_implementation.h"
 #include "proof/theory_proof.h"
 #include "smt/smt_engine.h"
@@ -131,6 +132,14 @@ ArithProof* ProofManager::getArithProof() {
   Assert (options::proof());
   TheoryProof* pf = getTheoryProofEngine()->getTheoryProof(theory::THEORY_ARITH);
   return (ArithProof*)pf;
+}
+
+QuantifiersProof* ProofManager::getQuantifiersProof()
+{
+  Assert(options::proof());
+  TheoryProof* pf =
+      getTheoryProofEngine()->getTheoryProof(theory::THEORY_QUANTIFIERS);
+  return (QuantifiersProof*)pf;
 }
 
 SkolemizationManager* ProofManager::getSkolemizationManager() {
@@ -1047,12 +1056,17 @@ void ProofManager::printGlobalLetMap(std::set<Node>& atoms,
   for (unsigned i = 0; i < letOrder.size(); ++i) {
     Expr currentExpr = letOrder[i].expr;
     unsigned letId = letOrder[i].id;
-    ProofLetMap::iterator it = letMap.find(currentExpr);
-    Assert(it != letMap.end());
-    out << "\n(@ let" << letId << " ";
-    d_theoryProof->printBoundTerm(currentExpr, out, letMap);
-    paren << ")";
-    it->second.increment();
+    // TODO: BOUND_VAR_LIST should probably not be filtered out here but not
+    // even appear in the letMap in the first place.
+    if (currentExpr.getKind() != kind::BOUND_VAR_LIST)
+    {
+      ProofLetMap::iterator it = letMap.find(currentExpr);
+      Assert(it != letMap.end());
+      out << "\n(@ let" << letId << " ";
+      d_theoryProof->printBoundTerm(currentExpr, out, letMap);
+      paren << ")";
+      it->second.increment();
+    }
   }
 
   out << std::endl << std::endl;

@@ -14,6 +14,8 @@
       (match ti
         ((apply si1 si2 ti1 ti2) (match (is_inst_t ti1 t1 k) (tt (is_inst_t ti2 t2 k)) (ff ff)))
         (default ff)))
+    ((a_var_bv n v) (match n2 ((a_var_bv n v) tt) (default ff)))
+    ((a_bv n v) (match ti ((a_bv n v) tt) (default ff)))
     (default (eqterm ti (ifmarked t k t)))))
 
 (program is_inst_f ((fi formula) (f formula) (k term)) bool
@@ -50,9 +52,15 @@
     (default ff)))
 
 (program is_inst ((fi formula) (f formula) (t term) (k term)) bool
-  (do (markvar t)
-     (let f1 (is_inst_f fi f k)
-        (do (markvar t) f1))))
+  (match t
+    ((a_var_bv n v) (do (markvar v)
+       (let f1 (is_inst_f fi f k)
+          (do (markvar v) f1))))
+    (default (do (markvar t)
+       (let f1 (is_inst_f fi f k)
+          (do (markvar t) f1))))
+  )
+)
 
 (declare skolem
   (! s sort

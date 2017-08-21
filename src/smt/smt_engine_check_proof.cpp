@@ -74,24 +74,30 @@ void SmtEngine::checkProof() {
   std::string logicString = d_logic.getLogicString();
 
   if (!(
-        // Pure logics
-        logicString == "QF_UF" ||
-        logicString == "QF_AX" ||
-        logicString == "QF_BV" ||
-        // Non-pure logics
-        logicString == "QF_AUF" ||
-        logicString == "QF_UFBV" ||
-        logicString == "QF_ABV" ||
-        logicString == "QF_AUFBV"
-        )) {
+          // Pure logics
+          logicString == "QF_UF" || logicString == "QF_AX"
+          || logicString == "QF_BV"
+          ||
+          // Quantified pure logics
+          logicString == "UF"
+          || logicString == "BV"
+          ||
+          // Non-pure logics
+          logicString == "QF_AUF"
+          || logicString == "QF_UFBV"
+          || logicString == "QF_ABV"
+          || logicString == "QF_AUFBV"))
+  {
     // This logic is not yet supported
-    Notice() << "Notice: no proof-checking for " << logicString << " proofs yet" << endl;
+    Warning() << "Warning: no proof-checking for " << logicString
+              << " proofs yet" << endl;
     return;
   }
 
   char *pfFile = tempnam(NULL, "cvc4_");
   if (!pfFile) {
-    Notice() << "Error: couldn't get path from tempnam() during proof checking" << endl;
+    Warning() << "Error: couldn't get path from tempnam() during proof checking"
+              << endl;
     return;
   }
 #if defined(_MSC_VER) || defined(__MINGW32__) || defined(__MINGW64__)
@@ -104,7 +110,8 @@ void SmtEngine::checkProof() {
 #endif
   if (fd == -1) {
     free(pfFile);
-    Notice() << "Error: failed to open temporary file during proof checking" << endl;
+    Warning() << "Error: failed to open temporary file during proof checking"
+              << endl;
     return;
   }
 

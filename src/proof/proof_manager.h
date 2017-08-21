@@ -70,6 +70,7 @@ class UFProof;
 class ArithProof;
 class ArrayProof;
 class BitVectorProof;
+class QuantifiersProof;
 
 template <class Solver> class LFSCSatProof;
 typedef LFSCSatProof< CVC4::Minisat::Solver> LFSCCoreSatProof;
@@ -196,6 +197,7 @@ public:
   static BitVectorProof* getBitVectorProof();
   static ArrayProof* getArrayProof();
   static ArithProof* getArithProof();
+  static QuantifiersProof* getQuantifiersProof();
 
   static SkolemizationManager *getSkolemizationManager();
 
