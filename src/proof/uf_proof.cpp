@@ -620,9 +620,10 @@ void LFSCUFProof::printOwnedTerm(Expr term, std::ostream& os, const ProofLetMap&
 
   Assert (theory::Theory::theoryOf(term) == theory::THEORY_UF);
 
-  if (term.getKind() == kind::VARIABLE ||
-      term.getKind() == kind::SKOLEM ||
-      term.getKind() == kind::BOOLEAN_TERM_VARIABLE) {
+  if (term.getKind() == kind::VARIABLE || term.getKind() == kind::SKOLEM
+      || term.getKind() == kind::BOOLEAN_TERM_VARIABLE
+      || term.getKind() == kind::BOUND_VARIABLE)
+  {
     os << term;
     return;
   }

@@ -28,6 +28,7 @@
 #include "proof/proof_manager.h"
 #include "proof/proof_output_channel.h"
 #include "proof/proof_utils.h"
+#include "proof/quantifiers_proof.h"
 #include "proof/resolution_bitvector_proof.h"
 #include "proof/sat_proof.h"
 #include "proof/simplify_boolean_node.h"
@@ -39,6 +40,7 @@
 #include "theory/arrays/theory_arrays.h"
 #include "theory/bv/theory_bv.h"
 #include "theory/output_channel.h"
+#include "theory/quantifiers/theory_quantifiers.h"
 #include "theory/term_registration_visitor.h"
 #include "theory/uf/theory_uf.h"
 #include "theory/valuation.h"
@@ -124,6 +126,13 @@ void TheoryProofEngine::registerTheory(theory::Theory* th) {
 
       if (id == theory::THEORY_ARITH) {
         d_theoryProofTable[id] = new LFSCArithProof((theory::arith::TheoryArith*)th, this);
+        return;
+      }
+
+      if (id == theory::THEORY_QUANTIFIERS)
+      {
+        d_theoryProofTable[id] = new LFSCQuantifiersProof(
+            (theory::quantifiers::TheoryQuantifiers*)th, this);
         return;
       }
 
@@ -317,6 +326,12 @@ void LFSCTheoryProofEngine::printSort(Type type, std::ostream& os) {
   }
 
   if (type.isBoolean()) {
+    getTheoryProof(theory::THEORY_BOOL)->printOwnedSort(type, os);
+    return;
+  }
+
+  if (type.isBoolean())
+  {
     getTheoryProof(theory::THEORY_BOOL)->printOwnedSort(type, os);
     return;
   }
@@ -1100,12 +1115,11 @@ void TheoryProof::printTheoryLemmaProof(std::vector<Expr>& lemma,
   Debug("pf::tp") << "About to delete the theory solver used for proving the lemma: DONE! " << std::endl;
 }
 
-bool TheoryProofEngine::supportedTheory(theory::TheoryId id) {
-  return (id == theory::THEORY_ARRAYS ||
-          id == theory::THEORY_ARITH ||
-          id == theory::THEORY_BV ||
-          id == theory::THEORY_UF ||
-          id == theory::THEORY_BOOL);
+bool TheoryProofEngine::supportedTheory(theory::TheoryId id)
+{
+  return (id == theory::THEORY_ARRAYS || id == theory::THEORY_ARITH
+          || id == theory::THEORY_BV || id == theory::THEORY_UF
+          || id == theory::THEORY_BOOL || id == theory::THEORY_QUANTIFIERS);
 }
 
 bool TheoryProofEngine::printsAsBool(const Node &n) {

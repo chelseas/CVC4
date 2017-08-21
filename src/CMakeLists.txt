@@ -145,6 +145,8 @@ libcvc4_add_sources(
   proof/er/er_proof.h
   proof/lemma_proof.cpp
   proof/lemma_proof.h
+  proof/quantifiers_proof.cpp
+  proof/quantifiers_proof.h
   proof/lfsc_proof_printer.cpp
   proof/lfsc_proof_printer.h
   proof/lrat/lrat_proof.cpp

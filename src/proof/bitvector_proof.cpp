@@ -203,6 +203,13 @@ void BitVectorProof::printOwnedTerm(Expr term,
     return;
   }
 
+  case kind::BOUND_VARIABLE:
+  {
+    os << "(a_var_bv " << utils::getSize(term) << " "
+       << ProofManager::sanitize(term) << ")";
+    return;
+  }
+
   case kind::SKOLEM: {
 
     // TODO: we need to distinguish between "real" skolems (e.g. from array) and "fake" skolems,
@@ -250,7 +257,10 @@ void BitVectorProof::printConstant(Expr term, std::ostream& os)
   Assert (term.isConst());
   os << "(a_bv " << utils::getSize(term) << " ";
 
-  if (d_useConstantLetification) {
+  // TODO: Add BV constants from instantiations to d_constantLetMap.
+  if (d_useConstantLetification
+      && d_constantLetMap.find(term) != d_constantLetMap.end())
+  {
     os << d_constantLetMap[term] << ")";
   } else {
     std::ostringstream paren;

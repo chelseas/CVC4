@@ -4432,6 +4432,8 @@ void SmtEngine::checkProof()
           // Pure logics
           logicString == "QF_UF" || logicString == "QF_AX"
           || logicString == "QF_BV" ||
+          // Quantified pure logics
+          logicString == "UF" || logicString == "BV" ||
           // Non-pure logics
           logicString == "QF_AUF" || logicString == "QF_UFBV"
           || logicString == "QF_ABV" || logicString == "QF_AUFBV"))

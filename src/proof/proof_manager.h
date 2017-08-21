@@ -69,6 +69,7 @@ class TheoryProof;
 class UFProof;
 class ArithProof;
 class ArrayProof;
+class QuantifiersProof;
 
 namespace proof {
 class ResolutionBitVectorProof;
@@ -194,6 +195,7 @@ public:
   static proof::ResolutionBitVectorProof* getBitVectorProof();
   static ArrayProof* getArrayProof();
   static ArithProof* getArithProof();
+  static QuantifiersProof* getQuantifiersProof();
 
   static SkolemizationManager *getSkolemizationManager();
 
