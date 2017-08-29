@@ -68,6 +68,7 @@ script:
    }
    JavaApiTest() {
      pushd test/java
+     mkdir local-lib && cd local-lib && wget http://search.maven.org/remotecontent?filepath=junit/junit/4.12/junit-4.12.jar -O junit-4.12.jar && cd ..
      local status=0
      ant || status=1
      popd
