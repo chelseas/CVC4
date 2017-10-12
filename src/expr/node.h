@@ -291,6 +291,19 @@ public:
    */
   NodeTemplate(const Expr& e);
 
+  NodeTemplate(NodeTemplate&& node) noexcept {
+    assert(node.d_nv != NULL, "Expecting a non-NULL expression value!");
+    d_nv = node.d_nv;
+    node.d_nv = &expr::NodeValue::null();
+    assert(d_nv->d_rc > 0, "Node/TNode constructed with rc == 0");
+  }
+  NodeTemplate& operator=(NodeTemplate&& other) noexcept {
+    expr::NodeValue* tmp = d_nv;
+    d_nv = other.d_nv;
+    other.d_nv = tmp;
+    return *this;
+  }
+
   /**
    * Assignment operator for nodes, copies the relevant information from node
    * to this node.
