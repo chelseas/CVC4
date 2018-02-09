@@ -40,6 +40,7 @@ addons:
   - ant-optional
   - cxxtest
   - libreadline-dev
+  - moreutils
 before_install:
  - eval "${MATRIX_EVAL}"
  # Clang does not play nice with ccache (at least the versions offered by
@@ -81,7 +82,7 @@ script:
        error "DISTCHECK (WITH NEWTHEORY TESTS) FAILED";
    }
    makeCheck() {
-     make V=1 -j2 check CVC4_REGRESSION_ARGS='--no-early-exit' || error "BUILD/TEST FAILED";
+     make V=1 -j2 check CVC4_REGRESSION_ARGS='--no-early-exit' |& ts;
    }
    makeExamples() {
      make V=1 -j2 examples || error "COULD NOT BUILD EXAMPLES${normal}";
