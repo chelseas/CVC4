@@ -381,7 +381,7 @@ bool Solver::addClause_(vec<Lit>& ps, bool removable, ClauseId& id)
     // Fit to size
     ps.shrink(i - j);
 
-    // If we are in solve or decision level > 0
+    // If we are in solve
     if (minisat_busy || decisionLevel() > 0) {
       Debug("pf::sat") << "Add clause adding a new lemma: ";
       for (int k = 0; k < ps.size(); ++k) {
@@ -458,7 +458,7 @@ bool Solver::addClause_(vec<Lit>& ps, bool removable, ClauseId& id)
                 );
           CRef confl = propagate(CHECK_WITHOUT_THEORY);
           if(! (ok = (confl == CRef_Undef)) ) {
-            if(ca[confl].size() == 1) {
+            if(confl != CRef_Lazy && ca[confl].size() == 1) {
               PROOF( id = ProofManager::getSatProof()->storeUnitConflict(ca[confl][0], LEARNT); );
               PROOF( ProofManager::getSatProof()->finalizeProof(CVC4::Minisat::CRef_Lazy); )
             } else {
