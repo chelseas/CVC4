@@ -1789,9 +1789,10 @@ CRef Solver::updateLemmas() {
         (
          TNode cnf_assertion = lemmas_cnf_assertion[i].first;
          TNode cnf_def = lemmas_cnf_assertion[i].second;
+         bool isInput = ProofManager::getCnfProof()->isAssertion(cnf_assertion) && ProofManager::getCnfProof()->getProofRule(cnf_assertion) == RULE_GIVEN;
 
          Debug("pf::sat") << "Minisat::Solver registering a THEORY_LEMMA (2)" << std::endl;
-         ClauseId id = ProofManager::getSatProof()->registerClause(lemma_ref, THEORY_LEMMA);
+         ClauseId id = ProofManager::getSatProof()->registerClause(lemma_ref, isInput ? INPUT : THEORY_LEMMA);
          ProofManager::getCnfProof()->setClauseAssertion(id, cnf_assertion);
          ProofManager::getCnfProof()->setClauseDefinition(id, cnf_def);
          );
@@ -1806,9 +1807,10 @@ CRef Solver::updateLemmas() {
         (
          Node cnf_assertion = lemmas_cnf_assertion[i].first;
          Node cnf_def = lemmas_cnf_assertion[i].second;
+         bool isInput = ProofManager::getCnfProof()->isAssertion(cnf_assertion) && ProofManager::getCnfProof()->getProofRule(cnf_assertion) == RULE_GIVEN;
 
          Debug("pf::sat") << "Minisat::Solver registering a THEORY_LEMMA (3)" << std::endl;
-         ClauseId id = ProofManager::getSatProof()->registerUnitClause(lemma[0], THEORY_LEMMA);
+         ClauseId id = ProofManager::getSatProof()->registerUnitClause(lemma[0], isInput ? INPUT : THEORY_LEMMA);
          ProofManager::getCnfProof()->setClauseAssertion(id, cnf_assertion);
          ProofManager::getCnfProof()->setClauseDefinition(id, cnf_def);
          );
