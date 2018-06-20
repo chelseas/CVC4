@@ -1821,6 +1821,7 @@ Node TheoryStringsRewriter::rewriteContains( Node node ) {
       }
     }
     Trace("strings-rewrite-multiset") << "For " << node << " : " << std::endl;
+    bool sameConst = true;
     for (const Node& ch : chars)
     {
       Trace("strings-rewrite-multiset") << "  # occurrences of substring ";
@@ -1832,7 +1833,51 @@ Node TheoryStringsRewriter::rewriteContains( Node node ) {
         Node ret = NodeManager::currentNM()->mkConst(false);
         return returnRewrite(node, ret, "ctn-mset-nss");
       }
+      else if (count_const[0][ch] > count_const[1][ch])
+      {
+        sameConst = false;
+      }
     }
+
+    if (sameConst)
+    {
+      // Find all non-const components that appear in the second argument but
+      // not the first
+      std::unordered_set<Node, NodeHashFunction> nConstEmpty;
+      for (std::pair<const Node, unsigned>& nncp : num_nconst[1])
+      {
+        if (nncp.second > num_nconst[0][nncp.first])
+        {
+          nConstEmpty.insert(nncp.first);
+        }
+      }
+
+      if (nConstEmpty.size() > 0)
+      {
+        std::vector<Node> cs;
+        std::vector<Node> nnc2;
+        for (const Node& n : nc2)
+        {
+          if (nConstEmpty.find(n) == nConstEmpty.end())
+          {
+            nnc2.push_back(n);
+          }
+        }
+        cs.push_back(nm->mkNode(
+            kind::STRING_STRCTN, node[0], mkConcat(kind::STRING_CONCAT, nnc2)));
+
+        Node emptyStr = nm->mkConst(String(""));
+        for (const Node& n : nConstEmpty)
+        {
+          cs.push_back(nm->mkNode(kind::EQUAL, n, emptyStr));
+        }
+
+        Assert(cs.size() >= 2);
+        Node res = nm->mkNode(kind::AND, cs);
+        return returnRewrite(node, res, "ctn-mset-substs");
+      }
+    }
+
     // TODO (#1180): count the number of 2,3,4,.. character substrings
     // for example:
     // str.contains( str.++( x, "cbabc" ), str.++( "cabbc", x ) ) ---> false
@@ -1840,6 +1885,7 @@ Node TheoryStringsRewriter::rewriteContains( Node node ) {
     // note this is orthogonal reasoning to inductive reasoning
     // via regular membership reduction in Liang et al CAV 2015.
   }
+
   // TODO (#1180): abstract interpretation with multi-set domain
   // to show first argument is a strict subset of second argument
 
@@ -2156,23 +2202,6 @@ Node TheoryStringsRewriter::rewriteReplace( Node node ) {
       return returnRewrite(node, ret, "rpl-const-find");
     }
   }
-  
-  if( node[0].isConst() )
-  {
-    // str.replace( "", x, t ) ---> str.replace( "", x, t{x->""} )
-    CVC4::String s = node[0].getConst<String>();
-    if( s.empty() )
-    {
-      TNode v = node[1];
-      TNode s = node[0];
-      Node sn2 = node[2].substitute(v,s);
-      if( sn2!=node[2] )
-      {
-        Node ret = nm->mkNode( STRING_STRREPL, node[0], node[1], sn2 );
-        return returnRewrite(node, ret, "repl-empty-subs");
-      }
-    }
-  }
 
   if (node[0] == node[2])
   {
@@ -2237,6 +2266,83 @@ Node TheoryStringsRewriter::rewriteReplace( Node node ) {
     {
       // ~contains( t, s ) => ( replace( t, s, r ) ----> t )
       return returnRewrite(node, node[0], "rpl-nctn");
+    }
+  }
+  else if (cmp_conr.getKind() == kind::EQUAL || cmp_conr.getKind() == kind::AND)
+  {
+    Node empty = nm->mkConst(::CVC4::String(""));
+
+    std::set<TNode> emptyNodes;
+    std::vector<TNode> nodesToKeep;
+    if (cmp_conr.getKind() == kind::EQUAL)
+    {
+      TNode n;
+      if (cmp_conr[0] == empty)
+      {
+        n = cmp_conr[1];
+      }
+      else if (cmp_conr[1] == empty)
+      {
+        n = cmp_conr[0];
+      }
+
+      if (!n.isNull())
+      {
+        emptyNodes.insert(n);
+        if (std::find(children0.begin(), children0.end(), n) == children0.end())
+        {
+          nodesToKeep.push_back(n);
+        }
+      }
+    }
+    else
+    {
+      for (const Node& c : cmp_conr)
+      {
+        TNode n;
+        if (c[0] == empty)
+        {
+          n = c[1];
+        }
+        else if (c[1] == empty)
+        {
+          n = c[0];
+        }
+
+        if (!n.isNull())
+        {
+          emptyNodes.insert(n);
+          if (std::find(children0.begin(), children0.end(), n)
+              == children0.end())
+          {
+            nodesToKeep.push_back(n);
+          }
+        }
+      }
+    }
+
+    if (emptyNodes.size() > 0)
+    {
+      std::vector<TNode> substs(emptyNodes.size(), TNode(empty));
+      Node nn2 = node[2].substitute(
+          emptyNodes.begin(), emptyNodes.end(), substs.begin(), substs.end());
+
+      std::vector<Node> nn1s;
+      for (const Node& child1 : children1)
+      {
+        if (emptyNodes.find(child1) == emptyNodes.end())
+        {
+          nn1s.push_back(child1);
+        }
+      }
+
+      nn1s.insert(nn1s.end(), nodesToKeep.begin(), nodesToKeep.end());
+
+      Node res = nm->mkNode(kind::STRING_STRREPL,
+                            node[0],
+                            mkConcat(kind::STRING_CONCAT, nn1s),
+                            nn2);
+      return returnRewrite(node, res, "rpl-cnts-substs");
     }
   }
 
