@@ -327,6 +327,7 @@ class TheoryStringsRewriterWhite : public CxxTest::TestSuite
   {
     TypeNode strType = d_nm->stringType();
 
+    Node empty = d_nm->mkConst(::CVC4::String(""));
     Node a = d_nm->mkConst(::CVC4::String("A"));
     Node b = d_nm->mkConst(::CVC4::String("B"));
     Node c = d_nm->mkConst(::CVC4::String("C"));
@@ -383,6 +384,14 @@ class TheoryStringsRewriterWhite : public CxxTest::TestSuite
     Node res_repl_x_xyz = Rewriter::rewrite(repl_x_xyz);
     Node res_repl_x_zyx = Rewriter::rewrite(repl_x_zyx);
     TS_ASSERT_EQUALS(res_repl_x_xyz, res_repl_x_zyx);
+
+    // (str.replace "" (str.++ x x) x) --> ""
+    Node repl_empty_xx = d_nm->mkNode(kind::STRING_STRREPL,
+                                      empty,
+                                      d_nm->mkNode(kind::STRING_CONCAT, x, x),
+                                      x);
+    Node res_repl_empty_xx = Rewriter::rewrite(repl_empty_xx);
+    TS_ASSERT_EQUALS(res_repl_empty_xx, empty);
   }
 
   void testRewriteContains()

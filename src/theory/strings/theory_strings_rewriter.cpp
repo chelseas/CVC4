@@ -1676,9 +1676,6 @@ Node TheoryStringsRewriter::rewriteContains( Node node ) {
           Node ret = NodeManager::currentNM()->mkConst(false);
           return returnRewrite(node, ret, "ctn-lhs-emptystr");
         }
-        // contains( "", x ) ---> ( "" = x )
-        Node ret = node[0].eqNode(node[1]);
-        return returnRewrite(node, ret, "ctn-lhs-emptystr-eq");
       }
       else if (node[1].getKind() == kind::STRING_CONCAT)
       {
@@ -2273,7 +2270,7 @@ Node TheoryStringsRewriter::rewriteReplace( Node node ) {
     Node empty = nm->mkConst(::CVC4::String(""));
 
     std::set<TNode> emptyNodes;
-    std::vector<TNode> nodesToKeep;
+    std::set<TNode> dupNodes;
     if (cmp_conr.getKind() == kind::EQUAL)
     {
       TNode n;
@@ -2289,9 +2286,9 @@ Node TheoryStringsRewriter::rewriteReplace( Node node ) {
       if (!n.isNull())
       {
         emptyNodes.insert(n);
-        if (std::find(children0.begin(), children0.end(), n) == children0.end())
+        if (std::find(children0.begin(), children0.end(), n) != children0.end())
         {
-          nodesToKeep.push_back(n);
+          dupNodes.insert(n);
         }
       }
     }
@@ -2313,9 +2310,9 @@ Node TheoryStringsRewriter::rewriteReplace( Node node ) {
         {
           emptyNodes.insert(n);
           if (std::find(children0.begin(), children0.end(), n)
-              == children0.end())
+              != children0.end())
           {
-            nodesToKeep.push_back(n);
+            dupNodes.insert(n);
           }
         }
       }
@@ -2336,7 +2333,8 @@ Node TheoryStringsRewriter::rewriteReplace( Node node ) {
         }
       }
 
-      nn1s.insert(nn1s.end(), nodesToKeep.begin(), nodesToKeep.end());
+      nn1s.insert(nn1s.end(), emptyNodes.begin(), emptyNodes.end());
+      nn1s.insert(nn1s.end(), dupNodes.begin(), dupNodes.end());
 
       Node res = nm->mkNode(kind::STRING_STRREPL,
                             node[0],
