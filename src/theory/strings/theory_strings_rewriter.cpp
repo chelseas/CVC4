@@ -1838,6 +1838,18 @@ Node TheoryStringsRewriter::rewriteContains( Node node ) {
 
     if (sameConst)
     {
+      // At this point, we know that both the first and the second argument
+      // both contain the same constants. Now we can check if there are
+      // non-const components that appear in the second argument but not the
+      // first. If there are, we know that the str.contains is true iff those
+      // components are empty, so we can pull them out of the str.contains. For
+      // example:
+      //
+      // (str.contains (str.++ "A" x) (str.++ y x "A")) -->
+      //   (and (str.contains (str.++ "A" x) (str.++ x "A")) (= y ""))
+      //
+      // These equalities can be used by other rewrites for subtitutions.
+
       // Find all non-const components that appear in the second argument but
       // not the first
       std::unordered_set<Node, NodeHashFunction> nConstEmpty;
@@ -1849,8 +1861,10 @@ Node TheoryStringsRewriter::rewriteContains( Node node ) {
         }
       }
 
+      // Check if there are any non-const components that must be empty
       if (nConstEmpty.size() > 0)
       {
+        // Generate str.contains of the (potentially) non-empty parts
         std::vector<Node> cs;
         std::vector<Node> nnc2;
         for (const Node& n : nc2)
@@ -1863,6 +1877,7 @@ Node TheoryStringsRewriter::rewriteContains( Node node ) {
         cs.push_back(nm->mkNode(
             kind::STRING_STRCTN, node[0], mkConcat(kind::STRING_CONCAT, nnc2)));
 
+        // Generate equalities for the parts that must be empty
         Node emptyStr = nm->mkConst(String(""));
         for (const Node& n : nConstEmpty)
         {
@@ -2267,79 +2282,56 @@ Node TheoryStringsRewriter::rewriteReplace( Node node ) {
   }
   else if (cmp_conr.getKind() == kind::EQUAL || cmp_conr.getKind() == kind::AND)
   {
+    // Rewriting the str.contains may return equalities of the form (= x "").
+    // In that case, we can substitute the variables appearing in those
+    // equalities with the empty string in the third argument of the
+    // str.replace. For example:
+    //
+    // (str.replace x (str.++ x y) y) --> (str.replace x (str.++ x y) "")
+    //
+    // This can be done because str.replace changes x iff (str.++ x y) is in x
+    // but that means that y must be empty in that case. Thus, we can
+    // substitute y with "" in the third argument. Note that the third argument
+    // does not matter when the str.replace does not apply.
+    //
     Node empty = nm->mkConst(::CVC4::String(""));
 
+    // Collect the equalities of the form (= x "")
     std::set<TNode> emptyNodes;
-    std::set<TNode> dupNodes;
     if (cmp_conr.getKind() == kind::EQUAL)
     {
-      TNode n;
       if (cmp_conr[0] == empty)
       {
-        n = cmp_conr[1];
+        emptyNodes.insert(cmp_conr[1]);
       }
       else if (cmp_conr[1] == empty)
       {
-        n = cmp_conr[0];
-      }
-
-      if (!n.isNull())
-      {
-        emptyNodes.insert(n);
-        if (std::find(children0.begin(), children0.end(), n) != children0.end())
-        {
-          dupNodes.insert(n);
-        }
+        emptyNodes.insert(cmp_conr[0]);
       }
     }
     else
     {
       for (const Node& c : cmp_conr)
       {
-        TNode n;
         if (c[0] == empty)
         {
-          n = c[1];
+          emptyNodes.insert(c[1]);
         }
         else if (c[1] == empty)
         {
-          n = c[0];
-        }
-
-        if (!n.isNull())
-        {
-          emptyNodes.insert(n);
-          if (std::find(children0.begin(), children0.end(), n)
-              != children0.end())
-          {
-            dupNodes.insert(n);
-          }
+          emptyNodes.insert(c[0]);
         }
       }
     }
 
     if (emptyNodes.size() > 0)
     {
+      // Perform the substitutions
       std::vector<TNode> substs(emptyNodes.size(), TNode(empty));
       Node nn2 = node[2].substitute(
           emptyNodes.begin(), emptyNodes.end(), substs.begin(), substs.end());
 
-      std::vector<Node> nn1s;
-      for (const Node& child1 : children1)
-      {
-        if (emptyNodes.find(child1) == emptyNodes.end())
-        {
-          nn1s.push_back(child1);
-        }
-      }
-
-      nn1s.insert(nn1s.end(), emptyNodes.begin(), emptyNodes.end());
-      nn1s.insert(nn1s.end(), dupNodes.begin(), dupNodes.end());
-
-      Node res = nm->mkNode(kind::STRING_STRREPL,
-                            node[0],
-                            mkConcat(kind::STRING_CONCAT, nn1s),
-                            nn2);
+      Node res = nm->mkNode(kind::STRING_STRREPL, node[0], node[1], nn2);
       return returnRewrite(node, res, "rpl-cnts-substs");
     }
   }
