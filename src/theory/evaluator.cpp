@@ -4,7 +4,7 @@
  ** Top contributors (to current version):
  **   Andres Noetzli
  ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2017 by the authors listed in the file AUTHORS
+ ** Copyright (c) 2009-2018 by the authors listed in the file AUTHORS
  ** in the top-level source directory) and their institutional affiliations.
  ** All rights reserved.  See the file COPYING in the top-level source
  ** directory for licensing information.\endverbatim
@@ -22,6 +22,98 @@
 
 namespace CVC4 {
 namespace theory {
+
+EvalResult::EvalResult(const EvalResult& other)
+{
+  d_tag = other.d_tag;
+  switch (d_tag)
+  {
+    case BOOL: d_bool = other.d_bool; break;
+    case BITVECTOR:
+      new (&d_bv) BitVector;
+      d_bv = other.d_bv;
+      break;
+    case RATIONAL:
+      new (&d_rat) Rational;
+      d_rat = other.d_rat;
+      break;
+    case STRING:
+      new (&d_str) String;
+      d_str = other.d_str;
+      break;
+    case INVALID: break;
+  }
+}
+
+EvalResult& EvalResult::operator=(const EvalResult& other)
+{
+  if (this != &other)
+  {
+    d_tag = other.d_tag;
+    switch (d_tag)
+    {
+      case BOOL: d_bool = other.d_bool; break;
+      case BITVECTOR:
+        new (&d_bv) BitVector;
+        d_bv = other.d_bv;
+        break;
+      case RATIONAL:
+        new (&d_rat) Rational;
+        d_rat = other.d_rat;
+        break;
+      case STRING:
+        new (&d_str) String;
+        d_str = other.d_str;
+        break;
+      case INVALID: break;
+    }
+  }
+  return *this;
+}
+
+EvalResult::~EvalResult()
+{
+  switch (d_tag)
+  {
+    case BITVECTOR:
+    {
+      d_bv.~BitVector();
+      break;
+    }
+    case RATIONAL:
+    {
+      d_rat.~Rational();
+      break;
+    }
+    case STRING:
+    {
+      d_str.~String();
+      break;
+
+      default: break;
+    }
+  }
+}
+
+Node EvalResult::toNode() const
+{
+  NodeManager* nm = NodeManager::currentNM();
+  switch (d_tag)
+  {
+    case EvalResult::BOOL: return nm->mkConst(d_bool);
+    case EvalResult::BITVECTOR: return nm->mkConst(d_bv);
+    case EvalResult::RATIONAL: return nm->mkConst(d_rat);
+    case EvalResult::STRING: return nm->mkConst(d_str);
+    default:
+    {
+      Trace("evaluator") << "Missing conversion from " << d_tag << " to node"
+                         << std::endl;
+      return Node();
+    }
+  }
+
+  return Node();
+}
 
 Node Evaluator::eval(TNode n,
                      const std::vector<Node>& args,
@@ -80,9 +172,13 @@ EvalResult Evaluator::evalInternal(TNode n,
       else if (currNode.getKind() == kind::APPLY_UF
                && currNode.getOperator().getKind() == kind::LAMBDA)
       {
+        // Create a copy of the current substitutions
         std::vector<Node> lambdaArgs(args);
         std::vector<Node> lambdaVals(vals);
 
+        // Add the values for the arguments of the lambda as substitutions at
+        // the beginning of the vector to shadow variables from outer scopes
+        // with the same name
         Node op = currNode.getOperator();
         for (const auto& lambdaArg : op[0])
         {
@@ -94,6 +190,8 @@ EvalResult Evaluator::evalInternal(TNode n,
           lambdaVals.insert(lambdaVals.begin(), results[lambdaVal].toNode());
         }
 
+        // Lambdas are evaluated in a recursive fashion because each evaluation
+        // requires different substitutions
         results[currNode] = evalInternal(op[1], lambdaArgs, lambdaVals);
         continue;
       }

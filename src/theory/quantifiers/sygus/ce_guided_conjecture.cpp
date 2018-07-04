@@ -2,9 +2,9 @@
 /*! \file ce_guided_conjecture.cpp
  ** \verbatim
  ** Top contributors (to current version):
- **   Andrew Reynolds
+ **   Andrew Reynolds, Tim King, Haniel Barbosa
  ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2017 by the authors listed in the file AUTHORS
+ ** Copyright (c) 2009-2018 by the authors listed in the file AUTHORS
  ** in the top-level source directory) and their institutional affiliations.
  ** All rights reserved.  See the file COPYING in the top-level source
  ** directory for licensing information.\endverbatim
@@ -105,7 +105,7 @@ void CegConjecture::assign( Node q ) {
   // we now finalize the single invocation module, based on the syntax restrictions
   if (d_qe->getQuantAttributes()->isSygus(q))
   {
-    d_ceg_si->finishInit( d_ceg_gc->isSyntaxRestricted());
+    d_ceg_si->finishInit(d_ceg_gc->isSyntaxRestricted());
   }
 
   Assert( d_candidates.empty() );
@@ -125,9 +125,9 @@ void CegConjecture::assign( Node q ) {
   if (options::sygusRepairConst())
   {
     d_sygus_rconst->initialize(d_base_inst.negate(), d_candidates);
-    if( options::sygusConstRepairAbort() )
+    if (options::sygusConstRepairAbort())
     {
-      if( !d_sygus_rconst->isActive() )
+      if (!d_sygus_rconst->isActive())
       {
         // no constant repair is possible: abort
         std::stringstream ss;
@@ -693,7 +693,7 @@ void CegConjecture::printSynthSolution( std::ostream& out, bool singleInvocation
   Assert( d_quant[0].getNumChildren()==d_embed_quant[0].getNumChildren() );
   std::vector<Node> sols;
   std::vector<int> statuses;
-  if( !getSynthSolutionsInternal(sols, statuses, singleInvocation) )
+  if (!getSynthSolutionsInternal(sols, statuses, singleInvocation))
   {
     return;
   }
@@ -761,7 +761,7 @@ void CegConjecture::getSynthSolutions(std::map<Node, Node>& sol_map,
   TermDbSygus* sygusDb = d_qe->getTermDatabaseSygus();
   std::vector<Node> sols;
   std::vector<int> statuses;
-  if( !getSynthSolutionsInternal(sols, statuses, singleInvocation) )
+  if (!getSynthSolutionsInternal(sols, statuses, singleInvocation))
   {
     return;
   }

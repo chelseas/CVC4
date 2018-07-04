@@ -2,9 +2,9 @@
 /*! \file term_database_sygus.cpp
  ** \verbatim
  ** Top contributors (to current version):
- **   Andrew Reynolds
+ **   Andrew Reynolds, Haniel Barbosa, Aina Niemetz
  ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2017 by the authors listed in the file AUTHORS
+ ** Copyright (c) 2009-2018 by the authors listed in the file AUTHORS
  ** in the top-level source directory) and their institutional affiliations.
  ** All rights reserved.  See the file COPYING in the top-level source
  ** directory for licensing information.\endverbatim
@@ -15,7 +15,9 @@
 #include "theory/quantifiers/sygus/term_database_sygus.h"
 
 #include "base/cvc4_check.h"
+#include "options/base_options.h"
 #include "options/quantifiers_options.h"
+#include "printer/printer.h"
 #include "theory/arith/arith_msum.h"
 #include "theory/datatypes/datatypes_rewriter.h"
 #include "theory/quantifiers/quantifiers_attributes.h"
@@ -362,11 +364,13 @@ public:
     if( d_req_kind!=UNDEFINED_KIND ){
       Trace("sygus-sb-debug") << "- check if " << tn << " has " << d_req_kind
                               << std::endl;
-      std::vector< TypeNode > argts;
-      if( tdb->canConstructKind(tn, d_req_kind, argts ) ){
+      std::vector<TypeNode> argts;
+      if (tdb->canConstructKind(tn, d_req_kind, argts))
+      {
         bool ret = true;
         for( std::map< unsigned, ReqTrie >::iterator it = d_children.begin(); it != d_children.end(); ++it ){
-          if( it->first<argts.size() ){
+          if (it->first < argts.size())
+          {
             TypeNode tnc = argts[it->first];
             if( !it->second.satisfiedBy( tdb, tnc ) ){
               return false;
@@ -1037,9 +1041,9 @@ TypeNode TermDbSygus::sygusToBuiltinType( TypeNode tn ) {
   return d_register[tn];
 }
 
-void TermDbSygus::toStreamSygus( const char * c, Node n )
+void TermDbSygus::toStreamSygus(const char* c, Node n)
 {
-  if( Trace.isOn(c) )
+  if (Trace.isOn(c))
   {
     std::stringstream ss;
     Printer::getPrinter(options::outputLanguage())->toStreamSygus(ss, n);
@@ -1315,65 +1319,74 @@ bool TermDbSygus::isSymbolicConsApp(Node n) const
   return sygusOp.getAttribute(SygusAnyConstAttribute());
 }
 
-bool TermDbSygus::canConstructKind( TypeNode tn, Kind k, std::vector< TypeNode >& argts, bool aggr )
+bool TermDbSygus::canConstructKind(TypeNode tn,
+                                   Kind k,
+                                   std::vector<TypeNode>& argts,
+                                   bool aggr)
 {
-  int c = getKindConsNum( tn, k );
+  int c = getKindConsNum(tn, k);
   const Datatype& dt = static_cast<DatatypeType>(tn.toType()).getDatatype();
-  if( c!=-1 )
+  if (c != -1)
   {
-    for( unsigned i=0, nargs=dt[c].getNumArgs(); i<nargs; i++ )
+    for (unsigned i = 0, nargs = dt[c].getNumArgs(); i < nargs; i++)
     {
       argts.push_back(TypeNode::fromType(dt[c].getArgType(i)));
     }
     return true;
   }
-  if( !options::sygusSymBreakAgg() )
+  if (!options::sygusSymBreakAgg())
   {
     return false;
   }
   if (sygusToBuiltinType(tn).isBoolean())
   {
-    if( k==ITE )
+    if (k == ITE)
     {
       // ite( b1, b2, b3 ) <---- and( or( ~b1, b2 ), or( b1, b3 ) )
-      std::vector< TypeNode > conj_types;
-      if( canConstructKind( tn, AND, conj_types, true ) && conj_types.size()==2 )
+      std::vector<TypeNode> conj_types;
+      if (canConstructKind(tn, AND, conj_types, true) && conj_types.size() == 2)
       {
         bool success = true;
-        std::vector< TypeNode > disj_types[2];
-        for( unsigned c=0; c<2; c++ )
+        std::vector<TypeNode> disj_types[2];
+        for (unsigned c = 0; c < 2; c++)
         {
-          if( !canConstructKind( conj_types[c], OR, disj_types[c], true ) || disj_types[c].size()!=2 )
+          if (!canConstructKind(conj_types[c], OR, disj_types[c], true)
+              || disj_types[c].size() != 2)
           {
             success = false;
             break;
           }
         }
-        if( success )
+        if (success)
         {
-          for( unsigned r=0; r<2; r++ )
+          for (unsigned r = 0; r < 2; r++)
           {
-            for( unsigned d=0, size=disj_types[r].size(); d<size; d++ )
+            for (unsigned d = 0, size = disj_types[r].size(); d < size; d++)
             {
               TypeNode dtn = disj_types[r][d];
               // must have negation that occurs in the other conjunct
-              std::vector< TypeNode > ntypes;
-              if( canConstructKind( dtn, NOT, ntypes ) && ntypes.size()==1 )
+              std::vector<TypeNode> ntypes;
+              if (canConstructKind(dtn, NOT, ntypes) && ntypes.size() == 1)
               {
                 TypeNode ntn = ntypes[0];
-                for( unsigned dd=0, size=disj_types[1-r].size(); dd<size; dd++ )
+                for (unsigned dd = 0, size = disj_types[1 - r].size();
+                     dd < size;
+                     dd++)
                 {
-                  if( disj_types[1-r][dd]==ntn )
+                  if (disj_types[1 - r][dd] == ntn)
                   {
                     argts.push_back(ntn);
                     argts.push_back(disj_types[r][d]);
-                    argts.push_back(disj_types[1-r][1-dd]);
-                    if( Trace.isOn("sygus-cons-kind") )
+                    argts.push_back(disj_types[1 - r][1 - dd]);
+                    if (Trace.isOn("sygus-cons-kind"))
                     {
-                      Trace("sygus-cons-kind") << "Can construct kind " << k << " in " << tn << " via child types:" << std::endl;
-                      for( unsigned i=0; i<3; i++ )
+                      Trace("sygus-cons-kind")
+                          << "Can construct kind " << k << " in " << tn
+                          << " via child types:" << std::endl;
+                      for (unsigned i = 0; i < 3; i++)
                       {
-                        Trace("sygus-cons-kind") << "  " << argts[i] << std::endl;
+                        Trace("sygus-cons-kind")
+                            << "  " << argts[i] << std::endl;
                       }
                     }
                     return true;
@@ -1398,7 +1411,7 @@ bool TermDbSygus::canConstructKind( TypeNode tn, Kind k, std::vector< TypeNode >
         // (and b1 b2) <---- (not (or (not b1) (not b2)))
         // (or b1 b2)  <---- (not (and (not b1) (not b2)))
         std::vector< Node > ctypes;
-        
+
       }
     }
   }
@@ -1750,14 +1763,6 @@ Node TermDbSygus::evaluateBuiltin(TypeNode tn,
     }
     if (!res.isNull())
     {
-      /*
-      std::cout << bn << std::endl;
-      std::cout << res << std::endl;
-      std::cout << Rewriter::rewrite(bn.substitute(it->second.begin(),
-                                                it->second.end(),
-                                                args.begin(),
-                                                args.end())) << std::endl;
-                                                */
       Assert(res
              == Rewriter::rewrite(bn.substitute(it->second.begin(),
                                                 it->second.end(),

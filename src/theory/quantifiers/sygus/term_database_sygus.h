@@ -4,7 +4,7 @@
  ** Top contributors (to current version):
  **   Andrew Reynolds
  ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2017 by the authors listed in the file AUTHORS
+ ** Copyright (c) 2009-2018 by the authors listed in the file AUTHORS
  ** in the top-level source directory) and their institutional affiliations.
  ** All rights reserved.  See the file COPYING in the top-level source
  ** directory for licensing information.\endverbatim
@@ -230,9 +230,10 @@ class TermDbSygus {
    */
   TypeNode sygusToBuiltinType(TypeNode tn);
   //-----------------------------end conversion from sygus to builtin
-  
+
   /** print to sygus stream n on trace c */
-  static void toStreamSygus( const char * c, Node n );
+  static void toStreamSygus(const char* c, Node n);
+
  private:
   /** reference to the quantifiers engine */
   QuantifiersEngine* d_quantEngine;
@@ -393,24 +394,27 @@ class TermDbSygus {
   bool hasSubtermSymbolicCons(TypeNode tn) const;
   /** return whether n is an application of a symbolic constructor */
   bool isSymbolicConsApp(Node n) const;
-  /** can construct kind 
-   * 
+  /** can construct kind
+   *
    * Given a sygus datatype type tn, if this method returns true, then there
    * exists values of tn whose builtin analog is equivalent to
    * <k>( t1, ..., tn ). The sygus types of t1...tn are added to arg_types.
-   * 
+   *
    * For example, if:
    *   A -> A+A | ite( B, A, A ) | x | 1 | 0
    *   B -> and( B, B ) | not( B ) | or( B, B ) | A = A
    * - canConstructKind( A, +, ... ) returns true and adds {A,A} to arg_types,
    * - canConstructKind( B, not, ... ) returns true and adds { B } to arg types.
-   * 
+   *
    * We also may infer that operator is constructable. For example,
    * - canConstructKind( B, ite, ... ) may return true, adding { B, B, B } to
-   * arg_types, noting that the term 
+   * arg_types, noting that the term
    *   (and (or (not b1) b2) (or b1 b3)) is equivalent to (ite b1 b2 b3)
    */
-  bool canConstructKind( TypeNode tn, Kind k, std::vector< TypeNode >& argts, bool aggr = false );
+  bool canConstructKind(TypeNode tn,
+                        Kind k,
+                        std::vector<TypeNode>& argts,
+                        bool aggr = false);
 
   TypeNode getSygusTypeForVar( Node v );
   Node sygusSubstituted( TypeNode tn, Node n, std::vector< Node >& args );

@@ -2,9 +2,9 @@
 /*! \file theory_strings_rewriter.cpp
  ** \verbatim
  ** Top contributors (to current version):
- **   Tianyi Liang, Andrew Reynolds, Tim King
+ **   Andrew Reynolds, Tianyi Liang, Andres Noetzli
  ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2017 by the authors listed in the file AUTHORS
+ ** Copyright (c) 2009-2018 by the authors listed in the file AUTHORS
  ** in the top-level source directory) and their institutional affiliations.
  ** All rights reserved.  See the file COPYING in the top-level source
  ** directory for licensing information.\endverbatim
@@ -1166,13 +1166,15 @@ RewriteResponse TheoryStringsRewriter::postRewrite(TNode node) {
         }
         retNode = NodeManager::currentNM()->mkNode(kind::PLUS, node_vec);
       }
-    }else if( node[0].getKind()==STRING_STRREPL ){
+    }
+    else if (node[0].getKind() == STRING_STRREPL)
+    {
       Node len1 = Rewriter::rewrite(nm->mkNode(STRING_LENGTH, node[0][1]));
       Node len2 = Rewriter::rewrite(nm->mkNode(STRING_LENGTH, node[0][2]));
-      if( len1==len2 )
+      if (len1 == len2)
       {
         // len( y ) == len( z ) => len( str.replace( x, y, z ) ) ---> len( x )
-        retNode = nm->mkNode( STRING_LENGTH, node[0][0] );
+        retNode = nm->mkNode(STRING_LENGTH, node[0][0]);
       }
     }
   }else if( node.getKind() == kind::STRING_CHARAT ){
@@ -2397,19 +2399,19 @@ Node TheoryStringsRewriter::rewriteReplace( Node node ) {
       return returnRewrite(node, res, "repl-subst-idx");
     }
   }
-  if( node[1].getKind()==STRING_STRREPL )
+  if (node[1].getKind() == STRING_STRREPL)
   {
-    if( node[1][0]==node[0] )
+    if (node[1][0] == node[0])
     {
-      if( node[1][0]==node[1][2] && node[1][0]==node[2] )
+      if (node[1][0] == node[1][2] && node[1][0] == node[2])
       {
         // str.replace( x, str.replace( x, y, x ), x ) ---> x
         return returnRewrite(node, node[0], "repl-repl2-inv-id");
       }
       bool dualReplIteSuccess = false;
       Node cmp_con = nm->mkNode(STRING_STRCTN, node[1][0], node[1][2]);
-      cmp_con = Rewriter::rewrite( cmp_con );
-      if( cmp_con.isConst() && !cmp_con.getConst<bool>() )
+      cmp_con = Rewriter::rewrite(cmp_con);
+      if (cmp_con.isConst() && !cmp_con.getConst<bool>())
       {
         // str.contains( x, z ) ---> false
         //   implies
@@ -2424,39 +2426,42 @@ Node TheoryStringsRewriter::rewriteReplace( Node node ) {
         // str.replace( x, str.replace( x, y, z ), w ) --->
         // ite( str.contains( x, y ), x, w )
         cmp_con = nm->mkNode(STRING_STRCTN, node[1][1], node[1][2]);
-        cmp_con = Rewriter::rewrite( cmp_con );
-        if( cmp_con.isConst() && !cmp_con.getConst<bool>() )
+        cmp_con = Rewriter::rewrite(cmp_con);
+        if (cmp_con.isConst() && !cmp_con.getConst<bool>())
         {
           cmp_con = nm->mkNode(STRING_STRCTN, node[1][2], node[1][1]);
-          cmp_con = Rewriter::rewrite( cmp_con );
-          if( cmp_con.isConst() && !cmp_con.getConst<bool>() )
+          cmp_con = Rewriter::rewrite(cmp_con);
+          if (cmp_con.isConst() && !cmp_con.getConst<bool>())
           {
             dualReplIteSuccess = true;
           }
         }
       }
-      if( dualReplIteSuccess )
+      if (dualReplIteSuccess)
       {
-        Node res = nm->mkNode( ITE, nm->mkNode(STRING_STRCTN,node[0],node[1][1]), node[0], node[2] );
+        Node res = nm->mkNode(ITE,
+                              nm->mkNode(STRING_STRCTN, node[0], node[1][1]),
+                              node[0],
+                              node[2]);
         return returnRewrite(node, res, "repl-dual-repl-ite");
       }
     }
-    
+
     bool invSuccess = false;
-    if( node[1][1]==node[0] )
+    if (node[1][1] == node[0])
     {
-      if( node[1][0]==node[1][2] )
+      if (node[1][0] == node[1][2])
       {
         // str.replace(x, str.replace(y, x, y), w) ---> str.replace(x, y, w)
         invSuccess = true;
       }
-      else if( node[1][1]==node[2] || node[1][0]==node[2] )
+      else if (node[1][1] == node[2] || node[1][0] == node[2])
       {
         // str.contains(y, z) ----> false and ( y == w or x == w ) implies
         //   implies
         // str.replace(x, str.replace(y, x, z), w) ---> str.replace(x, y, w)
         Node cmp_con = nm->mkNode(STRING_STRCTN, node[1][0], node[1][2]);
-        cmp_con = Rewriter::rewrite( cmp_con );
+        cmp_con = Rewriter::rewrite(cmp_con);
         invSuccess = cmp_con.isConst() && !cmp_con.getConst<bool>();
       }
     }
@@ -2466,45 +2471,39 @@ Node TheoryStringsRewriter::rewriteReplace( Node node ) {
       //   implies
       // str.replace(x, str.replace(y, z, w), u) ---> str.replace(x, y, u)
       Node cmp_con = nm->mkNode(STRING_STRCTN, node[0], node[1][1]);
-      cmp_con = Rewriter::rewrite( cmp_con );
-      if( cmp_con.isConst() && !cmp_con.getConst<bool>() )
+      cmp_con = Rewriter::rewrite(cmp_con);
+      if (cmp_con.isConst() && !cmp_con.getConst<bool>())
       {
         cmp_con = nm->mkNode(STRING_STRCTN, node[0], node[1][2]);
-        cmp_con = Rewriter::rewrite( cmp_con );
+        cmp_con = Rewriter::rewrite(cmp_con);
         invSuccess = cmp_con.isConst() && !cmp_con.getConst<bool>();
       }
     }
-    if( invSuccess )
+    if (invSuccess)
     {
-      Node res = nm->mkNode(kind::STRING_STRREPL,
-                            node[0],
-                            node[1][0],
-                            node[2]);
+      Node res = nm->mkNode(kind::STRING_STRREPL, node[0], node[1][0], node[2]);
       return returnRewrite(node, res, "repl-repl2-inv");
     }
-
   }
-  if( node[2].getKind()==STRING_STRREPL )
+  if (node[2].getKind() == STRING_STRREPL)
   {
-    if( node[2][1]==node[0] )
+    if (node[2][1] == node[0])
     {
       // str.contains( z, w ) ----> false implies
       // str.replace( x, w, str.replace( z, x, y ) ) ---> str.replace( x, w, z )
       Node cmp_con = nm->mkNode(STRING_STRCTN, node[1], node[2][0]);
-      cmp_con = Rewriter::rewrite( cmp_con );
+      cmp_con = Rewriter::rewrite(cmp_con);
       if (cmp_con.isConst() && !cmp_con.getConst<bool>())
       {
-        Node res = nm->mkNode(kind::STRING_STRREPL,
-                              node[0],
-                              node[1],
-                              node[2][0]);
+        Node res =
+            nm->mkNode(kind::STRING_STRREPL, node[0], node[1], node[2][0]);
         return returnRewrite(node, res, "repl-repl3-inv");
       }
     }
-    if( node[2][0]==node[1] )
+    if (node[2][0] == node[1])
     {
       bool success = false;
-      if( node[2][0]==node[2][2] && node[2][1]==node[0] )
+      if (node[2][0] == node[2][2] && node[2][1] == node[0])
       {
         // str.replace( x, y, str.replace( y, x, y ) ) ---> x
         success = true;
@@ -2514,10 +2513,10 @@ Node TheoryStringsRewriter::rewriteReplace( Node node ) {
         // str.contains( x, z ) ----> false implies
         // str.replace( x, y, str.replace( y, z, w ) ) ---> x
         cmp_con = nm->mkNode(STRING_STRCTN, node[0], node[2][1]);
-        cmp_con = Rewriter::rewrite( cmp_con );
+        cmp_con = Rewriter::rewrite(cmp_con);
         success = cmp_con.isConst() && !cmp_con.getConst<bool>();
       }
-      if( success )
+      if (success)
       {
         return returnRewrite(node, node[0], "repl-repl3-inv-id");
       }

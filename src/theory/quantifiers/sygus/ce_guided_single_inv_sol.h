@@ -2,9 +2,9 @@
 /*! \file ce_guided_single_inv_sol.h
  ** \verbatim
  ** Top contributors (to current version):
- **   Andrew Reynolds, Paul Meng
+ **   Andrew Reynolds
  ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2017 by the authors listed in the file AUTHORS
+ ** Copyright (c) 2009-2018 by the authors listed in the file AUTHORS
  ** in the top-level source directory) and their institutional affiliations.
  ** All rights reserved.  See the file COPYING in the top-level source
  ** directory for licensing information.\endverbatim
@@ -72,7 +72,7 @@ private:
    * This method quickly tries to match sol to the grammar induced by stn. If
    * this fails, we use enumerative techniques to try to repair the solution.
    * The number of iterations for this enumeration is bounded by the argument
-   * enumLimit if it is positive, and unbounded otherwise. 
+   * enumLimit if it is positive, and unbounded otherwise.
    */
   Node reconstructSolution(Node sol,
                            TypeNode stn,

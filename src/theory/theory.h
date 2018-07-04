@@ -4,7 +4,7 @@
  ** Top contributors (to current version):
  **   Morgan Deters, Dejan Jovanovic, Tim King
  ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2017 by the authors listed in the file AUTHORS
+ ** Copyright (c) 2009-2018 by the authors listed in the file AUTHORS
  ** in the top-level source directory) and their institutional affiliations.
  ** All rights reserved.  See the file COPYING in the top-level source
  ** directory for licensing information.\endverbatim
@@ -161,7 +161,9 @@ private:
   /**
    * Helper function for computeRelevantTerms
    */
-  void collectTerms(TNode n, std::set<Kind>& irr_kinds, std::set<Node>& termSet) const;
+  void collectTerms(TNode n,
+                    std::set<Kind>& irr_kinds,
+                    std::set<Node>& termSet) const;
 
   /**
    * Scans the current set of assertions and shared terms top-down
@@ -169,7 +171,9 @@ private:
    * termSet.  This is used by collectModelInfo to delimit the set of
    * terms that should be used when constructing a model
    */
-  void computeRelevantTerms(std::set<Node>& termSet, std::set<Kind>& irr_kinds, bool includeShared = true) const;
+  void computeRelevantTerms(std::set<Node>& termSet,
+                            std::set<Kind>& irr_kinds,
+                            bool includeShared = true) const;
   void computeRelevantTerms(std::set<Node>& termSet, bool includeShared = true) const;
 
   /**

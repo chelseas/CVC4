@@ -6,12 +6,12 @@ UNIT_TESTS = \
 	util/cardinality_public
 if WHITE_AND_BLACK_TESTS
 UNIT_TESTS += \
+	theory/evaluator_white \
 	theory/logic_info_white \
 	theory/theory_arith_white \
 	theory/theory_black \
 	theory/theory_bv_white \
 	theory/theory_engine_white \
-	theory/theory_evaluator_white \
 	theory/theory_quantifiers_bv_instantiator_white \
 	theory/theory_quantifiers_bv_inverter_white \
 	theory/theory_strings_rewriter_white \

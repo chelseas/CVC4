@@ -1,10 +1,10 @@
 /*********************                                                        */
-/*! \file theory_evaluator_white.h
+/*! \file evaluator_white.h
  ** \verbatim
  ** Top contributors (to current version):
  **   Andres Noetzli
  ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2017 by the authors listed in the file AUTHORS
+ ** Copyright (c) 2009-2018 by the authors listed in the file AUTHORS
  ** in the top-level source directory) and their institutional affiliations.
  ** All rights reserved.  See the file COPYING in the top-level source
  ** directory for licensing information.\endverbatim
@@ -25,7 +25,6 @@
 #include "theory/bv/theory_bv_utils.h"
 #include "theory/evaluator.h"
 #include "theory/rewriter.h"
-#include "theory/strings/theory_strings_rewriter.h"
 #include "theory/theory_test_utils.h"
 
 using namespace CVC4;
@@ -79,13 +78,16 @@ class TheoryEvaluatorWhite : public CxxTest::TestSuite
         64,
         (unsigned int)0b0000000100000101001110111001101000101110011101011011110011100111));
 
+    Node t = d_nm->mkNode(kind::ITE, d_nm->mkNode(kind::EQUAL, y, one), x, w);
+
     std::vector<Node> args = {w, x, y, z};
     std::vector<Node> vals = {c1, zero, one, c1};
 
     Evaluator eval;
-    eval.eval(d_nm->mkNode(kind::ITE, d_nm->mkNode(kind::EQUAL, y, one), x, w),
-              args,
-              vals);
+    Node r = eval.eval(t, args, vals);
+    TS_ASSERT_EQUALS(r,
+                     Rewriter::rewrite(t.substitute(
+                         args.begin(), args.end(), vals.begin(), vals.end())));
   }
 
   void testLoop()
@@ -97,23 +99,24 @@ class TheoryEvaluatorWhite : public CxxTest::TestSuite
 
     Node zero = d_nm->mkConst(BitVector(1, (unsigned int)0));
     Node one = d_nm->mkConst(BitVector(64, (unsigned int)1));
+    Node c = d_nm->mkConst(BitVector(
+        64,
+        (unsigned int)0b0001111000010111110000110110001101011110111001101100000101010100));
 
     Node largs = d_nm->mkNode(kind::BOUND_VAR_LIST, w);
     Node lbody = d_nm->mkNode(
         kind::BITVECTOR_CONCAT, bv::utils::mkExtract(w, 62, 0), zero);
     Node lambda = d_nm->mkNode(kind::LAMBDA, largs, lbody);
-
     Node t = d_nm->mkNode(kind::BITVECTOR_AND,
                           d_nm->mkNode(kind::APPLY_UF, lambda, one),
                           d_nm->mkNode(kind::APPLY_UF, lambda, x));
 
-    Node c = d_nm->mkConst(BitVector(
-        64,
-        (unsigned int)0b0001111000010111110000110110001101011110111001101100000101010100));
-
     std::vector<Node> args = {x};
     std::vector<Node> vals = {c};
     Evaluator eval;
-    eval.eval(t, args, vals);
+    Node r = eval.eval(t, args, vals);
+    TS_ASSERT_EQUALS(r,
+                     Rewriter::rewrite(t.substitute(
+                         args.begin(), args.end(), vals.begin(), vals.end())));
   }
 };

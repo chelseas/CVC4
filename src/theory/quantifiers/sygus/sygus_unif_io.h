@@ -2,9 +2,9 @@
 /*! \file sygus_unif_io.h
  ** \verbatim
  ** Top contributors (to current version):
- **   Andrew Reynolds
+ **   Andrew Reynolds, Haniel Barbosa
  ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2017 by the authors listed in the file AUTHORS
+ ** Copyright (c) 2009-2018 by the authors listed in the file AUTHORS
  ** in the top-level source directory) and their institutional affiliations.
  ** All rights reserved.  See the file COPYING in the top-level source
  ** directory for licensing information.\endverbatim
@@ -310,6 +310,8 @@ class SygusUnifIo : public SygusUnif
    * register a new value for an enumerator.
    */
   bool d_check_sol;
+  /** whether we have solved the overall conjecture */
+  bool d_solved;
   /** The number of values we have enumerated for all enumerators. */
   unsigned d_cond_count;
   /** The solution for the function of this class, if one has been found */
@@ -413,15 +415,17 @@ class SygusUnifIo : public SygusUnif
    * exp : if this function returns true, then exp contains a (possibly
    * generalize) explanation for why v can be excluded.
    */
-  bool getExplanationForEnumeratorExclude(Node e,
-                                          Node v,
-                                          std::vector<Node>& results,
-                                                     std::map< Node, std::vector< Node > >& srmap,
-                                                     bool prereg,
-                                          std::vector<Node>& exp);
-  Node getExclusionInvariancePredicate(Node e, Node v,
-                                       std::map< Node, std::vector< Node > >& srmap,
-                                                     bool prereg);
+  bool getExplanationForEnumeratorExclude(
+      Node e,
+      Node v,
+      std::vector<Node>& results,
+      std::map<Node, std::vector<Node>>& srmap,
+      bool prereg,
+      std::vector<Node>& exp);
+  Node getExclusionInvariancePredicate(Node e,
+                                       Node v,
+                                       std::map<Node, std::vector<Node>>& srmap,
+                                       bool prereg);
   /** returns true if we can exlude values of e based on negative str.contains
    *
    * Values v for e may be excluded if we realize that the value of v under the

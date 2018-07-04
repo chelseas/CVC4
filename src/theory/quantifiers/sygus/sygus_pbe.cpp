@@ -1,10 +1,10 @@
 /*********************                                                        */
-/*! \file ce_guided_pbe.cpp
+/*! \file sygus_pbe.cpp
  ** \verbatim
  ** Top contributors (to current version):
- **   Andrew Reynolds
+ **   Andrew Reynolds, Haniel Barbosa, Aina Niemetz
  ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2016 by the authors listed in the file AUTHORS
+ ** Copyright (c) 2009-2018 by the authors listed in the file AUTHORS
  ** in the top-level source directory) and their institutional affiliations.
  ** All rights reserved.  See the file COPYING in the top-level source
  ** directory for licensing information.\endverbatim
@@ -411,10 +411,11 @@ bool CegConjecturePbe::constructCandidates(const std::vector<Node>& enums,
   if( !enums.empty() ){
     unsigned min_term_size = 0;
     Trace("sygus-pbe-enum") << "Register new enumerated values : " << std::endl;
-    std::vector< unsigned > szs;
-    for( unsigned i=0, esize = enums.size(); i<esize; i++ ){
+    std::vector<unsigned> szs;
+    for (unsigned i = 0, esize = enums.size(); i < esize; i++)
+    {
       Trace("sygus-pbe-enum") << "  " << enums[i] << " -> ";
-      TermDbSygus::toStreamSygus("sygus-pbe-enum",enum_values[i]);
+      TermDbSygus::toStreamSygus("sygus-pbe-enum", enum_values[i]);
       Trace("sygus-pbe-enum") << std::endl;
       unsigned sz = d_tds->getSygusTermSize( enum_values[i] );
       szs.push_back(sz);
@@ -423,14 +424,15 @@ bool CegConjecturePbe::constructCandidates(const std::vector<Node>& enums,
       }
     }
     unsigned allowDiff = options::sygusUnifPbeMultiFair() ? 0 : 1;
-    std::vector< unsigned > enum_consider;
-    for( unsigned i=0, esize = enums.size(); i<esize; i++ ){
-      if( szs[i]-min_term_size<=allowDiff )
+    std::vector<unsigned> enum_consider;
+    for (unsigned i = 0, esize = enums.size(); i < esize; i++)
+    {
+      if (szs[i] - min_term_size <= allowDiff)
       {
         enum_consider.push_back( i );
       }
     }
-    
+
     // only consider the enumerators that are at minimum size (for fairness)
     Trace("sygus-pbe-enum") << "...register " << enum_consider.size() << " / " << enums.size() << std::endl;
     NodeManager* nm = NodeManager::currentNM();

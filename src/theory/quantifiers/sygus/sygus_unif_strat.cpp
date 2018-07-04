@@ -2,9 +2,9 @@
 /*! \file sygus_unif_strat.cpp
  ** \verbatim
  ** Top contributors (to current version):
- **   Andrew Reynolds
+ **   Andrew Reynolds, Haniel Barbosa
  ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2017 by the authors listed in the file AUTHORS
+ ** Copyright (c) 2009-2018 by the authors listed in the file AUTHORS
  ** in the top-level source directory) and their institutional affiliations.
  ** All rights reserved.  See the file COPYING in the top-level source
  ** directory for licensing information.\endverbatim
@@ -758,7 +758,7 @@ bool SygusUnifStrategy::isTrivial()
   TypeNode etn = root_e.getType();
   EnumTypeInfo& tinfo = getEnumTypeInfo(etn);
   StrategyNode& snode = tinfo.getStrategyNode(role_equal);
-  if( snode.d_strats.empty() )
+  if (snode.d_strats.empty())
   {
     return true;
   }
@@ -768,8 +768,8 @@ bool SygusUnifStrategy::isTrivial()
 bool SygusUnifStrategy::isNonDeterministic()
 {
   std::map<Node, std::map<NodeRole, bool>> visited;
-  std::vector< Node > visit;
-  std::vector< NodeRole > visit_role;
+  std::vector<Node> visit;
+  std::vector<NodeRole> visit_role;
   visit.push_back(getRootEnumerator());
   visit_role.push_back(role_equal);
   Node e;
@@ -790,18 +790,18 @@ bool SygusUnifStrategy::isNonDeterministic()
       {
         EnumTypeInfoStrat* etis = snode.d_strats[j];
         StrategyType strat = etis->d_this;
-        if( strat==strat_CONCAT_PREFIX || strat==strat_CONCAT_SUFFIX )
+        if (strat == strat_CONCAT_PREFIX || strat == strat_CONCAT_SUFFIX)
         {
           return true;
         }
         for (std::pair<Node, NodeRole>& cec : etis->d_cenum)
         {
-          visit.push_back( cec.first );
-          visit_role.push_back( cec.second );
+          visit.push_back(cec.first);
+          visit_role.push_back(cec.second);
         }
       }
     }
-  }while( !visit.empty() );
+  } while (!visit.empty());
   return false;
 }
 
@@ -838,7 +838,7 @@ TypeNode SygusUnifStrategy::getStrategyType()
       TypeNode etn = e.getType();
       EnumTypeInfo& tinfo = getEnumTypeInfo(etn);
       StrategyNode& snode = tinfo.getStrategyNode(erole);
-      
+
       // process=1 --> building a sygus datatype
       std::stringstream dname;
       dname << "strategy_" << e << "_" << erole;
@@ -855,7 +855,7 @@ TypeNode SygusUnifStrategy::getStrategyType()
           NodeRole cnr = cec.second;
           if( process==1 )
           {
-            // get the child sygus datatype 
+            // get the child sygus datatype
             Assert( visitedt[cn].find(cnr)!=visitedt[cn].end());
             TypeNode childt = visitedt[cn][cnr];
             childArgTypes.push_back(childt.toType());
@@ -874,7 +874,7 @@ TypeNode SygusUnifStrategy::getStrategyType()
       }
     }
   }while( !visit.empty() );
-  
+
   return visited[root_e][role_equal];
 }
 */

@@ -4,7 +4,7 @@
  ** Top contributors (to current version):
  **   Andrew Reynolds
  ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2017 by the authors listed in the file AUTHORS
+ ** Copyright (c) 2009-2018 by the authors listed in the file AUTHORS
  ** in the top-level source directory) and their institutional affiliations.
  ** All rights reserved.  See the file COPYING in the top-level source
  ** directory for licensing information.\endverbatim
@@ -309,15 +309,13 @@ class ExtendedRewriter
    *   n2 is equivalent to nv[0] ++ ... ++ (~)nv[i] ++ ... ++ nv[k-1], and
    *   nv[i] is a constant of bit-width one.
    */
-  int spliceBvConstBit(Node n1,
-                       Node n2,
-                       std::vector<Node>& nv);
+  int spliceBvConstBit(Node n1, Node n2, std::vector<Node>& nv);
   /** extend
-   * 
-   * This returns the concatentation node of the form 
+   *
+   * This returns the concatentation node of the form
    */
-  Node extendBv(Node n, std::map< unsigned, Node >& ex_map);
-  Node extendBv(Node n, std::vector< Node >& exs);
+  Node extendBv(Node n, std::map<unsigned, Node>& ex_map);
+  Node extendBv(Node n, std::vector<Node>& exs);
   //--------------------------------------end bit-vectors
 };
 

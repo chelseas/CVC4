@@ -2,9 +2,9 @@
 /*! \file ce_guided_single_inv_sol.cpp
  ** \verbatim
  ** Top contributors (to current version):
- **   Andrew Reynolds, Paul Meng, Tim King
+ **   Andrew Reynolds, Tim King
  ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2017 by the authors listed in the file AUTHORS
+ ** Copyright (c) 2009-2018 by the authors listed in the file AUTHORS
  ** in the top-level source directory) and their institutional affiliations.
  ** All rights reserved.  See the file COPYING in the top-level source
  ** directory for licensing information.\endverbatim
@@ -678,7 +678,7 @@ Node CegConjectureSingleInvSol::reconstructSolution(Node sol,
       Assert(!it->second.empty());
     }
   }
-  if (enumLimit!=0)
+  if (enumLimit != 0)
   {
     int index = 0;
     std::map< TypeNode, bool > active;
@@ -727,7 +727,7 @@ Node CegConjectureSingleInvSol::reconstructSolution(Node sol,
       if( index%100==0 ){
         Trace("csi-rcons-stats") << "Tried " << index << " for each type."  << std::endl;
       }
-    }while( !active.empty() && ( enumLimit<0 || index<enumLimit) );
+    } while (!active.empty() && (enumLimit < 0 || index < enumLimit));
   }
 
   // we ran out of elements, return null
