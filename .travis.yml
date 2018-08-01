@@ -81,8 +81,8 @@ script:
        error "DISTCHECK (WITH NEWTHEORY TESTS) FAILED";
    }
    makeCheck() {
-     builds/bin/cvc4 --show-config
      make V=1 -j2 check REGRESSION_LEVEL=0 CVC4_REGRESSION_ARGS='--no-early-exit' || error "BUILD/UNIT/SYSTEM/REGRESSION TEST FAILED"
+     builds/bin/cvc4 --show-config
    }
    makeExamples() {
      make V=1 -j2 examples || error "COULD NOT BUILD EXAMPLES${normal}";
