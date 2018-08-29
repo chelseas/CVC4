@@ -112,4 +112,16 @@ bool NodeTemplate<ref_count>::isConst() const {
 template bool NodeTemplate<true>::isConst() const;
 template bool NodeTemplate<false>::isConst() const;
 
+template class NodeTemplate<true>;
+template class NodeTemplate<false>;
+
 }/* CVC4 namespace */
+
+namespace std {
+template class std::vector<CVC4::NodeTemplate<true>>;
+template class std::vector<CVC4::NodeTemplate<false>>;
+template class std::unordered_map<CVC4::NodeTemplate<true>, CVC4::NodeTemplate<true>, CVC4::NodeHashFunction>;
+template class std::unordered_map<CVC4::NodeTemplate<false>, CVC4::NodeTemplate<false>, CVC4::TNodeHashFunction>;
+template class std::map<CVC4::NodeTemplate<true>, CVC4::NodeTemplate<true> >;
+template class std::map<CVC4::NodeTemplate<false>, CVC4::NodeTemplate<false> >;
+}

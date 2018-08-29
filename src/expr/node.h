@@ -1507,6 +1507,9 @@ inline Node NodeTemplate<true>::fromExpr(const Expr& e) {
   return NodeManager::fromExpr(e);
 }
 
+extern template class NodeTemplate<true>;
+extern template class NodeTemplate<false>;
+
 #ifdef CVC4_DEBUG
 /**
  * Pretty printer for use within gdb.  This is not intended to be used
@@ -1567,5 +1570,14 @@ static void __attribute__((used)) debugPrintRawTNode(const NodeTemplate<false>& 
 #endif /* CVC4_DEBUG */
 
 }/* CVC4 namespace */
+
+namespace std {
+extern template class std::vector<CVC4::NodeTemplate<true>>;
+extern template class std::vector<CVC4::NodeTemplate<false>>;
+extern template class std::unordered_map<CVC4::NodeTemplate<true>, CVC4::NodeTemplate<true>, CVC4::NodeHashFunction>;
+extern template class std::unordered_map<CVC4::NodeTemplate<false>, CVC4::NodeTemplate<false>, CVC4::TNodeHashFunction>;
+extern template class std::map<CVC4::NodeTemplate<true>, CVC4::NodeTemplate<true> >;
+extern template class std::map<CVC4::NodeTemplate<false>, CVC4::NodeTemplate<false> >;
+}
 
 #endif /* __CVC4__NODE_H */
