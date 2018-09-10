@@ -36,6 +36,7 @@ class StringsPreprocess {
   Node d_empty_str;
   //mapping from kinds to UF
   std::map< Kind, std::map< unsigned, Node > > d_uf;
+  std::map<std::vector<Node>, std::vector<Node> > d_cache;
   //get UF for node
   Node getUfForNode( Kind k, Node n, unsigned id = 0 );
   Node getUfAppForNode( Kind k, Node n, unsigned id = 0 );

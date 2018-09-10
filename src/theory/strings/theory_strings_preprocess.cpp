@@ -410,52 +410,97 @@ Node StringsPreprocess::simplify( Node t, std::vector< Node > &new_nodes ) {
     Node y = t[1];
     Node z = t[2];
     TypeNode tn = t[0].getType();
-    Node rp1 = nm->mkSkolem("rp1", tn, "created for replace");
-    Node rp2 = nm->mkSkolem("rp2", tn, "created for replace");
+
+    Node rr;
     Node rpw = nm->mkSkolem("rpw", tn, "created for replace");
+    if (true) { //d_cache.find({x, y}) == d_cache.end()) {
+      Node rp1 = nm->mkSkolem("rp1", tn, "created for replace");
+      Node rp2 = nm->mkSkolem("rp2", tn, "created for replace");
 
-    // y = ""
-    Node cond1 = y.eqNode(nm->mkConst(CVC4::String("")));
-    // rpw = str.++( z, x )
-    Node c1 = rpw.eqNode(nm->mkNode(kind::STRING_CONCAT, z, x));
+      // y = ""
+      Node cond1 = y.eqNode(nm->mkConst(CVC4::String("")));
+      // rpw = str.++( z, x )
+      Node c1 = rpw.eqNode(nm->mkNode(kind::STRING_CONCAT, z, x));
 
-    // contains( x, y )
-    Node cond2 = nm->mkNode(kind::STRING_STRCTN, x, y);
-    // x = str.++( rp1, y, rp2 )
-    Node c21 = x.eqNode(nm->mkNode(kind::STRING_CONCAT, rp1, y, rp2));
-    // rpw = str.++( rp1, z, rp2 )
-    Node c22 = rpw.eqNode(nm->mkNode(kind::STRING_CONCAT, rp1, z, rp2));
-    // ~contains( str.++( rp1, substr( y, 0, len(y)-1 ) ), y )
-    Node c23 =
-        nm->mkNode(kind::STRING_STRCTN,
-                   nm->mkNode(
-                       kind::STRING_CONCAT,
-                       rp1,
-                       nm->mkNode(kind::STRING_SUBSTR,
-                                  y,
-                                  d_zero,
-                                  nm->mkNode(kind::MINUS,
-                                             nm->mkNode(kind::STRING_LENGTH, y),
-                                             d_one))),
-                   y)
-            .negate();
+      // contains( x, y )
+      Node cond2 = nm->mkNode(kind::STRING_STRCTN, x, y);
+      // x = str.++( rp1, y, rp2 )
+      Node c21 = x.eqNode(nm->mkNode(kind::STRING_CONCAT, rp1, y, rp2));
+      // rpw = str.++( rp1, z, rp2 )
+      Node c22 = rpw.eqNode(nm->mkNode(kind::STRING_CONCAT, rp1, z, rp2));
+      // ~contains( str.++( rp1, substr( y, 0, len(y)-1 ) ), y )
+      /* Node c23 =
+          nm->mkNode(kind::STRING_STRCTN,
+                     nm->mkNode(
+                         kind::STRING_CONCAT,
+                         rp1,
+                         nm->mkNode(kind::STRING_SUBSTR,
+                                    y,
+                                    d_zero,
+                                    nm->mkNode(kind::MINUS,
+                                               nm->mkNode(kind::STRING_LENGTH, y),
+                                               d_one))),
+                     y)
+              .negate();*/
+      Node c23 = nm->mkNode(kind::EQUAL, nm->mkNode(kind::STRING_STRIDOF, x, y, d_zero), nm->mkNode(kind::STRING_LENGTH, rp1));
 
-    // assert:
-    //   IF    y=""
-    //   THEN: rpw = str.++( z, x )
-    //   ELIF: contains( x, y )
-    //   THEN: x = str.++( rp1, y, rp2 ) ^
-    //         rpw = str.++( rp1, z, rp2 ) ^
-    //         ~contains( str.++( rp1, substr( y, 0, len(y)-1 ) ), y ),
-    //   ELSE: rpw = x
-    // for fresh rp1, rp2, rpw
-    Node rr = nm->mkNode(kind::ITE,
-                         cond1,
-                         c1,
-                         nm->mkNode(kind::ITE,
-                                    cond2,
-                                    nm->mkNode(kind::AND, c21, c22, c23),
-                                    rpw.eqNode(x)));
+      // assert:
+      //   IF    y=""
+      //   THEN: rpw = str.++( z, x )
+      //   ELIF: contains( x, y )
+      //   THEN: x = str.++( rp1, y, rp2 ) ^
+      //         rpw = str.++( rp1, z, rp2 ) ^
+      //         ~contains( str.++( rp1, substr( y, 0, len(y)-1 ) ), y ),
+      //   ELSE: rpw = x
+      // for fresh rp1, rp2, rpw
+      rr = nm->mkNode(kind::ITE,
+                           cond1,
+                           c1,
+                           nm->mkNode(kind::ITE,
+                                      cond2,
+                                      nm->mkNode(kind::AND, c21, c22, c23),
+                                      rpw.eqNode(x)));
+
+      d_cache[{ x, y }] = { rp1, rp2, rpw };
+    } else {
+      Node rp1 = d_cache[{x, y}][0];
+      Node rp2 = d_cache[{x, y}][1];
+      Node old_rpw = d_cache[{x, y}][2];
+
+      // y = ""
+      Node cond1 = y.eqNode(nm->mkConst(CVC4::String("")));
+      // rpw = str.++( z, x )
+      Node c1 = rpw.eqNode(nm->mkNode(kind::STRING_CONCAT, z, x));
+
+      // contains( x, y )
+      Node cond2 = nm->mkNode(kind::STRING_STRCTN, x, y);
+      // x = str.++( rp1, y, rp2 )
+      Node c21 = x.eqNode(nm->mkNode(kind::STRING_CONCAT, rp1, y, rp2));
+      // rpw = str.++( rp1, z, rp2 )
+      Node c22 = rpw.eqNode(nm->mkNode(kind::STRING_CONCAT, rp1, z, rp2));
+      // ~contains( str.++( rp1, substr( y, 0, len(y)-1 ) ), y )
+      Node c23 =
+          nm->mkNode(kind::STRING_STRCTN,
+                     nm->mkNode(
+                         kind::STRING_CONCAT,
+                         rp1,
+                         nm->mkNode(kind::STRING_SUBSTR,
+                                    y,
+                                    d_zero,
+                                    nm->mkNode(kind::MINUS,
+                                               nm->mkNode(kind::STRING_LENGTH, y),
+                                               d_one))),
+                     y)
+              .negate();
+
+      rr = nm->mkNode(kind::ITE,
+                           cond1,
+                           c1,
+                           nm->mkNode(kind::ITE,
+                                      cond2,
+                                      nm->mkNode(kind::AND, c21, c22, c23),
+                                      rpw.eqNode(x)));
+    }
     new_nodes.push_back( rr );
 
     // Thus, replace( x, y, z ) = rpw.
