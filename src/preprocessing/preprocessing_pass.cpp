@@ -88,6 +88,7 @@ PreprocessingPass::PreprocessingPass(PreprocessingPassContext* preprocContext,
     : d_name(name), d_timer("preprocessing::" + name) {
   d_preprocContext = preprocContext;
   smtStatisticsRegistry()->registerStat(&d_timer);
+  Dump.registerPreprocessingPass(d_name);
 }
 
 PreprocessingPass::~PreprocessingPass() {
