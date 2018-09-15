@@ -75,7 +75,8 @@ PreprocessingPassResult PreprocessingPass::apply(
 
 void PreprocessingPass::dumpAssertions(const char* key,
                                        const AssertionPipeline& assertionList) {
-  if (Dump.isOn("assertions") && Dump.isOn(std::string("assertions::") + key)) {
+  if (Dump.isOn("assertions") && Dump.isOn(std::string("assertions:") + key))
+  {
     // Push the simplified assertions to the dump output stream
     for (const auto& n : assertionList) {
       Dump("assertions") << AssertCommand(Expr(n.toExpr()));
@@ -88,7 +89,6 @@ PreprocessingPass::PreprocessingPass(PreprocessingPassContext* preprocContext,
     : d_name(name), d_timer("preprocessing::" + name) {
   d_preprocContext = preprocContext;
   smtStatisticsRegistry()->registerStat(&d_timer);
-  Dump.registerPreprocessingPass(d_name);
 }
 
 PreprocessingPass::~PreprocessingPass() {
