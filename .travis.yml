@@ -34,6 +34,7 @@ addons:
   - libhamcrest-java
   - openjdk-7-jdk
   - swig3.0
+  - eatmydata
 before_install:
  - eval "${MATRIX_EVAL}"
  # Clang does not play nice with ccache (at least the versions offered by
@@ -69,7 +70,7 @@ script:
    makeAutotools() {
      ./autogen.sh
      ./configure debug --with-lfsc --disable-debug-symbols
-     make -j2 check REGRESSION_LEVEL=0 CVC4_REGRESSION_ARGS='--no-early-exit' || error "AUTOTOOLS BUILD/UNIT/SYSTEM/REGRESSION TEST FAILED"
+     eatmydata -- make -j2 check REGRESSION_LEVEL=0 CVC4_REGRESSION_ARGS='--no-early-exit' || error "AUTOTOOLS BUILD/UNIT/SYSTEM/REGRESSION TEST FAILED"
    }
    #   makeDistcheck() {
    #     make V=1 -j2 distcheck REGRESSION_LEVEL=0 CVC4_REGRESSION_ARGS='--no-early-exit' ||
@@ -77,7 +78,7 @@ script:
    #   }
    makeCheck() {
      cd build
-     make -j2 check ARGS='-LE regress[1-4]' CVC4_REGRESSION_ARGS='--no-early-exit' || error "BUILD/UNIT/SYSTEM/REGRESSION TEST FAILED"
+     eatmydata -- make -j2 check ARGS='-LE regress[1-4]' CVC4_REGRESSION_ARGS='--no-early-exit' || error "BUILD/UNIT/SYSTEM/REGRESSION TEST FAILED"
    }
    makeExamples() {
      cd build
