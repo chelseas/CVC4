@@ -20,9 +20,11 @@
 #include <algorithm>
 
 #include "expr/node_builder.h"
+#include "options/quantifiers_options.h"
 #include "options/strings_options.h"
 #include "smt/logic_exception.h"
 #include "theory/arith/arith_msum.h"
+#include "theory/strings/theory_strings_rewriter_old.h"
 #include "theory/theory.h"
 #include "util/integer.h"
 #include "util/rational.h"
