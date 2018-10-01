@@ -1349,6 +1349,12 @@ Node TheoryStringsRewriter::rewriteMembership(TNode node) {
 }
 
 RewriteResponse TheoryStringsRewriter::postRewrite(TNode node) {
+  if (!options::sygusExtRew())
+  {
+    // call the old rewriter
+    return TheoryStringsRewriterOld::postRewrite(node);
+  }
+
   Trace("strings-postrewrite") << "Strings::postRewrite start " << node << std::endl;
   NodeManager* nm = NodeManager::currentNM();
   Node retNode = node;
@@ -1522,6 +1528,12 @@ bool TheoryStringsRewriter::hasEpsilonNode(TNode node) {
 }
 
 RewriteResponse TheoryStringsRewriter::preRewrite(TNode node) {
+  if (!options::sygusExtRew())
+  {
+    // call the old rewriter
+    return TheoryStringsRewriterOld::preRewrite(node);
+  }
+
   return RewriteResponse(REWRITE_DONE, node);
 }
 

@@ -613,6 +613,8 @@ libcvc4_add_sources(
   theory/strings/theory_strings_preprocess.h
   theory/strings/theory_strings_rewriter.cpp
   theory/strings/theory_strings_rewriter.h
+  theory/strings/theory_strings_rewriter_old.cpp
+  theory/strings/theory_strings_rewriter_old.h
   theory/strings/theory_strings_type_rules.h
   theory/strings/type_enumerator.h
   theory/subs_minimize.cpp
