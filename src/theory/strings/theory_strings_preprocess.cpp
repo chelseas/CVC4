@@ -389,13 +389,13 @@ Node StringsPreprocess::simplify( Node t, std::vector< Node > &new_nodes ) {
 
     // y = ""
     Node cond1 = nm->mkNode(kind::STRING_PREFIX, y, x);
-    cond1 = y.eqNode(nm->mkConst(CVC4::String("")));
+    // cond1 = y.eqNode(nm->mkConst(CVC4::String("")));
     
     // rpw = str.++( z, x )
     Node c1 =  nm->mkNode(kind::AND,
         nm->mkNode(kind::EQUAL, x, nm->mkNode(kind::STRING_CONCAT, y,rp2)),
         nm->mkNode(kind::EQUAL, rpw, nm->mkNode(kind::STRING_CONCAT, z, rp2)));
-    c1 = rpw.eqNode(nm->mkNode(kind::STRING_CONCAT, z, x));
+    //c1 = rpw.eqNode(nm->mkNode(kind::STRING_CONCAT, z, x));
 
     // contains( x, y )
     Node cond2 = nm->mkNode(kind::STRING_STRCTN, x, y);
@@ -433,7 +433,6 @@ Node StringsPreprocess::simplify( Node t, std::vector< Node > &new_nodes ) {
                                              d_one))),
                    y)
             .negate());
-            */
     c23 =
         nm->mkNode(kind::STRING_STRCTN,
                    nm->mkNode(
@@ -447,6 +446,7 @@ Node StringsPreprocess::simplify( Node t, std::vector< Node > &new_nodes ) {
                                              d_one))),
                    y)
             .negate();
+            */
 
     // assert:
     //   IF    y=""
