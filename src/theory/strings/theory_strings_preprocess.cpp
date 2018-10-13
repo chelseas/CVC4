@@ -388,9 +388,14 @@ Node StringsPreprocess::simplify( Node t, std::vector< Node > &new_nodes ) {
     Node rpw = d_sc->mkSkolemCached(t, SkolemCache::SK_PURIFY, "rpw");
 
     // y = ""
-    Node cond1 = y.eqNode(nm->mkConst(CVC4::String("")));
+    Node cond1 = nm->mkNode(kind::STRING_PREFIX, y, x);
+    cond1 = y.eqNode(nm->mkConst(CVC4::String("")));
+    
     // rpw = str.++( z, x )
-    Node c1 = rpw.eqNode(nm->mkNode(kind::STRING_CONCAT, z, x));
+    Node c1 =  nm->mkNode(kind::AND,
+        nm->mkNode(kind::EQUAL, x, nm->mkNode(kind::STRING_CONCAT, y,rp2)),
+        nm->mkNode(kind::EQUAL, rpw, nm->mkNode(kind::STRING_CONCAT, z, rp2)));
+    c1 = rpw.eqNode(nm->mkNode(kind::STRING_CONCAT, z, x));
 
     // contains( x, y )
     Node cond2 = nm->mkNode(kind::STRING_STRCTN, x, y);
@@ -400,6 +405,36 @@ Node StringsPreprocess::simplify( Node t, std::vector< Node > &new_nodes ) {
     Node c22 = rpw.eqNode(nm->mkNode(kind::STRING_CONCAT, rp1, z, rp2));
     // ~contains( str.++( rp1, substr( y, 0, len(y)-1 ) ), y )
     Node c23 =
+      nm->mkNode(kind::AND, nm->mkNode(kind::EQUAL, rp1, nm->mkConst(String(""))).negate(),
+        nm->mkNode(kind::STRING_STRCTN,
+                   nm->mkNode(
+                       kind::STRING_CONCAT,
+                       rp1,
+                       nm->mkNode(kind::STRING_SUBSTR,
+                                  y,
+                                  d_zero,
+                                  nm->mkNode(kind::MINUS,
+                                             nm->mkNode(kind::STRING_LENGTH, y),
+                                             d_one))),
+                   y)
+            .negate());
+    /*
+    Node c23 =
+      nm->mkNode(kind::AND, nm->mkNode(kind::IMPLIES, nm->mkNode(kind::STRING_PREFIX, y, x).negate(), nm->mkNode(kind::EQUAL, rp1, nm->mkConst(String(""))).negate()),
+        nm->mkNode(kind::STRING_STRCTN,
+                   nm->mkNode(
+                       kind::STRING_CONCAT,
+                       rp1,
+                       nm->mkNode(kind::STRING_SUBSTR,
+                                  y,
+                                  d_zero,
+                                  nm->mkNode(kind::MINUS,
+                                             nm->mkNode(kind::STRING_LENGTH, y),
+                                             d_one))),
+                   y)
+            .negate());
+            */
+    c23 =
         nm->mkNode(kind::STRING_STRCTN,
                    nm->mkNode(
                        kind::STRING_CONCAT,
@@ -429,6 +464,33 @@ Node StringsPreprocess::simplify( Node t, std::vector< Node > &new_nodes ) {
                                     cond2,
                                     nm->mkNode(kind::AND, c21, c22, c23),
                                     rpw.eqNode(x)));
+
+    //std::cout << t << std::endl;
+    if (false) //x.getKind() == kind::STRING_STRREPL)
+    {
+      Node xxx = d_sc->mkSkolemCached(
+          x[0], x[1], SkolemCache::SK_FIRST_CTN_PRE, "rfcpre");
+      std::cout << "XXXX" << xxx << std::endl;
+      // len(x3) >= len(x1) - len(y) + 1
+      rr = nm->mkNode(
+          kind::AND,
+          rr,
+          nm->mkNode(
+              kind::GEQ,
+              nm->mkNode(kind::STRING_LENGTH, rp1),
+              nm->mkNode(kind::PLUS,
+                         nm->mkConst(Rational(1)),
+                         nm->mkNode(kind::MINUS,
+                                    nm->mkNode(kind::STRING_LENGTH, xxx),
+                                    nm->mkNode(kind::STRING_LENGTH, y)))),
+          nm->mkNode(kind::LEQ, nm->mkConst(Rational(0)), nm->mkNode(kind::PLUS,
+                         nm->mkConst(Rational(1)),
+                         nm->mkNode(kind::MINUS,
+                                    nm->mkNode(kind::STRING_LENGTH, xxx),
+                                    nm->mkNode(kind::STRING_LENGTH, y)))));
+    }
+    //std::cout << rr << std::endl;
+
     new_nodes.push_back( rr );
 
     // Thus, replace( x, y, z ) = rpw.
