@@ -24,6 +24,16 @@ SkolemCache::SkolemCache() {}
 
 Node SkolemCache::mkSkolemCached(Node a, Node b, SkolemId id, const char* c)
 {
+  NodeManager* nm = NodeManager::currentNM();
+  if (id == SK_FIRST_CTN_PRE)
+  {
+    return nm->mkNode(kind::STRING_FST_OCC_PRE, a, b);
+  }
+  if (id == SK_FIRST_CTN_POST)
+  {
+    return nm->mkNode(kind::STRING_FST_OCC_POST, a, b);
+  }
+
   a = a.isNull() ? a : Rewriter::rewrite(a);
   b = b.isNull() ? b : Rewriter::rewrite(b);
   std::map<SkolemId, Node>::iterator it = d_skolemCache[a][b].find(id);

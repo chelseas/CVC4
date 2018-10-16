@@ -151,6 +151,8 @@ class TheoryStrings : public Theory {
 
   void setMasterEqualityEngine(eq::EqualityEngine* eq) override;
 
+  void finishInit() override;
+
   std::string identify() const override { return std::string("TheoryStrings"); }
 
  public:

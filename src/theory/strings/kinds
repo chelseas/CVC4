@@ -27,6 +27,8 @@ operator STRING_SUFFIX 2 "string suffixof"
 operator STRING_ITOS 1 "integer to string"
 operator STRING_STOI 1 "string to integer (total function)"
 operator STRING_CODE 1 "string to code, returns the code of the first character of the string if it has length one, -1 otherwise"
+operator STRING_FST_OCC_PRE 2 "string prefixof"
+operator STRING_FST_OCC_POST 2 "string suffixof"
 
 sort STRING_TYPE \
     Cardinality::INTEGERS \
@@ -98,6 +100,8 @@ typerule STRING_SUFFIX ::CVC4::theory::strings::StringSuffixOfTypeRule
 typerule STRING_ITOS ::CVC4::theory::strings::StringIntToStrTypeRule
 typerule STRING_STOI ::CVC4::theory::strings::StringStrToIntTypeRule
 typerule STRING_CODE ::CVC4::theory::strings::StringStrToIntTypeRule
+typerule STRING_FST_OCC_PRE ::CVC4::theory::strings::StringFstOccPreTypeRule
+typerule STRING_FST_OCC_POST ::CVC4::theory::strings::StringFstOccPostTypeRule
 
 typerule STRING_IN_REGEXP ::CVC4::theory::strings::StringInRegExpTypeRule
 

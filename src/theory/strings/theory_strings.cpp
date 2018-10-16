@@ -154,6 +154,8 @@ TheoryStrings::TheoryStrings(context::Context* c,
   d_equalityEngine.addFunctionKind(kind::STRING_CONCAT);
   d_equalityEngine.addFunctionKind(kind::STRING_IN_REGEXP);
   d_equalityEngine.addFunctionKind(kind::STRING_CODE);
+  d_equalityEngine.addFunctionKind(kind::STRING_FST_OCC_PRE);
+  d_equalityEngine.addFunctionKind(kind::STRING_FST_OCC_POST);
   if( options::stringLazyPreproc() ){
     d_equalityEngine.addFunctionKind(kind::STRING_STRCTN);
     d_equalityEngine.addFunctionKind(kind::STRING_LEQ);
@@ -259,6 +261,14 @@ Node TheoryStrings::getLength( Node t, std::vector< Node >& exp ) {
 
 void TheoryStrings::setMasterEqualityEngine(eq::EqualityEngine* eq) {
   d_equalityEngine.setMasterEqualityEngine(eq);
+}
+
+void TheoryStrings::finishInit()
+{
+  TheoryModel* tm = d_valuation.getModel();
+  Assert(tm != nullptr);
+  tm->setSemiEvaluatedKind(kind::STRING_FST_OCC_PRE);
+  tm->setSemiEvaluatedKind(kind::STRING_FST_OCC_POST);
 }
 
 void TheoryStrings::addSharedTerm(TNode t) {
