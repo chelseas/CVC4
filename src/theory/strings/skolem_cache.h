@@ -114,6 +114,8 @@ class SkolemCache
  private:
   /** map from node pairs and identifiers to skolems */
   std::map<Node, std::map<Node, std::map<SkolemId, Node> > > d_skolemCache;
+  /** map from node pairs and identifiers to skolems */
+  std::map<SkolemId, Node> d_skolemFnCache;
   /** the set of all skolems we have generated */
   std::unordered_set<Node, NodeHashFunction> d_allSkolems;
 };

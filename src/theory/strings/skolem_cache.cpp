@@ -24,18 +24,48 @@ SkolemCache::SkolemCache() {}
 
 Node SkolemCache::mkSkolemCached(Node a, Node b, SkolemId id, const char* c)
 {
-  if (!a.isNull())
-    a = Rewriter::rewrite(a);
-  if (!b.isNull())
-    b = Rewriter::rewrite(b);
-  std::map<SkolemId, Node>::iterator it = d_skolemCache[a][b].find(id);
-  if (it == d_skolemCache[a][b].end())
+  NodeManager* nm = NodeManager::currentNM();
+  if (id == SK_FIRST_CTN_PRE || id == SK_FIRST_CTN_POST)
   {
-    Node sk = mkSkolem(c);
-    d_skolemCache[a][b][id] = sk;
-    return sk;
+    Node sk;
+    std::map<SkolemId, Node>::iterator it = d_skolemFnCache.find(id);
+    if (it == d_skolemFnCache.end())
+    {
+      std::vector<TypeNode> argTypes;
+      argTypes.push_back(a.getType());
+      if (!b.isNull()) argTypes.push_back(b.getType());
+      sk = nm->mkSkolem(c, nm->mkFunctionType(argTypes, nm->stringType()));
+      d_allSkolems.insert(sk);
+      d_skolemFnCache[id] = sk;
+    }
+    else
+    {
+      sk = it->second;
+    }
+    Node ret;
+    if (b.isNull())
+    {
+      ret = nm->mkNode(kind::APPLY_UF, sk, a);
+    }
+    else
+    {
+      ret = nm->mkNode(kind::APPLY_UF, sk, a, b);
+    }
+    return ret;
   }
-  return it->second;
+  else
+  {
+    if (!a.isNull()) a = Rewriter::rewrite(a);
+    if (!b.isNull()) b = Rewriter::rewrite(b);
+    std::map<SkolemId, Node>::iterator it = d_skolemCache[a][b].find(id);
+    if (it == d_skolemCache[a][b].end())
+    {
+      Node sk = mkSkolem(c);
+      d_skolemCache[a][b][id] = sk;
+      return sk;
+    }
+    return it->second;
+  }
 }
 
 Node SkolemCache::mkSkolemCached(Node a, SkolemId id, const char* c)
