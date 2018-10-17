@@ -489,6 +489,7 @@ bool TheoryStrings::doReduction(int effort, Node n, bool& isCd)
       << "Process reduction for " << n << ", pol = " << pol << std::endl;
   if (k == STRING_STRCTN && pol == 1)
   {
+    NodeManager* nm = NodeManager::currentNM();
     Node x = n[0];
     Node s = n[1];
     // positive contains reduces to a equality
@@ -496,7 +497,9 @@ bool TheoryStrings::doReduction(int effort, Node n, bool& isCd)
         d_sk_cache.mkSkolemCached(x, s, SkolemCache::SK_FIRST_CTN_PRE, "sc1");
     Node sk2 =
         d_sk_cache.mkSkolemCached(x, s, SkolemCache::SK_FIRST_CTN_POST, "sc2");
-    Node eq = Rewriter::rewrite(x.eqNode(mkConcat(sk1, s, sk2)));
+    Node sk1EqPre = sk1.eqNode(nm->mkNode(kind::STRING_FST_OCC_PRE, x, s));
+    Node sk2EqPost = sk2.eqNode(nm->mkNode(kind::STRING_FST_OCC_POST, x, s));
+    Node eq = Rewriter::rewrite(nm->mkNode(AND, x.eqNode(mkConcat(sk1, s, sk2)), sk1EqPre, sk2EqPost));
     std::vector<Node> exp_vec;
     exp_vec.push_back(n);
     sendInference(d_empty_vec, exp_vec, eq, "POS-CTN", true);

@@ -169,8 +169,10 @@ Node StringsPreprocess::simplify( Node t, std::vector< Node > &new_nodes ) {
     //       ~contains( str.++( io2, substr( y, 0, len( y ) - 1) ), y ) ^
     //       skk = n + len( io2 )
     // for fresh io2, io4.
+    Node io2EqPre = io2.eqNode(nm->mkNode(kind::STRING_FST_OCC_PRE, st, y));
+    Node io4EqPost = io4.eqNode(nm->mkNode(kind::STRING_FST_OCC_POST, st, y));
     Node rr = nm->mkNode(ITE, cond1, cc1, nm->mkNode(ITE, cond2, cc2, cc3));
-    new_nodes.push_back( rr );
+    new_nodes.push_back(nm->mkNode(AND, rr, io2EqPre, io4EqPost));
 
     // Thus, indexof( x, y, n ) = skk.
     retNode = skk;
@@ -395,6 +397,9 @@ Node StringsPreprocess::simplify( Node t, std::vector< Node > &new_nodes ) {
                    y)
             .negate();
 
+    Node rp1EqPre = rp1.eqNode(nm->mkNode(kind::STRING_FST_OCC_PRE, x, y));
+    Node rp2EqPost = rp2.eqNode(nm->mkNode(kind::STRING_FST_OCC_POST, x, y));
+
     // assert:
     //   IF    y=""
     //   THEN: rpw = str.++( z, x )
@@ -411,7 +416,7 @@ Node StringsPreprocess::simplify( Node t, std::vector< Node > &new_nodes ) {
                                     cond2,
                                     nm->mkNode(kind::AND, c21, c22, c23),
                                     rpw.eqNode(x)));
-    new_nodes.push_back( rr );
+    new_nodes.push_back( nm->mkNode(AND, rr, rp1EqPre, rp2EqPost) );
 
     // Thus, replace( x, y, z ) = rpw.
     retNode = rpw;
