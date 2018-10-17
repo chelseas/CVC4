@@ -169,8 +169,8 @@ Node StringsPreprocess::simplify( Node t, std::vector< Node > &new_nodes ) {
     //       ~contains( str.++( io2, substr( y, 0, len( y ) - 1) ), y ) ^
     //       skk = n + len( io2 )
     // for fresh io2, io4.
-    Node io2EqPre = io2.eqNode(nm->mkNode(kind::STRING_FST_OCC_PRE, st, y));
-    Node io4EqPost = io4.eqNode(nm->mkNode(kind::STRING_FST_OCC_POST, st, y));
+    Node io2EqPre = io2.eqNode(nm->mkNode(kind::STRING_FST_OCC_PRE, Rewriter::rewrite(st), Rewriter::rewrite(y)));
+    Node io4EqPost = io4.eqNode(nm->mkNode(kind::STRING_FST_OCC_POST, Rewriter::rewrite(st), Rewriter::rewrite(y)));
     Node rr = nm->mkNode(ITE, cond1, cc1, nm->mkNode(ITE, cond2, cc2, cc3));
     new_nodes.push_back(nm->mkNode(AND, rr, io2EqPre, io4EqPost));
 
@@ -397,8 +397,8 @@ Node StringsPreprocess::simplify( Node t, std::vector< Node > &new_nodes ) {
                    y)
             .negate();
 
-    Node rp1EqPre = rp1.eqNode(nm->mkNode(kind::STRING_FST_OCC_PRE, x, y));
-    Node rp2EqPost = rp2.eqNode(nm->mkNode(kind::STRING_FST_OCC_POST, x, y));
+    Node rp1EqPre = rp1.eqNode(nm->mkNode(kind::STRING_FST_OCC_PRE, Rewriter::rewrite(x), Rewriter::rewrite(y)));
+    Node rp2EqPost = rp2.eqNode(nm->mkNode(kind::STRING_FST_OCC_POST, Rewriter::rewrite(x), Rewriter::rewrite(y)));
 
     // assert:
     //   IF    y=""
