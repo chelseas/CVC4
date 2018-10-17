@@ -2226,14 +2226,14 @@ Node TheoryStringsRewriter::rewriteContains( Node node ) {
       return returnRewrite(node, ret, "ctn-repl-to-ctn-disj");
     }
   }
-  /*else if (node[0].getKind() == kind::STRING_FST_OCC_PRE)
+  else if (node[0].getKind() == kind::STRING_FST_OCC_PRE)
   {
     if (node[0][1] == node[1])
     {
       Node ret = nm->mkConst(false);
       return returnRewrite(node, ret, "ctn-fst-occ-pre-false");
     }
-  }*/
+  }
 
   if (node[1].getKind() == kind::STRING_STRREPL)
   {
