@@ -1479,29 +1479,54 @@ RewriteResponse TheoryStringsRewriter::postRewrite(TNode node) {
   }
   else if (nk == kind::STRING_FST_OCC_PRE)
   {
-    if (node[0].isConst() && node[1].isConst())
+    Node empty = nm->mkConst(String(""));
+    if (node[0] == node[1])
     {
-      String x = node[0].getConst<String>();
-      String y = node[1].getConst<String>();
-
-      size_t i = x.find(y);
-      if (i != std::string::npos)
+      retNode = empty;
+    }
+    else if (node[1].isConst())
+    {
+      if (node[1] == empty)
       {
-        retNode = nm->mkConst(x.substr(0, i));
+        retNode = empty;
+      }
+      else if (node[0].isConst())
+      {
+        String x = node[0].getConst<String>();
+        String y = node[1].getConst<String>();
+
+        size_t i = x.find(y);
+        if (i != std::string::npos)
+        {
+          retNode = nm->mkConst(x.substr(0, i));
+        }
       }
     }
   }
   else if (nk == kind::STRING_FST_OCC_POST)
   {
-    if (node[0].isConst() && node[1].isConst())
+    Node empty = nm->mkConst(String(""));
+    if (node[0] == node[1])
     {
-      String x = node[0].getConst<String>();
-      String y = node[1].getConst<String>();
-
-      size_t i = x.find(y);
-      if (i != std::string::npos)
+      retNode = empty;
+    }
+    else if (node[1].isConst())
+    {
+      if (node[1] == empty)
       {
-        retNode = nm->mkConst(x.substr(i + y.size(), x.size() - i - y.size()));
+        retNode = node[0];
+      }
+      else if (node[0].isConst())
+      {
+        String x = node[0].getConst<String>();
+        String y = node[1].getConst<String>();
+
+        size_t i = x.find(y);
+        if (i != std::string::npos)
+        {
+          retNode =
+              nm->mkConst(x.substr(i + y.size(), x.size() - i - y.size()));
+        }
       }
     }
   }
@@ -2199,6 +2224,14 @@ Node TheoryStringsRewriter::rewriteContains( Node node ) {
                             nm->mkNode(STRING_STRCTN, node[0][0], node[0][1]),
                             nm->mkNode(STRING_STRCTN, node[0][0], node[0][2]));
       return returnRewrite(node, ret, "ctn-repl-to-ctn-disj");
+    }
+  }
+  else if (node[0].getKind() == kind::STRING_FST_OCC_PRE)
+  {
+    if (node[0][1] == node[1])
+    {
+      Node ret = nm->mkConst(false);
+      return returnRewrite(node, ret, "ctn-fst-occ-pre-false");
     }
   }
 
