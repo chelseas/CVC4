@@ -2681,7 +2681,7 @@ int ExtendedRewriter::bitVectorSubsume(Node a, Node b, bool strict, bool tryNot)
 
   //--------------recurse extract
   if (ak == BITVECTOR_EXTRACT && bk == BITVECTOR_EXTRACT
-      && a.getOperator() == b.getOperator())
+      && a.getOperator() == b.getOperator() && a[0].getType()==b[0].getType())
   {
     return bitVectorSubsume(a[0], b[0], strict);
   }
@@ -2735,7 +2735,7 @@ int ExtendedRewriter::bitVectorSubsume(Node a, Node b, bool strict, bool tryNot)
       if (r2 > curr_ret)
       {
         curr_ret = r2 > r1 ? r1 : r2;
-        if (curr_ret = max_ret)
+        if (curr_ret == max_ret)
         {
           return max_ret;
         }
