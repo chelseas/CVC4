@@ -31,6 +31,33 @@ namespace CVC4 {
 namespace theory {
 namespace quantifiers {
 
+void TypeNodeIdTrie::add(Node v, std::vector<TypeNode>& types)
+{
+  TypeNodeIdTrie* tnt = this;
+  for (unsigned i = 0, size = types.size(); i < size; i++)
+  {
+    tnt = &tnt->d_children[types[i]];
+  }
+  tnt->d_data.push_back(v);
+}
+
+void TypeNodeIdTrie::assignIds(std::map<Node, unsigned>& assign,
+                               unsigned& idCount)
+{
+  if (!d_data.empty())
+  {
+    for (const Node& v : d_data)
+    {
+      assign[v] = idCount;
+    }
+    idCount++;
+  }
+  for (std::pair<const TypeNode, TypeNodeIdTrie>& c : d_children)
+  {
+    c.second.assignIds(assign, idCount);
+  }
+}
+
 TermDbSygus::TermDbSygus(context::Context* c, QuantifiersEngine* qe)
     : d_quantEngine(qe),
       d_syexp(new SygusExplain(this)),
@@ -371,7 +398,9 @@ void TermDbSygus::registerSygusType( TypeNode tn ) {
             Trace("sygus-db") << ", kind = " << sk;
             d_kinds[tn][sk] = i;
             d_arg_kind[tn][i] = sk;
-          }else if( sop.isConst() ){
+          }
+          else if (sop.isConst() && dt[i].getNumArgs() == 0)
+          {
             Trace("sygus-db") << ", constant";
             d_consts[tn][n] = i;
             d_arg_const[tn][i] = n;
@@ -422,51 +451,12 @@ void TermDbSygus::registerSygusType( TypeNode tn ) {
   }
 }
 
-/** A trie indexed by types that assigns unique identifiers to nodes. */
-class TypeNodeIdTrie
-{
- public:
-  /** children of this node */
-  std::map<TypeNode, TypeNodeIdTrie> d_children;
-  /** the data stored at this node */
-  std::vector<Node> d_data;
-  /** add v to this trie, indexed by types */
-  void add(Node v, std::vector<TypeNode>& types)
-  {
-    TypeNodeIdTrie* tnt = this;
-    for (unsigned i = 0, size = types.size(); i < size; i++)
-    {
-      tnt = &tnt->d_children[types[i]];
-    }
-    tnt->d_data.push_back(v);
-  }
-  /**
-   * Assign each node in this trie an identifier such that
-   * assign[v1] = assign[v2] iff v1 and v2 are indexed by the same values.
-   */
-  void assignIds(std::map<Node, unsigned>& assign, unsigned& idCount)
-  {
-    if (!d_data.empty())
-    {
-      for (const Node& v : d_data)
-      {
-        assign[v] = idCount;
-      }
-      idCount++;
-    }
-    for (std::pair<const TypeNode, TypeNodeIdTrie>& c : d_children)
-    {
-      c.second.assignIds(assign, idCount);
-    }
-  }
-};
-
 void TermDbSygus::registerEnumerator(Node e,
                                      Node f,
                                      SynthConjecture* conj,
                                      bool mkActiveGuard,
                                      bool useSymbolicCons,
-                                     bool isVarAgnostic)
+                                     bool isActiveGen)
 {
   if (d_enum_to_conjecture.find(e) != d_enum_to_conjecture.end())
   {
@@ -564,6 +554,11 @@ void TermDbSygus::registerEnumerator(Node e,
   }
   Trace("sygus-db") << "  ...finished" << std::endl;
 
+  // Currently, actively-generated enumerators are either basic or variable
+  // agnostic.
+  bool isVarAgnostic =
+      isActiveGen
+      && options::sygusActiveGenMode() == SYGUS_ACTIVE_GEN_VAR_AGNOSTIC;
   d_enum_var_agnostic[e] = isVarAgnostic;
   if (isVarAgnostic)
   {
@@ -589,7 +584,29 @@ void TermDbSygus::registerEnumerator(Node e,
         d_var_subclass_list[et][sc].push_back(v);
       }
     }
+    // If no subclass has more than one variable, do not use variable agnostic
+    // enumeration
+    bool useVarAgnostic = false;
+    for (std::pair<const unsigned, std::vector<Node> >& p :
+         d_var_subclass_list[et])
+    {
+      if (p.second.size() > 1)
+      {
+        useVarAgnostic = true;
+      }
+    }
+    if (!useVarAgnostic)
+    {
+      Trace("sygus-db")
+          << "...disabling variable agnostic for " << e
+          << " since it has no subclass with more than one variable."
+          << std::endl;
+      d_enum_var_agnostic[e] = false;
+      isActiveGen = false;
+    }
   }
+  d_enum_active_gen[e] = isActiveGen;
+  d_enum_basic[e] = isActiveGen && !isVarAgnostic;
 }
 
 bool TermDbSygus::isEnumerator(Node e) const
@@ -646,13 +663,23 @@ bool TermDbSygus::isVariableAgnosticEnumerator(Node e) const
   return false;
 }
 
+bool TermDbSygus::isBasicEnumerator(Node e) const
+{
+  std::map<Node, bool>::const_iterator itus = d_enum_basic.find(e);
+  if (itus != d_enum_basic.end())
+  {
+    return itus->second;
+  }
+  return false;
+}
+
 bool TermDbSygus::isPassiveEnumerator(Node e) const
 {
-  if (isVariableAgnosticEnumerator(e))
+  std::map<Node, bool>::const_iterator itus = d_enum_active_gen.find(e);
+  if (itus != d_enum_active_gen.end())
   {
-    return false;
+    return !itus->second;
   }
-  // other criteria go here
   return true;
 }
 
