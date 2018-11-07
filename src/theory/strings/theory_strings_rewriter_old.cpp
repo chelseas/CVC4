@@ -1211,6 +1211,10 @@ RewriteResponse TheoryStringsRewriterOld::postRewrite(TNode node) {
   } else if(node.getKind() == kind::STRING_IN_REGEXP) {
     retNode = rewriteMembership(node);
   }
+  else if (node.getKind() == STRING_CODE)
+  {
+    retNode = rewriteStringCode(node);
+  }
 
   Trace("strings-postrewrite") << "Strings::postRewrite returning " << retNode << std::endl;
   if( orig!=retNode ){
@@ -1395,6 +1399,29 @@ RewriteResponse TheoryStringsRewriterOld::preRewrite(TNode node) {
   return RewriteResponse(orig==retNode ? REWRITE_DONE : REWRITE_AGAIN_FULL, retNode);
 }
 
+Node TheoryStringsRewriterOld::rewriteStringCode(Node n)
+{
+  Assert(n.getKind() == kind::STRING_CODE);
+  if (n[0].isConst())
+  {
+    CVC4::String s = n[0].getConst<String>();
+    Node ret;
+    if (s.size() == 1)
+    {
+      std::vector<unsigned> vec = s.getVec();
+      Assert(vec.size() == 1);
+      ret = NodeManager::currentNM()->mkConst(
+          Rational(CVC4::String::convertUnsignedIntToCode(vec[0])));
+    }
+    else
+    {
+      ret = NodeManager::currentNM()->mkConst(Rational(-1));
+    }
+    return ret;
+  }
+
+  return n;
+}
 
 Node TheoryStringsRewriterOld::rewriteContains( Node node ) {
   if( node[0] == node[1] ){

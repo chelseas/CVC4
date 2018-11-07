@@ -54,6 +54,8 @@ public:
   static inline void init() {}
   static inline void shutdown() {}
 
+  static Node rewriteStringCode(Node node);
+
   static Node rewriteContains( Node n );
   static Node rewriteIndexof( Node n );
   static Node rewriteReplace( Node n );
