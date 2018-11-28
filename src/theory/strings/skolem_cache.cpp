@@ -14,6 +14,7 @@
 
 #include "theory/strings/skolem_cache.h"
 
+#include "options/strings_options.h"
 #include "theory/rewriter.h"
 #include "theory/strings/theory_strings_rewriter.h"
 #include "util/rational.h"
@@ -42,6 +43,13 @@ Node SkolemCache::mkSkolemCached(Node a, SkolemId id, const char* c)
 Node SkolemCache::mkTypedSkolemCached(
     TypeNode tn, Node a, Node b, SkolemId id, const char* c)
 {
+  if (!options::stringsCacheSkolems())
+  {
+    Node n = NodeManager::currentNM()->mkSkolem(c, tn, "string skolem");
+    d_allSkolems.insert(n);
+    return n;
+  }
+
   a = a.isNull() ? a : Rewriter::rewrite(a);
   b = b.isNull() ? b : Rewriter::rewrite(b);
 
@@ -87,6 +95,11 @@ bool SkolemCache::isSkolem(Node n) const
 std::tuple<SkolemCache::SkolemId, Node, Node>
 SkolemCache::normalizeStringSkolem(SkolemId id, Node a, Node b)
 {
+  if (!options::stringsNormalizeSkolems())
+  {
+    return std::make_tuple(id, a, b);
+  }
+
   Trace("skolem-cache") << "normalizeStringSkolem start: (" << id << ", " << a
                         << ", " << b << ")" << std::endl;
 

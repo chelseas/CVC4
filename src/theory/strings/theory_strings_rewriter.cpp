@@ -4010,6 +4010,10 @@ bool TheoryStringsRewriter::checkEntailArith(Node a, bool strict)
     return a.getConst<Rational>().sgn() >= (strict ? 1 : 0);
   }
 
+  if (!options::stringsRewriterEntailChecks()) {
+    return false;
+  }
+
   Node ar =
       strict
           ? NodeManager::currentNM()->mkNode(
@@ -4659,7 +4663,7 @@ Node TheoryStringsRewriter::getConstantArithBound(Node a, bool isLower)
       ret = NodeManager::currentNM()->mkConst(Rational(0));
     }
   }
-  else if (a.getKind() == kind::PLUS || a.getKind() == kind::MULT)
+  else if (options::stringsRewriterEntailChecks() && (a.getKind() == kind::PLUS || a.getKind() == kind::MULT))
   {
     std::vector<Node> children;
     bool success = true;

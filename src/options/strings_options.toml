@@ -224,3 +224,30 @@ header = "options/strings_options.h"
   default    = "true"
   read_only  = true
   help       = "do flat form inferences"
+
+[[option]]
+  name       = "stringsCacheSkolems"
+  category   = "expert"
+  long       = "strings-cache-skolems"
+  type       = "bool"
+  default    = "true"
+  read_only  = true
+  help       = "Cache skolems in string reductions"
+
+[[option]]
+  name       = "stringsNormalizeSkolems"
+  category   = "expert"
+  long       = "strings-normalize-skolems"
+  type       = "bool"
+  default    = "true"
+  read_only  = true
+  help       = "Normalize string skolems before looking them up in the cache"
+
+[[option]]
+  name       = "stringsRewriterEntailChecks"
+  category   = "expert"
+  long       = "strings-rewriter-entail-checks"
+  type       = "bool"
+  default    = "true"
+  read_only  = true
+  help       = "Enable the entailment checks in the strings rewriter"
