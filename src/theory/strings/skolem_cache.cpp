@@ -18,6 +18,8 @@
 #include "theory/strings/theory_strings_rewriter.h"
 #include "util/rational.h"
 
+using namespace CVC4::kind;
+
 namespace CVC4 {
 namespace theory {
 namespace strings {
@@ -89,6 +91,18 @@ SkolemCache::normalizeStringSkolem(SkolemId id, Node a, Node b)
 {
   Trace("skolem-cache") << "normalizeStringSkolem start: (" << id << ", " << a
                         << ", " << b << ")" << std::endl;
+
+  NodeManager* nm = NodeManager::currentNM();
+
+  if (id == SK_FIRST_CTN_POST)
+  {
+    // SK_FIRST_CTN_POST(x, y) --->
+    //   SK_SUFFIX_REM(x, (+ (str.len SK_FIRST_CTN_PRE(x, y)) (str.len y)))
+    id = SK_SUFFIX_REM;
+    Node pre = mkSkolemCached(a, b, SK_FIRST_CTN_PRE, "pre");
+    b = Rewriter::rewrite(nm->mkNode(
+        PLUS, nm->mkNode(STRING_LENGTH, pre), nm->mkNode(STRING_LENGTH, b)));
+  }
 
   // SK_PURIFY(str.substr x 0 (str.indexof x y 0)) ---> SK_FIRST_CTN_PRE(x, y)
   if (id == SK_PURIFY && a.getKind() == kind::STRING_SUBSTR)
