@@ -94,6 +94,12 @@ SkolemCache::normalizeStringSkolem(SkolemId id, Node a, Node b)
 
   NodeManager* nm = NodeManager::currentNM();
 
+  if (id == SK_FIRST_CTN_POST) {
+    id = SK_SUFFIX_REM;
+    Node pre = mkSkolemCached(a, b, SK_FIRST_CTN_PRE, "pre");
+    b = Rewriter::rewrite(nm->mkNode(PLUS, nm->mkNode(STRING_LENGTH, pre), nm->mkNode(STRING_LENGTH, b)));
+  }
+
   if (id == SK_PURIFY && a.getKind() == kind::STRING_SUBSTR)
   {
     Node s = a[0];
