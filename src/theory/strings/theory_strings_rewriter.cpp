@@ -593,6 +593,51 @@ Node TheoryStringsRewriter::rewriteStrEqualityExt(Node node)
     }
   }
 
+  // ------- rewrites for (= (str.substr _ _ _) z)
+  for (size_t i = 0; i < 2; i++)
+  {
+    if (node[i].getKind() == STRING_SUBSTR)
+    {
+      Node substr = node[i];
+      Node z = node[1 - i];
+
+      Node zero = nm->mkConst(Rational(0));
+      if (substr[1] == zero && substr[2].getKind() == STRING_STRIDOF)
+      {
+        Node y = substr[2][1];
+        Node zCtnY = Rewriter::rewrite(nm->mkNode(STRING_STRCTN, z, y));
+        if (zCtnY.isConst() && zCtnY.getConst<bool>())
+        {
+          // (= (str.substr x 0 (str.indexof x y 0)) z) ---> false
+          // if z != ""
+          if (checkEntailNonEmpty(z))
+          {
+            Node ret = nm->mkConst(false);
+            return returnRewrite(node, ret, "str-eq-substr-idof-to-false");
+          }
+        }
+        else if (y.isConst() && z.isConst())
+        {
+          String yStr = y.getConst<String>();
+          String zStr = z.getConst<String>();
+
+          // Otherwise (str.contains z y) would rewrite to true above
+          Assert(zStr.find(yStr, 0) == std::string::npos);
+
+          // (= (str.substr x 0 (str.indexof x y 0)) z) ---> (str.prefixof
+          // (str.++ z y) x) if y and z are constants such that no suffix of z
+          // is a prefix of y
+          if (zStr.size() != 0 && zStr.overlap(yStr) == 0)
+          {
+            Node ret = nm->mkNode(
+                STRING_PREFIX, nm->mkNode(STRING_CONCAT, z, y), substr[0]);
+            return returnRewrite(node, ret, "str-eq-substr-idof-to-prefix");
+          }
+        }
+      }
+    }
+  }
+
   // Try to rewrite (= x y) into a conjunction of equalities based on length
   // entailment.
   //
