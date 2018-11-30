@@ -96,6 +96,16 @@ SkolemCache::normalizeStringSkolem(SkolemId id, Node a, Node b)
 
   if (id == SK_FIRST_CTN_POST)
   {
+    // SK_FIRST_CTN_PRE((str.substr x 0 n), y) ---> SK_FIRST_CTN_PRE(x, y)
+    while (
+        a.getKind() == kind::STRING_SUBSTR
+        && TheoryStringsRewriter::checkEntailArith(
+               nm->mkNode(PLUS, a[1], a[2]), nm->mkNode(STRING_LENGTH, a[0])))
+    {
+      std::cout << a << " ---> " << a[0] << std::endl;
+      a = a[0];
+    }
+
     // SK_FIRST_CTN_POST(x, y) --->
     //   SK_SUFFIX_REM(x, (+ (str.len SK_FIRST_CTN_PRE(x, y)) (str.len y)))
     id = SK_SUFFIX_REM;
