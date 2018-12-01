@@ -15,6 +15,7 @@
 #include "theory/strings/skolem_cache.h"
 
 #include "theory/rewriter.h"
+#include "theory/strings/theory_strings.h"
 #include "theory/strings/theory_strings_rewriter.h"
 #include "util/rational.h"
 
@@ -24,9 +25,10 @@ namespace CVC4 {
 namespace theory {
 namespace strings {
 
-SkolemCache::SkolemCache()
+SkolemCache::SkolemCache(TheoryStrings* ts)
 {
   NodeManager* nm = NodeManager::currentNM();
+  d_ts = ts;
   d_strType = nm->stringType();
   d_zero = nm->mkConst(Rational(0));
 }
@@ -57,6 +59,19 @@ Node SkolemCache::mkTypedSkolemCached(
   {
     Node sk = mkTypedSkolem(tn, c);
     d_skolemCache[a][b][id] = sk;
+
+    if (id == SK_FIRST_CTN_POST && a.getKind() == STRING_SUBSTR) {
+      NodeManager* nm = NodeManager::currentNM();
+      Node aLen = nm->mkNode(STRING_LENGTH, a[0]);
+      Node sum = nm->mkNode(PLUS, a[1], a[2]);
+
+      if (TheoryStringsRewriter::checkEntailArith(sum, aLen))  {
+        Node skLen = nm->mkNode(STRING_LENGTH, sk);
+        Node sk2Len = nm->mkNode(STRING_LENGTH, mkSkolemCached(a[0], b, SK_FIRST_CTN_POST, "foo"));
+        d_ts->sendLemma(nm->mkConst(true), nm->mkNode(GEQ, sk2Len, skLen), "foo");
+      }
+    }
+
     return sk;
   }
   return it->second;
@@ -94,18 +109,9 @@ SkolemCache::normalizeStringSkolem(SkolemId id, Node a, Node b)
 
   NodeManager* nm = NodeManager::currentNM();
 
+  /*
   if (id == SK_FIRST_CTN_POST)
   {
-    // SK_FIRST_CTN_PRE((str.substr x 0 n), y) ---> SK_FIRST_CTN_PRE(x, y)
-    while (
-        a.getKind() == kind::STRING_SUBSTR
-        && TheoryStringsRewriter::checkEntailArith(
-               nm->mkNode(PLUS, a[1], a[2]), nm->mkNode(STRING_LENGTH, a[0])))
-    {
-      std::cout << a << " ---> " << a[0] << std::endl;
-      a = a[0];
-    }
-
     // SK_FIRST_CTN_POST(x, y) --->
     //   SK_SUFFIX_REM(x, (+ (str.len SK_FIRST_CTN_PRE(x, y)) (str.len y)))
     id = SK_SUFFIX_REM;
@@ -113,6 +119,7 @@ SkolemCache::normalizeStringSkolem(SkolemId id, Node a, Node b)
     b = Rewriter::rewrite(nm->mkNode(
         PLUS, nm->mkNode(STRING_LENGTH, pre), nm->mkNode(STRING_LENGTH, b)));
   }
+  */
 
   // SK_PURIFY(str.substr x 0 (str.indexof x y 0)) ---> SK_FIRST_CTN_PRE(x, y)
   if (id == SK_PURIFY && a.getKind() == kind::STRING_SUBSTR)
