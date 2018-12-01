@@ -1670,6 +1670,22 @@ Node TheoryStringsRewriter::rewriteSubstr(Node node)
       Node ret = nm->mkConst(::CVC4::String(""));
       return returnRewrite(node, ret, "ss-start-geq-len");
     }
+
+    if (node[0][2].getKind() == STRING_STRIDOF)
+    {
+      if (checkEntailArith(node[1], node[0][2][2], true))
+      {
+        Node nidof =
+            nm->mkNode(STRING_STRIDOF, node[0][2][0], node[0][2][1], node[1]);
+        Node nlen = node[2].substitute(TNode(node[0][2]), TNode(nidof));
+        Node ret =
+            nm->mkNode(STRING_SUBSTR,
+                       nm->mkNode(STRING_SUBSTR, node[0][0], node[0][1], nidof),
+                       node[1],
+                       nlen);
+        return returnRewrite(node, ret, "ss-inc-idof-start-idx");
+      }
+    }
   }
   else if (node[0].getKind() == STRING_STRREPL)
   {
