@@ -60,6 +60,7 @@ Node SkolemCache::mkTypedSkolemCached(
     Node sk = mkTypedSkolem(tn, c);
     d_skolemCache[a][b][id] = sk;
 
+    /*
     if (id == SK_FIRST_CTN_POST && a.getKind() == STRING_SUBSTR) {
       NodeManager* nm = NodeManager::currentNM();
       Node aLen = nm->mkNode(STRING_LENGTH, a[0]);
@@ -67,10 +68,12 @@ Node SkolemCache::mkTypedSkolemCached(
 
       if (TheoryStringsRewriter::checkEntailArith(sum, aLen))  {
         Node skLen = nm->mkNode(STRING_LENGTH, sk);
-        Node sk2Len = nm->mkNode(STRING_LENGTH, mkSkolemCached(a[0], b, SK_FIRST_CTN_POST, "foo"));
-        d_ts->sendLemma(nm->mkConst(true), nm->mkNode(GEQ, sk2Len, skLen), "foo");
+        Node sk2Len = nm->mkNode(STRING_LENGTH, mkSkolemCached(a[0], b,
+    SK_FIRST_CTN_POST, "foo")); d_ts->sendLemma(nm->mkConst(true),
+    nm->mkNode(GEQ, sk2Len, skLen), "foo");
       }
     }
+    */
 
     return sk;
   }
@@ -109,7 +112,6 @@ SkolemCache::normalizeStringSkolem(SkolemId id, Node a, Node b)
 
   NodeManager* nm = NodeManager::currentNM();
 
-  /*
   if (id == SK_FIRST_CTN_POST)
   {
     // SK_FIRST_CTN_POST(x, y) --->
@@ -119,7 +121,13 @@ SkolemCache::normalizeStringSkolem(SkolemId id, Node a, Node b)
     b = Rewriter::rewrite(nm->mkNode(
         PLUS, nm->mkNode(STRING_LENGTH, pre), nm->mkNode(STRING_LENGTH, b)));
   }
-  */
+
+  if (id == SK_PREFIX)
+  {
+    id = SK_PURIFY;
+    a = nm->mkNode(STRING_SUBSTR, a, nm->mkConst(Rational(0)), b);
+    b = Node::null();
+  }
 
   // SK_PURIFY(str.substr x 0 (str.indexof x y 0)) ---> SK_FIRST_CTN_PRE(x, y)
   if (id == SK_PURIFY && a.getKind() == kind::STRING_SUBSTR)
@@ -135,6 +143,13 @@ SkolemCache::normalizeStringSkolem(SkolemId id, Node a, Node b)
         a = m[0];
         b = m[1];
       }
+    }
+    else if (TheoryStringsRewriter::checkEntailArith(
+                 nm->mkNode(PLUS, n, m), nm->mkNode(STRING_LENGTH, s)))
+    {
+      id = SK_SUFFIX_REM;
+      a = s;
+      b = n;
     }
   }
 
