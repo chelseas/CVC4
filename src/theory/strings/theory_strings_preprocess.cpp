@@ -523,7 +523,7 @@ Node StringsPreprocess::simplify( Node t, std::vector< Node > &new_nodes ) {
       Node udx = nm->mkNode(APPLY_UF, ud, x);
       Node usx = nm->mkNode(APPLY_UF, us, x);
       Node usx1 = nm->mkNode(APPLY_UF, us, nm->mkNode(PLUS, x, d_one));
-      Node eqs = usx1.eqNode(nm->mkNode(STRING_CONCAT, udx, usx));
+      Node eqs = usx1.eqNode(nm->mkNode(STRING_CONCAT, usx, udx));
       body =
           nm->mkNode(OR,
                      g.negate(),
