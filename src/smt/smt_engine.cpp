@@ -581,49 +581,67 @@ class SmtEnginePrivate : public NodeManagerListener {
     d_listenerRegistrations->add(d_resourceManager->registerHardListener(
         new HardResourceOutListener(d_smt)));
 
-    Options& nodeManagerOptions = NodeManager::currentNM()->getOptions();
-    d_listenerRegistrations->add(
-        nodeManagerOptions.registerForceLogicListener(
-            new SetLogicListener(d_smt), true));
+    try
+    {
+      Options& nodeManagerOptions = NodeManager::currentNM()->getOptions();
+      d_listenerRegistrations->add(
+          nodeManagerOptions.registerForceLogicListener(
+              new SetLogicListener(d_smt), true));
 
-    // Multiple options reuse BeforeSearchListener so registration requires an
-    // extra bit of care.
-    // We can safely not call notify on this before search listener at
-    // registration time. This d_smt cannot be beforeSearch at construction
-    // time. Therefore the BeforeSearchListener is a no-op. Therefore it does
-    // not have to be called.
-    d_listenerRegistrations->add(
-        nodeManagerOptions.registerBeforeSearchListener(
-            new BeforeSearchListener(d_smt)));
+      // Multiple options reuse BeforeSearchListener so registration requires an
+      // extra bit of care.
+      // We can safely not call notify on this before search listener at
+      // registration time. This d_smt cannot be beforeSearch at construction
+      // time. Therefore the BeforeSearchListener is a no-op. Therefore it does
+      // not have to be called.
+      d_listenerRegistrations->add(
+          nodeManagerOptions.registerBeforeSearchListener(
+              new BeforeSearchListener(d_smt)));
 
-    // These do need registration calls.
-    d_listenerRegistrations->add(
-        nodeManagerOptions.registerSetDefaultExprDepthListener(
-            new SetDefaultExprDepthListener(), true));
-    d_listenerRegistrations->add(
-        nodeManagerOptions.registerSetDefaultExprDagListener(
-            new SetDefaultExprDagListener(), true));
-    d_listenerRegistrations->add(
-        nodeManagerOptions.registerSetPrintExprTypesListener(
-            new SetPrintExprTypesListener(), true));
-    d_listenerRegistrations->add(
-        nodeManagerOptions.registerSetDumpModeListener(
-            new DumpModeListener(), true));
-    d_listenerRegistrations->add(
-        nodeManagerOptions.registerSetPrintSuccessListener(
-            new PrintSuccessListener(), true));
-    d_listenerRegistrations->add(
-        nodeManagerOptions.registerSetRegularOutputChannelListener(
-            new SetToDefaultSourceListener(&d_managedRegularChannel), true));
-    d_listenerRegistrations->add(
-        nodeManagerOptions.registerSetDiagnosticOutputChannelListener(
-            new SetToDefaultSourceListener(&d_managedDiagnosticChannel), true));
-    d_listenerRegistrations->add(
-        nodeManagerOptions.registerDumpToFileNameListener(
-            new SetToDefaultSourceListener(&d_managedDumpChannel), true));
-    d_listenerRegistrations->add(
-        nodeManagerOptions.registerSetReplayLogFilename(
-            new SetToDefaultSourceListener(&d_managedReplayLog), true));
+      // These do need registration calls.
+      d_listenerRegistrations->add(
+          nodeManagerOptions.registerSetDefaultExprDepthListener(
+              new SetDefaultExprDepthListener(), true));
+      d_listenerRegistrations->add(
+          nodeManagerOptions.registerSetDefaultExprDagListener(
+              new SetDefaultExprDagListener(), true));
+      d_listenerRegistrations->add(
+          nodeManagerOptions.registerSetPrintExprTypesListener(
+              new SetPrintExprTypesListener(), true));
+      d_listenerRegistrations->add(
+          nodeManagerOptions.registerSetDumpModeListener(new DumpModeListener(),
+                                                         true));
+      d_listenerRegistrations->add(
+          nodeManagerOptions.registerSetPrintSuccessListener(
+              new PrintSuccessListener(), true));
+      d_listenerRegistrations->add(
+          nodeManagerOptions.registerSetRegularOutputChannelListener(
+              new SetToDefaultSourceListener(&d_managedRegularChannel), true));
+      d_listenerRegistrations->add(
+          nodeManagerOptions.registerSetDiagnosticOutputChannelListener(
+              new SetToDefaultSourceListener(&d_managedDiagnosticChannel),
+              true));
+      d_listenerRegistrations->add(
+          nodeManagerOptions.registerDumpToFileNameListener(
+              new SetToDefaultSourceListener(&d_managedDumpChannel), true));
+      d_listenerRegistrations->add(
+          nodeManagerOptions.registerSetReplayLogFilename(
+              new SetToDefaultSourceListener(&d_managedReplayLog), true));
+    }
+    catch (OptionException& e)
+    {
+      // Registering the option listeners can lead to OptionExceptions, e.g.
+      // when the user chooses a dump tag that does not exist. In that case, we
+      // have to make sure that we delete existing listener registrations and
+      // that we unsubscribe from NodeManager events. Otherwise we will have
+      // errors in the deconstructors of the NodeManager (because the
+      // NodeManager tries to notify an SmtEnginePrivate that does not exist)
+      // and the ListenerCollection (because not all registrations have been
+      // removed before calling the deconstructor).
+      delete d_listenerRegistrations;
+      d_smt.d_nodeManager->unsubscribeEvents(this);
+      throw OptionException(e.getRawMessage());
+    }
   }
 
   ~SmtEnginePrivate()
@@ -738,8 +756,14 @@ class SmtEnginePrivate : public NodeManagerListener {
    * immediately, or it might be simplified and kept, or it might not
    * even be simplified.
    * the 2nd and 3rd arguments added for bookkeeping for proofs
+   *
+   * @param isAssumption If true, the formula is considered to be an assumption
+   * (this is used to distinguish assertions and assumptions)
    */
-  void addFormula(TNode n, bool inUnsatCore, bool inInput = true);
+  void addFormula(TNode n,
+                  bool inUnsatCore,
+                  bool inInput = true,
+                  bool isAssumption = false);
 
   /** Expand definitions in n. */
   Node expandDefinitions(TNode n,
@@ -998,12 +1022,6 @@ void SmtEngine::shutdown() {
     internalPop(true);
   }
 
-  // check to see if a postsolve() is pending
-  if(d_needPostsolve) {
-    d_theoryEngine->postsolve();
-    d_needPostsolve = false;
-  }
-
   if(d_propEngine != NULL) {
     d_propEngine->shutdown();
   }
@@ -1235,7 +1253,7 @@ void SmtEngine::setDefaults() {
   }
 
   if ((options::checkModels() || options::checkSynthSol()
-       || options::produceModelCores())
+       || options::modelCoresMode() != MODEL_CORES_NONE)
       && !options::produceAssertions())
   {
     Notice() << "SmtEngine: turning on produce-assertions to support "
@@ -1278,6 +1296,14 @@ void SmtEngine::setDefaults() {
       Trace("smt") << "setting unconstrained simplification to " << uncSimp
                    << endl;
       options::unconstrainedSimp.set(uncSimp);
+    }
+  }
+  if (!options::proof())
+  {
+    // minimizing solutions from single invocation requires proofs
+    if (options::cegqiSolMinCore() && options::cegqiSolMinCore.wasSetByUser())
+    {
+      throw OptionException("cegqi-si-sol-min-core requires --proof");
     }
   }
 
@@ -1432,7 +1458,7 @@ void SmtEngine::setDefaults() {
   // cases where we need produce models
   if (!options::produceModels()
       && (options::produceAssignments() || options::sygusRewSynthCheck()
-          || options::produceModelCores() || is_sygus))
+          || is_sygus))
   {
     Notice() << "SmtEngine: turning on produce-models" << endl;
     setOption("produce-models", SExpr("true"));
@@ -1909,14 +1935,21 @@ void SmtEngine::setDefaults() {
     }
     if (options::sygusStream())
     {
-      // PBE and streaming modes are incompatible
-      if (!options::sygusSymBreakPbe.wasSetByUser())
-      {
-        options::sygusSymBreakPbe.set(false);
-      }
+      // Streaming is incompatible with techniques that focus the search towards
+      // finding a single solution. This currently includes the PBE solver and
+      // static template inference for invariant synthesis.
       if (!options::sygusUnifPbe.wasSetByUser())
       {
         options::sygusUnifPbe.set(false);
+        // also disable PBE-specific symmetry breaking unless PBE was enabled
+        if (!options::sygusSymBreakPbe.wasSetByUser())
+        {
+          options::sygusSymBreakPbe.set(false);
+        }
+      }
+      if (!options::sygusInvTemplMode.wasSetByUser())
+      {
+        options::sygusInvTemplMode.set(quantifiers::SYGUS_INV_TEMPL_MODE_NONE);
       }
     }
     //do not allow partial functions
@@ -2388,8 +2421,9 @@ CVC4::SExpr SmtEngine::getInfo(const std::string& key) const {
       transform(s.begin(), s.end(), s.begin(), ::tolower);
       return SExpr(SExpr::Keyword(s));
     } else {
-      throw ModalException("Can't get-info :reason-unknown when the "
-                           "last result wasn't unknown!");
+      throw RecoverableModalException(
+          "Can't get-info :reason-unknown when the "
+          "last result wasn't unknown!");
     }
   } else if(key == "assertion-stack-levels") {
     AlwaysAssert(d_userLevels.size() <=
@@ -3046,7 +3080,8 @@ void SmtEnginePrivate::processAssertions() {
   Trace("smt-proc") << "SmtEnginePrivate::processAssertions() begin" << endl;
   Trace("smt") << "SmtEnginePrivate::processAssertions()" << endl;
 
-  Debug("smt") << " d_assertions     : " << d_assertions.size() << endl;
+  Debug("smt") << "#Assertions : " << d_assertions.size() << endl;
+  Debug("smt") << "#Assumptions: " << d_assertions.getNumAssumptions() << endl;
 
   if (d_assertions.size() == 0) {
     // nothing to do
@@ -3425,14 +3460,20 @@ void SmtEnginePrivate::processAssertions() {
   getIteSkolemMap().clear();
 }
 
-void SmtEnginePrivate::addFormula(TNode n, bool inUnsatCore, bool inInput)
+void SmtEnginePrivate::addFormula(TNode n,
+                                  bool inUnsatCore,
+                                  bool inInput,
+                                  bool isAssumption)
 {
   if (n == d_true) {
     // nothing to do
     return;
   }
 
-  Trace("smt") << "SmtEnginePrivate::addFormula(" << n << "), inUnsatCore = " << inUnsatCore << ", inInput = " << inInput << endl;
+  Trace("smt") << "SmtEnginePrivate::addFormula(" << n
+               << "), inUnsatCore = " << inUnsatCore
+               << ", inInput = " << inInput
+               << ", isAssumption = " << isAssumption << endl;
 
   // Give it to proof manager
   PROOF(
@@ -3455,7 +3496,7 @@ void SmtEnginePrivate::addFormula(TNode n, bool inUnsatCore, bool inInput)
   );
 
   // Add the normalized formula to the queue
-  d_assertions.push_back(n);
+  d_assertions.push_back(n, isAssumption);
   //d_assertions.push_back(Rewriter::rewrite(n));
 }
 
@@ -3522,11 +3563,6 @@ Result SmtEngine::checkSatisfiability(const vector<Expr>& assumptions,
                            "(try --incremental)");
     }
 
-    // check to see if a postsolve() is pending
-    if(d_needPostsolve) {
-      d_theoryEngine->postsolve();
-      d_needPostsolve = false;
-    }
     // Note that a query has been made
     d_queryMade = true;
     // reset global negation
@@ -3577,7 +3613,7 @@ Result SmtEngine::checkSatisfiability(const vector<Expr>& assumptions,
       {
         d_assertionList->push_back(e);
       }
-      d_private->addFormula(e.getNode(), inUnsatCore);
+      d_private->addFormula(e.getNode(), inUnsatCore, true, true);
     }
 
     r = isQuery ? check().asValidityResult() : check().asSatisfiabilityResult();
@@ -3630,8 +3666,6 @@ Result SmtEngine::checkSatisfiability(const vector<Expr>& assumptions,
         Dump("benchmark") << CheckSatAssumingCommand(d_assumptions);
       }
     }
-
-    d_propEngine->resetTrail();
 
     // Pop the context
     if (didInternalPush)
@@ -4076,7 +4110,7 @@ Expr SmtEngine::getValue(const Expr& ex) const
   }
 
   Trace("smt") << "--- getting value of " << n << endl;
-  TheoryModel* m = d_theoryEngine->getModel();
+  TheoryModel* m = d_theoryEngine->getBuiltModel();
   Node resultNode;
   if(m != NULL) {
     resultNode = m->getValue(n);
@@ -4163,7 +4197,7 @@ vector<pair<Expr, Expr>> SmtEngine::getAssignment()
   if (d_assignments != nullptr)
   {
     TypeNode boolType = d_nodeManager->booleanType();
-    TheoryModel* m = d_theoryEngine->getModel();
+    TheoryModel* m = d_theoryEngine->getBuiltModel();
     for (AssignmentSet::key_iterator i = d_assignments->key_begin(),
                                      iend = d_assignments->key_end();
          i != iend;
@@ -4214,7 +4248,6 @@ void SmtEngine::addToModelCommandAndDump(const Command& c, uint32_t flags, bool 
   if(/* userVisible && */
      (!d_fullyInited || options::produceModels()) &&
      (flags & ExprManager::VAR_FLAG_DEFINED) == 0) {
-    doPendingPops();
     if(flags & ExprManager::VAR_FLAG_GLOBAL) {
       d_modelGlobalCommands.push_back(c.clone());
     } else {
@@ -4261,14 +4294,28 @@ Model* SmtEngine::getModel() {
       "Cannot get model when produce-models options is off.";
     throw ModalException(msg);
   }
-  TheoryModel* m = d_theoryEngine->getModel();
+  TheoryModel* m = d_theoryEngine->getBuiltModel();
 
-  if (options::produceModelCores())
+  // Since model m is being returned to the user, we must ensure that this
+  // model object remains valid with future check-sat calls. Hence, we set
+  // the theory engine into "eager model building" mode. TODO #2648: revisit.
+  d_theoryEngine->setEagerModelBuilding();
+
+  if (options::modelCoresMode() != MODEL_CORES_NONE)
   {
     // If we enabled model cores, we compute a model core for m based on our
     // assertions using the model core builder utility
     std::vector<Expr> easserts = getAssertions();
-    ModelCoreBuilder::setModelCore(easserts, m);
+    // must expand definitions
+    std::vector<Expr> eassertsProc;
+    std::unordered_map<Node, Node, NodeHashFunction> cache;
+    for (unsigned i = 0, nasserts = easserts.size(); i < nasserts; i++)
+    {
+      Node ea = Node::fromExpr(easserts[i]);
+      Node eae = d_private->expandDefinitions(ea, cache);
+      eassertsProc.push_back(eae.toExpr());
+    }
+    ModelCoreBuilder::setModelCore(eassertsProc, m, options::modelCoresMode());
   }
   m->d_inputName = d_filename;
   return m;
@@ -4286,7 +4333,7 @@ std::pair<Expr, Expr> SmtEngine::getSepHeapAndNilExpr(void)
   NodeManagerScope nms(d_nodeManager);
   Expr heap;
   Expr nil;
-  Model* m = getModel();
+  Model* m = d_theoryEngine->getBuiltModel();
   if (m->getHeapModel(heap, nil))
   {
     return std::make_pair(heap, nil);
@@ -4379,7 +4426,7 @@ void SmtEngine::checkModel(bool hardFailure) {
   // and if Notice() is on, the user gave --verbose (or equivalent).
 
   Notice() << "SmtEngine::checkModel(): generating model" << endl;
-  TheoryModel* m = d_theoryEngine->getModel();
+  TheoryModel* m = d_theoryEngine->getBuiltModel();
 
   // check-model is not guaranteed to succeed if approximate values were used
   if (m->hasApproximations())
@@ -4895,11 +4942,6 @@ void SmtEngine::push()
     throw ModalException("Cannot push when not solving incrementally (use --incremental)");
   }
 
-  // check to see if a postsolve() is pending
-  if(d_needPostsolve) {
-    d_theoryEngine->postsolve();
-    d_needPostsolve = false;
-  }
 
   // The problem isn't really "extended" yet, but this disallows
   // get-model after a push, simplifying our lives somewhat and
@@ -4924,12 +4966,6 @@ void SmtEngine::pop() {
   }
   if(d_userLevels.size() == 0) {
     throw ModalException("Cannot pop beyond the first user frame");
-  }
-
-  // check to see if a postsolve() is pending
-  if(d_needPostsolve) {
-    d_theoryEngine->postsolve();
-    d_needPostsolve = false;
   }
 
   // The problem isn't really "extended" yet, but this disallows
@@ -4981,13 +5017,24 @@ void SmtEngine::internalPop(bool immediate) {
 }
 
 void SmtEngine::doPendingPops() {
+  Trace("smt") << "SmtEngine::doPendingPops()" << endl;
   Assert(d_pendingPops == 0 || options::incrementalSolving());
+  // check to see if a postsolve() is pending
+  if (d_needPostsolve)
+  {
+    d_propEngine->resetTrail();
+  }
   while(d_pendingPops > 0) {
     TimerStat::CodeTimer pushPopTimer(d_stats->d_pushPopTime);
     d_propEngine->pop();
     // the d_context pop is done inside of the SAT solver
     d_userContext->pop();
     --d_pendingPops;
+  }
+  if (d_needPostsolve)
+  {
+    d_theoryEngine->postsolve();
+    d_needPostsolve = false;
   }
 }
 

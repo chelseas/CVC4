@@ -42,8 +42,6 @@
 #include "options/language.h"
 #include "options/option_exception.h"
 #include "options/printer_modes.h"
-#include "options/quantifiers_modes.h"
-#include "options/simplification_mode.h"
 #include "options/smt_options.h"
 #include "options/theory_options.h"
 #include "options/theoryof_mode.h"
@@ -510,6 +508,21 @@ trust  \n\
 \n\
 ";
 
+const std::string OptionsHandler::s_sygusFilterSolHelp =
+    "\
+Modes for filtering sygus solutions supported by --sygus-filter-sol:\n\
+\n\
+none (default) \n\
++ Do not filter sygus solutions.\n\
+\n\
+strong \n\
++ Filter solutions that are logically stronger than others.\n\
+\n\
+weak \n\
++ Filter solutions that are logically weaker than others.\n\
+\n\
+";
+
 const std::string OptionsHandler::s_sygusInvTemplHelp = "\
 Template modes for sygus invariant synthesis, supported by --sygus-inv-templ:\n\
 \n\
@@ -532,10 +545,16 @@ none  \n\
 + Do not use actively-generated sygus enumerators.\n\
 \n\
 basic  \n\
-+ Use basic type enumerator as sygus enumerator.\n\
++ Use basic type enumerator for actively-generated sygus enumerators.\n\
+\n\
+enum  \n\
++ Use optimized enumerator for actively-generated sygus enumerators.\n\
 \n\
 var-agnostic \n\
 + Use sygus solver to enumerate terms that are agnostic to variables. \n\
+\n\
+auto (default) \n\
++ Internally decide the best policy for each enumerator. \n\
 \n\
 ";
 
@@ -947,6 +966,35 @@ theory::quantifiers::CegisSampleMode OptionsHandler::stringToCegisSampleMode(
   }
 }
 
+theory::quantifiers::SygusFilterSolMode
+OptionsHandler::stringToSygusFilterSolMode(std::string option,
+                                           std::string optarg)
+{
+  if (optarg == "none")
+  {
+    return theory::quantifiers::SYGUS_FILTER_SOL_NONE;
+  }
+  else if (optarg == "strong")
+  {
+    return theory::quantifiers::SYGUS_FILTER_SOL_STRONG;
+  }
+  else if (optarg == "weak")
+  {
+    return theory::quantifiers::SYGUS_FILTER_SOL_WEAK;
+  }
+  else if (optarg == "help")
+  {
+    puts(s_cegisSampleHelp.c_str());
+    exit(1);
+  }
+  else
+  {
+    throw OptionException(
+        std::string("unknown option for --sygus-filter-sol: `") + optarg
+        + "'.  Try --sygus-filter-sol help.");
+  }
+}
+
 theory::quantifiers::SygusInvTemplMode
 OptionsHandler::stringToSygusInvTemplMode(std::string option,
                                           std::string optarg)
@@ -976,11 +1024,19 @@ OptionsHandler::stringToSygusActiveGenMode(std::string option,
   }
   else if (optarg == "basic")
   {
-    return theory::quantifiers::SYGUS_ACTIVE_GEN_BASIC;
+    return theory::quantifiers::SYGUS_ACTIVE_GEN_ENUM_BASIC;
+  }
+  else if (optarg == "enum")
+  {
+    return theory::quantifiers::SYGUS_ACTIVE_GEN_ENUM;
   }
   else if (optarg == "var-agnostic")
   {
     return theory::quantifiers::SYGUS_ACTIVE_GEN_VAR_AGNOSTIC;
+  }
+  else if (optarg == "auto")
+  {
+    return theory::quantifiers::SYGUS_ACTIVE_GEN_AUTO;
   }
   else if (optarg == "help")
   {
@@ -1469,6 +1525,51 @@ SimplificationMode OptionsHandler::stringToSimplificationMode(
   } else {
     throw OptionException(std::string("unknown option for --simplification: `") +
                           optarg + "'.  Try --simplification help.");
+  }
+}
+
+const std::string OptionsHandler::s_modelCoresHelp =
+    "\
+Model cores modes currently supported by the --simplification option:\n\
+\n\
+none (default) \n\
++ do not compute model cores\n\
+\n\
+simple\n\
++ only include a subset of variables whose values are sufficient to show the\n\
+input formula is satisfied by the given model\n\
+\n\
+non-implied\n\
++ only include a subset of variables whose values, in addition to the values\n\
+of variables whose values are implied, are sufficient to show the input\n\
+formula is satisfied by the given model\n\
+\n\
+";
+
+ModelCoresMode OptionsHandler::stringToModelCoresMode(std::string option,
+                                                      std::string optarg)
+{
+  if (optarg == "none")
+  {
+    return MODEL_CORES_NONE;
+  }
+  else if (optarg == "simple")
+  {
+    return MODEL_CORES_SIMPLE;
+  }
+  else if (optarg == "non-implied")
+  {
+    return MODEL_CORES_NON_IMPLIED;
+  }
+  else if (optarg == "help")
+  {
+    puts(s_modelCoresHelp.c_str());
+    exit(1);
+  }
+  else
+  {
+    throw OptionException(std::string("unknown option for --model-cores: `")
+                          + optarg + "'.  Try --model-cores help.");
   }
 }
 

@@ -22,6 +22,7 @@ namespace quantifiers {
 ExpressionMinerManager::ExpressionMinerManager()
     : d_doRewSynth(false),
       d_doQueryGen(false),
+      d_doFilterLogicalStrength(false),
       d_use_sygus_type(false),
       d_qe(nullptr),
       d_tds(nullptr)
@@ -35,6 +36,7 @@ void ExpressionMinerManager::initialize(const std::vector<Node>& vars,
 {
   d_doRewSynth = false;
   d_doQueryGen = false;
+  d_doFilterLogicalStrength = false;
   d_sygus_fun = Node::null();
   d_use_sygus_type = false;
   d_qe = nullptr;
@@ -50,6 +52,7 @@ void ExpressionMinerManager::initializeSygus(QuantifiersEngine* qe,
 {
   d_doRewSynth = false;
   d_doQueryGen = false;
+  d_doFilterLogicalStrength = false;
   d_sygus_fun = f;
   d_use_sygus_type = useSygusType;
   d_qe = qe;
@@ -104,21 +107,52 @@ void ExpressionMinerManager::enableQueryGeneration(unsigned deqThresh)
   d_qg.setThreshold(deqThresh);
 }
 
+void ExpressionMinerManager::enableFilterWeakSolutions()
+{
+  d_doFilterLogicalStrength = true;
+  std::vector<Node> vars;
+  d_sampler.getVariables(vars);
+  d_sols.initialize(vars, &d_sampler);
+  d_sols.setLogicallyStrong(true);
+}
+
+void ExpressionMinerManager::enableFilterStrongSolutions()
+{
+  d_doFilterLogicalStrength = true;
+  std::vector<Node> vars;
+  d_sampler.getVariables(vars);
+  d_sols.initialize(vars, &d_sampler);
+  d_sols.setLogicallyStrong(false);
+}
+
 bool ExpressionMinerManager::addTerm(Node sol,
                                      std::ostream& out,
                                      bool& rew_print)
 {
-  bool ret = d_crd.addTerm(sol, out, rew_print);
+  // set the builtin version
+  Node solb = sol;
+  if (d_use_sygus_type)
+  {
+    solb = d_tds->sygusToBuiltin(sol);
+  }
+
+  // add to the candidate rewrite rule database
+  bool ret = true;
+  if (d_doRewSynth)
+  {
+    ret = d_crd.addTerm(sol, out, rew_print);
+  }
+
+  // a unique term, let's try the query generator
   if (ret && d_doQueryGen)
   {
-    // use the builtin version if d_use_sygus_type is true
-    Node solb = sol;
-    if (d_use_sygus_type)
-    {
-      solb = d_tds->sygusToBuiltin(sol);
-    }
-    // a unique term, let's try the query generator
     d_qg.addTerm(solb, out);
+  }
+
+  // filter based on logical strength
+  if (ret && d_doFilterLogicalStrength)
+  {
+    ret = d_sols.addTerm(solb, out);
   }
   return ret;
 }

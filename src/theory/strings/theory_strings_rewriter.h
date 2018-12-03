@@ -159,12 +159,21 @@ class TheoryStringsRewriter {
   * Returns the rewritten form of node.
   */
   static Node rewriteConcat(Node node);
+
   /** rewrite substr
   * This is the entry point for post-rewriting terms node of the form
   *   str.substr( s, i1, i2 )
   * Returns the rewritten form of node.
   */
   static Node rewriteSubstr(Node node);
+
+  /** rewrite substr extended
+   * This is the entry point for extended post-rewriting terms node of the form
+   *   str.substr( s, i1, i2 )
+   * Returns the rewritten form of node.
+   */
+  static Node rewriteSubstrExt(Node node);
+
   /** rewrite contains
   * This is the entry point for post-rewriting terms node of the form
   *   str.contains( t, s )
@@ -187,6 +196,18 @@ class TheoryStringsRewriter {
   * Returns the rewritten form of node.
   */
   static Node rewriteReplace(Node node);
+  /** rewrite replace all
+   * This is the entry point for post-rewriting terms n of the form
+   *   str.replaceall( s, t, r )
+   * Returns the rewritten form of node.
+   */
+  static Node rewriteReplaceAll(Node node);
+  /** rewrite replace internal
+   *
+   * This method implements rewrite rules that apply to both str.replace and
+   * str.replaceall. If it returns a non-null ret, then node rewrites to ret.
+   */
+  static Node rewriteReplaceInternal(Node node);
   /** rewrite string less than or equal
   * This is the entry point for post-rewriting terms n of the form
   *   str.<=( t, s )
@@ -455,6 +476,19 @@ class TheoryStringsRewriter {
    * the call checkArithEntail( len( a ), true ).
    */
   static bool checkEntailNonEmpty(Node a);
+
+  /**
+   * Checks whether string has at most/exactly length one. Length one strings
+   * can be used for more aggressive rewriting because there is guaranteed that
+   * it cannot be overlap multiple components in a string concatenation.
+   *
+   * @param s The string to check
+   * @param strict If true, the string must have exactly length one, otherwise
+   * at most length one
+   * @return True if the string has at most/exactly length one, false otherwise
+   */
+  static bool checkEntailLengthOne(Node s, bool strict = false);
+
   /** check arithmetic entailment equal
    * Returns true if it is always the case that a = b.
    */
