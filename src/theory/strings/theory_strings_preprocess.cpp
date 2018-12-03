@@ -487,20 +487,78 @@ Node StringsPreprocess::simplify( Node t, std::vector< Node > &new_nodes ) {
 
     // Thus, replaceall( x, y, z ) = rpaw
     retNode = rpaw;
-  } else if( t.getKind() == kind::STRING_STRCTN ){
-    Node x = t[0];
+  }
+  else if (t.getKind() == kind::STRING_STRCTN)
+  {
+    // processing term: str.contains( y, s )
+    Node y = t[0];
     Node s = t[1];
-    //negative contains reduces to existential
-    Node lenx = NodeManager::currentNM()->mkNode(kind::STRING_LENGTH, x);
-    Node lens = NodeManager::currentNM()->mkNode(kind::STRING_LENGTH, s);
-    Node b1 = NodeManager::currentNM()->mkBoundVar(NodeManager::currentNM()->integerType());
-    Node b1v = NodeManager::currentNM()->mkNode(kind::BOUND_VAR_LIST, b1);
-    Node body = NodeManager::currentNM()->mkNode( kind::AND, 
-                  NodeManager::currentNM()->mkNode( kind::LEQ, d_zero, b1 ),
-                  NodeManager::currentNM()->mkNode( kind::LEQ, b1, NodeManager::currentNM()->mkNode( kind::MINUS, lenx, lens ) ),
-                  NodeManager::currentNM()->mkNode( kind::EQUAL, NodeManager::currentNM()->mkNode(kind::STRING_SUBSTR, x, b1, lens), s )                
-                );
-    retNode = NodeManager::currentNM()->mkNode( kind::EXISTS, b1v, body );
+    Node leny = nm->mkNode(STRING_LENGTH, y);
+    Node lens = nm->mkNode(STRING_LENGTH, s);
+    lens = Rewriter::rewrite(lens);
+    Node x = nm->mkBoundVar(nm->integerType());
+    Node xbv = nm->mkNode(BOUND_VAR_LIST, x);
+    Node g = nm->mkNode(AND,
+                        nm->mkNode(LEQ, d_zero, x),
+                        nm->mkNode(LEQ, x, nm->mkNode(MINUS, leny, lens)));
+    Node body = nm->mkNode(
+        AND, g, nm->mkNode(EQUAL, nm->mkNode(STRING_SUBSTR, y, x, lens), s));
+    retNode = nm->mkNode(EXISTS, xbv, body);
+    if (lens == d_one)
+    {
+      std::vector<TypeNode> argTypes;
+      argTypes.push_back(nm->integerType());
+
+      TypeNode ufType = nm->mkFunctionType(argTypes, nm->stringType());
+      Node us = d_sc->mkTypedSkolemCached(
+          ufType, y, SkolemCache::SK_FOO, "Us");
+      Node ud = d_sc->mkTypedSkolemCached(
+          ufType, y, SkolemCache::SK_BAR, "Ud");
+
+      std::vector<Node> concNeg;
+      Node lem = y.eqNode(nm->mkNode(APPLY_UF, us, leny));
+      concNeg.push_back(lem);
+      lem = d_empty_str.eqNode(nm->mkNode(APPLY_UF, us, d_zero));
+      concNeg.push_back(lem);
+      Node udx = nm->mkNode(APPLY_UF, ud, x);
+      Node usx = nm->mkNode(APPLY_UF, us, x);
+      Node usx1 = nm->mkNode(APPLY_UF, us, nm->mkNode(PLUS, x, d_one));
+      Node eqs = usx1.eqNode(nm->mkNode(STRING_CONCAT, udx, usx));
+      body =
+          nm->mkNode(OR,
+                     g.negate(),
+                     nm->mkNode(AND,
+                                eqs,
+                                udx.eqNode(s).negate(),
+                                nm->mkNode(STRING_LENGTH, udx).eqNode(d_one)));
+      lem = nm->mkNode(FORALL, xbv, body);
+      concNeg.push_back(lem);
+      Node cv = nm->mkSkolem("ctn", nm->booleanType());
+
+
+      Node sk1 =
+          d_sc->mkSkolemCached(x, s, SkolemCache::SK_FIRST_CTN_PRE, "sc1");
+      Node sk2 =
+          d_sc->mkSkolemCached(x, s, SkolemCache::SK_FIRST_CTN_POST, "sc2");
+      Node eq = s.eqNode(nm->mkNode(STRING_CONCAT, sk1, s, sk2));
+
+      lem = nm->mkNode(ITE, cv, eq, nm->mkNode(AND, concNeg));
+      new_nodes.push_back(lem);
+      // if len( s ) = 1:
+      //
+      // assert:
+      // IF: cv
+      // THEN:
+      //   exists x. (0 <= x <= (len(y) - len(s))) ^ substr(y, x, len( s )) = s
+      // ELSE:
+      //   y = Us( 0 ) ^ Us( len( y ) ) = "" ^
+      //   forall x. (0 <= x <= (len(y) - len(s))) =>
+      //     Us( x+1 ) = Ud( x ) ++ Us( x ) ^
+      //     Ud( x ) != s
+      //     len( Ud( x ) ) = 1
+      // Thus, str.contains( y, s ) = cv
+      retNode = cv;
+    }
   }
   else if (t.getKind() == kind::STRING_LEQ)
   {
