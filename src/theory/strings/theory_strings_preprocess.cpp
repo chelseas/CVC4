@@ -84,8 +84,9 @@ Node StringsPreprocess::simplify( Node t, std::vector< Node > &new_nodes ) {
                                       nm->mkNode(GEQ, lt0, t12),
                                       nm->mkNode(MINUS, lt0, t12),
                                       d_zero));
+    Node b14 = nm->mkNode(NOT, skt.eqNode(nm->mkConst(String(""))));
 
-    Node b1 = nm->mkNode(AND, b11, b12, b13);
+    Node b1 = nm->mkNode(AND, b11, b12, b13, b14);
     Node b2 = skt.eqNode(d_empty_str);
     Node lemma = nm->mkNode(ITE, cond, b1, b2);
 

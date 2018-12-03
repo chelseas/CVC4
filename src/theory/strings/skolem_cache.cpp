@@ -122,26 +122,26 @@ SkolemCache::normalizeStringSkolem(SkolemId id, Node a, Node b)
         PLUS, nm->mkNode(STRING_LENGTH, pre), nm->mkNode(STRING_LENGTH, b)));
   }
 
-  if (id == SK_PREFIX)
-  {
-    id = SK_PURIFY;
-    a = nm->mkNode(STRING_SUBSTR, a, nm->mkConst(Rational(0)), b);
-    b = Node::null();
-  }
-
   // SK_PURIFY(str.substr x 0 (str.indexof x y 0)) ---> SK_FIRST_CTN_PRE(x, y)
   if (id == SK_PURIFY && a.getKind() == kind::STRING_SUBSTR)
   {
     Node s = a[0];
     Node n = a[1];
     Node m = a[2];
-    if (m.getKind() == kind::STRING_STRIDOF && m[0] == s)
-    {
-      if (n == d_zero && m[2] == d_zero)
+
+    if (n == d_zero) {
+      if (m.getKind() == kind::STRING_STRIDOF && m[0] == s)
       {
-        id = SK_FIRST_CTN_PRE;
-        a = m[0];
-        b = m[1];
+        if (n == d_zero && m[2] == d_zero)
+        {
+          id = SK_FIRST_CTN_PRE;
+          a = m[0];
+          b = m[1];
+        }
+      } else {
+        id = SK_PREFIX;
+        a = s;
+        b = m;
       }
     }
     else if (TheoryStringsRewriter::checkEntailArith(
