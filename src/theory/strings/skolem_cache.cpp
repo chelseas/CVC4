@@ -130,17 +130,15 @@ SkolemCache::normalizeStringSkolem(SkolemId id, Node a, Node b)
     Node m = a[2];
 
     if (n == d_zero) {
-      if (m.getKind() == kind::STRING_STRIDOF && m[0] == s)
+      if (m.getKind() == kind::STRING_STRIDOF && m[0] == s && m[2] == d_zero)
       {
-        if (n == d_zero && m[2] == d_zero)
-        {
           id = SK_FIRST_CTN_PRE;
           a = m[0];
           b = m[1];
-        }
       } else {
         id = SK_PREFIX;
         a = s;
+        // b = Rewriter::rewrite(nm->mkNode(MINUS, m, nm->mkConst(Rational(1))));
         b = m;
       }
     }
