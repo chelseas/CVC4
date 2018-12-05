@@ -59,6 +59,10 @@ Node SkolemCache::mkTypedSkolemCached(
   {
     Node sk = mkTypedSkolem(tn, c);
     d_skolemCache[a][b][id] = sk;
+    
+    if (id == SK_FIRST_CTN_PRE) {
+      d_preSkolems[sk] = std::make_pair(a, b);
+    }
 
     /*
     if (id == SK_FIRST_CTN_POST && a.getKind() == STRING_SUBSTR) {
@@ -122,6 +126,26 @@ SkolemCache::normalizeStringSkolem(SkolemId id, Node a, Node b)
         PLUS, nm->mkNode(STRING_LENGTH, pre), nm->mkNode(STRING_LENGTH, b)));
   }
 
+  if (id == SK_ID_C_SPT) {
+    id = SK_SUFFIX_REM;
+    b = Rewriter::rewrite(nm->mkNode(STRING_LENGTH, b));
+  }
+
+  if (id == SK_ID_VC_SPT) {
+    id = SK_SUFFIX_REM;
+    b = nm->mkConst(Rational(1));
+  }
+
+  if (id == SK_ID_DEQ_Y) {
+    id = SK_PREFIX;
+    b = Rewriter::rewrite(nm->mkNode(STRING_LENGTH, b));
+  } else if (id == SK_ID_DEQ_X) {
+    id = SK_PREFIX;
+    Node aOld = a;
+    a = b;
+    b = Rewriter::rewrite(nm->mkNode(STRING_LENGTH, aOld));
+  }
+
   // SK_PURIFY(str.substr x 0 (str.indexof x y 0)) ---> SK_FIRST_CTN_PRE(x, y)
   if (id == SK_PURIFY && a.getKind() == kind::STRING_SUBSTR)
   {
@@ -129,18 +153,11 @@ SkolemCache::normalizeStringSkolem(SkolemId id, Node a, Node b)
     Node n = a[1];
     Node m = a[2];
 
-    if (n == d_zero) {
-      if (m.getKind() == kind::STRING_STRIDOF && m[0] == s && m[2] == d_zero)
-      {
-          id = SK_FIRST_CTN_PRE;
-          a = m[0];
-          b = m[1];
-      } else {
-        id = SK_PREFIX;
-        a = s;
-        // b = Rewriter::rewrite(nm->mkNode(MINUS, m, nm->mkConst(Rational(1))));
-        b = m;
-      }
+    if (n == d_zero)
+    {
+      id = SK_PREFIX;
+      a = s;
+      b = m;
     }
     else if (TheoryStringsRewriter::checkEntailArith(
                  nm->mkNode(PLUS, n, m), nm->mkNode(STRING_LENGTH, s)))
@@ -149,6 +166,13 @@ SkolemCache::normalizeStringSkolem(SkolemId id, Node a, Node b)
       a = s;
       b = n;
     }
+  }
+
+  if (id == SK_PREFIX && b.getKind() == kind::STRING_STRIDOF && a == b[0]
+      && b[2] == d_zero)
+  {
+    id = SK_FIRST_CTN_PRE;
+    b = b[2];
   }
 
   if (id == SK_FIRST_CTN_PRE)

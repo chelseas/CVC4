@@ -138,6 +138,8 @@ class SkolemCache
   /** Returns true if n is a skolem allocated by this class */
   bool isSkolem(Node n) const;
 
+  std::map<Node, std::pair<Node, Node>> d_preSkolems;
+
  private:
   TheoryStrings* d_ts;
 

@@ -3148,10 +3148,20 @@ void TheoryStrings::processSimpleNEq( std::vector< std::vector< Node > > &normal
                             isRev ? SkolemCache::SK_ID_C_SPT_REV
                                   : SkolemCache::SK_ID_C_SPT,
                             "c_spt");
-                        Trace("strings-csp") << "Const Split: " << prea << " is removed from " << stra << " due to " << strb << ", p=" << p << std::endl;        
+                        Node lem = other_str.eqNode( isRev ? mkConcat( sk, prea ) : mkConcat(prea, sk) );;
+                        if (false && !isRev && d_sk_cache.d_preSkolems.find(Node(other_str)) != d_sk_cache.d_preSkolems.end()) {
+                          Node aa, bb;
+                          std::tie(aa, bb) = d_sk_cache.d_preSkolems.find(other_str)->second;
+                          if (bb == NodeManager::currentNM()->mkConst(strb)) {
+                            lem = other_str.eqNode(prea); // other_str.eqNode(mkConcat(prea, NodeManager::currentNM()->mkConst(String(""))));
+                            sk = Node::null();
+                          }
+                        }
+                        Trace("strings-csp") << "Const Split: " << other_str << " " << prea << " is removed from " << stra << " due to " << strb << ", p=" << p << std::endl;        
                         //set info
-                        info.d_conc = other_str.eqNode( isRev ? mkConcat( sk, prea ) : mkConcat(prea, sk) );
-                        info.d_new_skolem[LENGTH_SPLIT].push_back(sk);
+                        info.d_conc = lem;
+                        if (!sk.isNull())
+                          info.d_new_skolem[LENGTH_SPLIT].push_back(sk);
                         info.d_id = INFER_SSPLIT_CST_PROP;
                         info_valid = true;
                       }
