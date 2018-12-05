@@ -126,12 +126,32 @@ SkolemCache::normalizeStringSkolem(SkolemId id, Node a, Node b)
         PLUS, nm->mkNode(STRING_LENGTH, pre), nm->mkNode(STRING_LENGTH, b)));
   }
 
+  if (id == SK_ID_V_SPT_X) {
+    id = SK_SUFFIX_REM;
+    b = Rewriter::rewrite(nm->mkNode(STRING_LENGTH, b));
+  } else if (id == SK_ID_V_SPT_Y) {
+    id = SK_SUFFIX_REM;
+    b = Rewriter::rewrite(nm->mkNode(STRING_LENGTH, b));
+  } else if (id == SK_ID_V_SPT_REV) {
+    id = SK_PREFIX;
+    b = Rewriter::rewrite(nm->mkNode(MINUS, nm->mkNode(STRING_LENGTH, a), nm->mkNode(STRING_LENGTH, b)));
+  }
+
   if (id == SK_ID_C_SPT) {
     id = SK_SUFFIX_REM;
     b = Rewriter::rewrite(nm->mkNode(STRING_LENGTH, b));
   }
 
   if (id == SK_ID_VC_SPT) {
+    id = SK_SUFFIX_REM;
+    b = nm->mkConst(Rational(1));
+  }
+
+  if (id == SK_ID_DC_SPT) {
+    id = SK_PREFIX;
+    b = nm->mkConst(Rational(1));
+  }
+  if (id == SK_ID_DC_SPT_REM) {
     id = SK_SUFFIX_REM;
     b = nm->mkConst(Rational(1));
   }

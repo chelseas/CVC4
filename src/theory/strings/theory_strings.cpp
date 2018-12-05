@@ -3254,33 +3254,78 @@ void TheoryStrings::processSimpleNEq( std::vector< std::vector< Node > > &normal
                     info.d_antn.push_back( xgtz );
                   }
                 }
-                Node sk = d_sk_cache.mkSkolemCached(
-                    normal_forms[i][index],
-                    normal_forms[j][index],
-                    isRev ? SkolemCache::SK_ID_V_SPT_REV
-                          : SkolemCache::SK_ID_V_SPT,
-                    "v_spt");
-                // must add length requirement
-                info.d_new_skolem[LENGTH_GEQ_ONE].push_back(sk);
-                Node eq1 = normal_forms[i][index].eqNode( isRev ? mkConcat(sk, normal_forms[j][index]) : mkConcat(normal_forms[j][index], sk) );
-                Node eq2 = normal_forms[j][index].eqNode( isRev ? mkConcat(sk, normal_forms[i][index]) : mkConcat(normal_forms[i][index], sk) );
+                if (isRev) {
+                  Node sk_x = d_sk_cache.mkSkolemCached(
+                      normal_forms[i][index],
+                      normal_forms[j][index],
+                      SkolemCache::SK_ID_V_SPT_REV,
+                      "v_sptx");
+                  Node sk_y = d_sk_cache.mkSkolemCached(
+                      normal_forms[j][index],
+                      normal_forms[i][index],
+                      SkolemCache::SK_ID_V_SPT_REV,
+                      "v_spty");
+                  // must add length requirement
+                  if (lentTestSuccess == -1 || lentTestSuccess == 0)
+                    info.d_new_skolem[LENGTH_GEQ_ONE].push_back(sk_x);
+                  if (lentTestSuccess == -1 || lentTestSuccess != 0)
+                    info.d_new_skolem[LENGTH_GEQ_ONE].push_back(sk_y);
+                  Node eq1 = normal_forms[i][index].eqNode(mkConcat(sk_x, normal_forms[j][index]));
+                  Node eq2 = normal_forms[j][index].eqNode(mkConcat(sk_y, normal_forms[i][index]));
 
-                if( lentTestSuccess!=-1 ){
-                  info.d_antn.push_back( lentTestExp );
-                  info.d_conc = lentTestSuccess==0 ? eq1 : eq2;
-                  info.d_id = INFER_SSPLIT_VAR_PROP;
-                  info_valid = true;
-                }else{
-                  Node ldeq = NodeManager::currentNM()->mkNode( kind::EQUAL, length_term_i, length_term_j ).negate();
-                  if( d_equalityEngine.areDisequal( length_term_i, length_term_j, true ) ){
-                    info.d_ant.push_back( ldeq );
+                  if( lentTestSuccess!=-1 ){
+                    info.d_antn.push_back( lentTestExp );
+                    info.d_conc = lentTestSuccess==0 ? eq1 : eq2;
+                    info.d_id = INFER_SSPLIT_VAR_PROP;
+                    info_valid = true;
                   }else{
-                    info.d_antn.push_back(ldeq);
+                    Node ldeq = NodeManager::currentNM()->mkNode( kind::EQUAL, length_term_i, length_term_j ).negate();
+                    if( d_equalityEngine.areDisequal( length_term_i, length_term_j, true ) ){
+                      info.d_ant.push_back( ldeq );
+                    }else{
+                      info.d_antn.push_back(ldeq);
+                    }
+                    //set info
+                    info.d_conc = NodeManager::currentNM()->mkNode( kind::OR, eq1, eq2 );
+                    info.d_id = INFER_SSPLIT_VAR;
+                    info_valid = true;
                   }
-                  //set info
-                  info.d_conc = NodeManager::currentNM()->mkNode( kind::OR, eq1, eq2 );
-                  info.d_id = INFER_SSPLIT_VAR;
-                  info_valid = true;
+                } else {
+                  Node sk_x = d_sk_cache.mkSkolemCached(
+                      normal_forms[i][index],
+                      normal_forms[j][index],
+                      SkolemCache::SK_ID_V_SPT_X,
+                      "v_sptx");
+                  Node sk_y = d_sk_cache.mkSkolemCached(
+                      normal_forms[j][index],
+                      normal_forms[i][index],
+                      SkolemCache::SK_ID_V_SPT_Y,
+                      "v_spty");
+                  // must add length requirement
+                  if (lentTestSuccess == -1 || lentTestSuccess == 0)
+                    info.d_new_skolem[LENGTH_GEQ_ONE].push_back(sk_x);
+                  if (lentTestSuccess == -1 || lentTestSuccess != 0)
+                    info.d_new_skolem[LENGTH_GEQ_ONE].push_back(sk_y);
+                  Node eq1 = normal_forms[i][index].eqNode(mkConcat(normal_forms[j][index], sk_x) );
+                  Node eq2 = normal_forms[j][index].eqNode(mkConcat(normal_forms[i][index], sk_y) );
+
+                  if( lentTestSuccess!=-1 ){
+                    info.d_antn.push_back( lentTestExp );
+                    info.d_conc = lentTestSuccess==0 ? eq1 : eq2;
+                    info.d_id = INFER_SSPLIT_VAR_PROP;
+                    info_valid = true;
+                  }else{
+                    Node ldeq = NodeManager::currentNM()->mkNode( kind::EQUAL, length_term_i, length_term_j ).negate();
+                    if( d_equalityEngine.areDisequal( length_term_i, length_term_j, true ) ){
+                      info.d_ant.push_back( ldeq );
+                    }else{
+                      info.d_antn.push_back(ldeq);
+                    }
+                    //set info
+                    info.d_conc = NodeManager::currentNM()->mkNode( kind::OR, eq1, eq2 );
+                    info.d_id = INFER_SSPLIT_VAR;
+                    info_valid = true;
+                  }
                 }
               }
             }
