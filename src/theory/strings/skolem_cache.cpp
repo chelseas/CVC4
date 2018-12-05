@@ -172,7 +172,7 @@ SkolemCache::normalizeStringSkolem(SkolemId id, Node a, Node b)
       && b[2] == d_zero)
   {
     id = SK_FIRST_CTN_PRE;
-    b = b[2];
+    b = b[1];
   }
 
   if (id == SK_FIRST_CTN_PRE)
