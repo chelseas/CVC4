@@ -1914,7 +1914,7 @@ Node TheoryStringsRewriter::rewriteContains( Node node ) {
       // The following rewrites are specific to a single character second
       // argument of contains, where we can reason that this character is
       // not split over multiple components in the first argument.
-      if (node[0].getKind() == STRING_CONCAT)
+      if (false && node[0].getKind() == STRING_CONCAT)
       {
         std::vector<Node> nc1;
         getConcat(node[0], nc1);
@@ -2106,7 +2106,7 @@ Node TheoryStringsRewriter::rewriteContains( Node node ) {
       Trace("strings-rewrite-multiset") << ch << " in arguments is ";
       Trace("strings-rewrite-multiset") << count_const[0][ch] << " / "
                                         << count_const[1][ch] << std::endl;
-      if (count_const[0][ch] < count_const[1][ch])
+      if (false && count_const[0][ch] < count_const[1][ch])
       {
         Node ret = NodeManager::currentNM()->mkConst(false);
         return returnRewrite(node, ret, "ctn-mset-nss");
@@ -2132,7 +2132,7 @@ Node TheoryStringsRewriter::rewriteContains( Node node ) {
   }
 
   // splitting
-  if (node[0].getKind() == kind::STRING_CONCAT)
+  if (false && node[0].getKind() == kind::STRING_CONCAT)
   {
     if( node[1].isConst() ){
       CVC4::String t = node[1].getConst<String>();
@@ -2207,7 +2207,7 @@ Node TheoryStringsRewriter::rewriteContains( Node node ) {
 
     // (str.contains (str.replace x y z) z) --->
     //   (or (str.contains x y) (str.contains x z))
-    if (node[0][2] == node[1])
+    if (false && node[0][2] == node[1])
     {
       Node ret = nm->mkNode(OR,
                             nm->mkNode(STRING_STRCTN, node[0][0], node[0][1]),
@@ -2323,7 +2323,7 @@ Node TheoryStringsRewriter::rewriteIndexof( Node node ) {
       return returnRewrite(node, negone, "idof-eq-nstart");
     }
     Node emp = nm->mkConst(CVC4::String(""));
-    if (node[0] != emp)
+    if (false && node[0] != emp)
     {
       // indexof( x, x, z ) ---> indexof( "", "", z )
       Node ret = nm->mkNode(STRING_STRIDOF, emp, emp, node[2]);
@@ -2483,7 +2483,7 @@ Node TheoryStringsRewriter::rewriteReplace( Node node ) {
         return returnRewrite(node, node[0], "rpl-const-nfind");
       }
       // if no overlap, we can pull the first child
-      if (s.overlap(t) == 0)
+      if (false && s.overlap(t) == 0)
       {
         std::vector<Node> spl(children0.begin() + 1, children0.end());
         Node ret = NodeManager::currentNM()->mkNode(
