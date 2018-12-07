@@ -1662,7 +1662,7 @@ void TheoryStrings::checkExtfEval( int effort ) {
                               << ", const = " << einfo.d_const << std::endl;
         for (const Node& nrcc : nrc)
         {
-          sendInference(einfo.d_exp,
+          sendInternalInference(einfo.d_exp,
                         einfo.d_const == d_false ? nrcc.negate() : nrcc,
                         effort == 0 ? "EXTF_d" : "EXTF_d-N");
         }
