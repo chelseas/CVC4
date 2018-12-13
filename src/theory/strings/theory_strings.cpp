@@ -3083,15 +3083,21 @@ void TheoryStrings::processSimpleNEq( std::vector< std::vector< Node > > &normal
             Trace("strings-solve-debug") << "Non-simple Case 2 : must compare strings" << std::endl;
             int loop_in_i = -1;
             int loop_in_j = -1;
+            bool loopDetected = false;
             if( detectLoop( normal_forms, i, j, index, loop_in_i, loop_in_j, rproc ) ){
               if( !isRev ){  //FIXME
               getExplanationVectorForPrefixEq( normal_forms, normal_form_src, normal_forms_exp, normal_forms_exp_depend, i, j, -1, -1, isRev, info.d_ant );
               //set info
-              if( processLoop( normal_forms, normal_form_src, i, j, loop_in_i!=-1 ? i : j, loop_in_i!=-1 ? j : i, loop_in_i!=-1 ? loop_in_i : loop_in_j, index, info ) ){
+              bool loopSuccess;
+              if( processLoop( normal_forms, normal_form_src, i, j, loop_in_i!=-1 ? i : j, loop_in_i!=-1 ? j : i, loop_in_i!=-1 ? loop_in_i : loop_in_j, index, info, loopSuccess) ){
                 info_valid = true;
               }
+              if (loopSuccess)
+                loopDetected = true;
               }
-            }else{
+            }
+            
+            if (!loopDetected) {
               //AJR: length entailment here?
               if( normal_forms[i][index].getKind() == kind::CONST_STRING || normal_forms[j][index].getKind() == kind::CONST_STRING ){
                 unsigned const_k = normal_forms[i][index].getKind() == kind::CONST_STRING ? i : j;
@@ -3312,7 +3318,8 @@ bool TheoryStrings::detectLoop( std::vector< std::vector< Node > > &normal_forms
 
 //xs(zy)=t(yz)xr
 bool TheoryStrings::processLoop( std::vector< std::vector< Node > > &normal_forms, std::vector< Node > &normal_form_src,
-                                 int i, int j, int loop_n_index, int other_n_index, int loop_index, int index, InferInfo& info ){
+                                 int i, int j, int loop_n_index, int other_n_index, int loop_index, int index, InferInfo& info, bool& loopSuccess){
+  loopSuccess = true;
   if( options::stringAbortLoop() ){
     std::stringstream ss;
     ss << "Looping word equation encountered." << std::endl;
@@ -3464,6 +3471,9 @@ bool TheoryStrings::processLoop( std::vector< std::vector< Node > > &normal_form
   }
   else
   {
+    loopSuccess = false;
+    return false;
+
     Trace("strings-loop") << "Strings::Loop: Normal Loop Breaking."
                           << std::endl;
     // right

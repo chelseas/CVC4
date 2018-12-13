@@ -521,7 +521,7 @@ private:
                        std::vector< std::vector< Node > > &normal_forms_exp, std::vector< std::map< Node, std::map< bool, int > > >& normal_forms_exp_depend );
   bool detectLoop( std::vector< std::vector< Node > > &normal_forms, int i, int j, int index, int &loop_in_i, int &loop_in_j, unsigned rproc );
   bool processLoop( std::vector< std::vector< Node > > &normal_forms, std::vector< Node > &normal_form_src,
-                    int i, int j, int loop_n_index, int other_n_index,int loop_index, int index, InferInfo& info );
+                    int i, int j, int loop_n_index, int other_n_index,int loop_index, int index, InferInfo& info, bool& loopSuccess );
   void processNEqc( std::vector< std::vector< Node > > &normal_forms, std::vector< Node > &normal_form_src,
                     std::vector< std::vector< Node > > &normal_forms_exp, std::vector< std::map< Node, std::map< bool, int > > >& normal_forms_exp_depend );
   void processReverseNEq( std::vector< std::vector< Node > > &normal_forms, std::vector< Node > &normal_form_src, 
