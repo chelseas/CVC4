@@ -3285,6 +3285,10 @@ void TheoryStrings::processSimpleNEq( std::vector< std::vector< Node > > &normal
 }
 
 bool TheoryStrings::detectLoop( std::vector< std::vector< Node > > &normal_forms, int i, int j, int index, int &loop_in_i, int &loop_in_j, unsigned rproc ){
+  if (!options::stringProcessLoop())
+  {
+    return false;
+  }
   int has_loop[2] = { -1, -1 };
   if( options::stringLB() != 2 ) {
     for( unsigned r=0; r<2; r++ ) {
@@ -3317,11 +3321,6 @@ bool TheoryStrings::processLoop( std::vector< std::vector< Node > > &normal_form
     std::stringstream ss;
     ss << "Looping word equation encountered." << std::endl;
     throw LogicException(ss.str());
-  }
-  if (!options::stringProcessLoop())
-  {
-    d_out->setIncomplete();
-    return false;
   }
   NodeManager* nm = NodeManager::currentNM();
   Node conc;
