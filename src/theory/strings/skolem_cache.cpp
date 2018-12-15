@@ -97,11 +97,10 @@ SkolemCache::normalizeStringSkolem(SkolemId id, Node a, Node b)
   if (id == SK_FIRST_CTN_POST)
   {
     // SK_FIRST_CTN_POST(x, y) --->
-    //   SK_SUFFIX_REM(x, (+ (str.len SK_FIRST_CTN_PRE(x, y)) (str.len y)))
+    //   SK_SUFFIX_REM(x, (+ (str.indexof x y 0) (str.len y)))
     id = SK_SUFFIX_REM;
-    Node pre = mkSkolemCached(a, b, SK_FIRST_CTN_PRE, "pre");
     b = Rewriter::rewrite(nm->mkNode(
-        PLUS, nm->mkNode(STRING_LENGTH, pre), nm->mkNode(STRING_LENGTH, b)));
+        PLUS, nm->mkNode(STRING_STRIDOF, a, b, d_zero), nm->mkNode(STRING_LENGTH, b)));
   }
 
   if (id == SK_ID_C_SPT)
@@ -149,6 +148,12 @@ SkolemCache::normalizeStringSkolem(SkolemId id, Node a, Node b)
     id = SK_PREFIX;
     b = Rewriter::rewrite(nm->mkNode(STRING_LENGTH, b));
   }
+  else if (id == SK_ID_V_SPT || id == SK_ID_V_SPT_REV)
+  {
+    if (b > a) {
+      std::swap(a, b);
+    }
+  }
 
   if (id == SK_PURIFY && a.getKind() == kind::STRING_SUBSTR)
   {
@@ -171,6 +176,10 @@ SkolemCache::normalizeStringSkolem(SkolemId id, Node a, Node b)
       id = SK_SUFFIX_REM;
       a = s;
       b = n;
+    } else {
+      id = SK_PREFIX;
+      a = nm->mkNode(STRING_SUBSTR, n, nm->mkNode(MINUS, nm->mkNode(STRING_LENGTH, a), n));
+      b = m;
     }
   }
 
