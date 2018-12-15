@@ -68,8 +68,7 @@ class SkolemCache
     SK_ID_VC_BIN_SPT_REV,
     // a != "" ^ b != "" ^ len(a)!=len(b) ^ a ++ a' = b ++ b' =>
     //    exists k. len( k )>0 ^ ( a ++ k = b OR a = b ++ k )
-    SK_ID_V_SPT_X,
-    SK_ID_V_SPT_Y,
+    SK_ID_V_SPT,
     SK_ID_V_SPT_REV,
     // a != ""  ^ b = "c" ^ a ++ a' != b ++ b' =>
     //    exists k, k_rem.
