@@ -130,13 +130,19 @@ libcvc4_add_sources(
   proof/array_proof.h
   proof/bitvector_proof.cpp
   proof/bitvector_proof.h
+  proof/clausal_bitvector_proof.cpp
+  proof/clausal_bitvector_proof.h
   proof/clause_id.h
   proof/cnf_proof.cpp
   proof/cnf_proof.h
+  proof/drat/drat_proof.cpp
+  proof/drat/drat_proof.h
   proof/lemma_proof.cpp
   proof/lemma_proof.h
   proof/lfsc_proof_printer.cpp
   proof/lfsc_proof_printer.h
+  proof/lrat/lrat_proof.cpp
+  proof/lrat/lrat_proof.h
   proof/proof.h
   proof/proof_manager.cpp
   proof/proof_manager.h
