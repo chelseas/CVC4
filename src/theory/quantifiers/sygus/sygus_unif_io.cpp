@@ -1013,6 +1013,7 @@ Node SygusUnifIo::constructSol(
   bool retValMod = x.isReturnValueModified();
 
   Node ret_dt;
+  Node cached_ret_dt;
   if (nrole == role_equal)
   {
     if (!retValMod)
@@ -1094,14 +1095,14 @@ Node SygusUnifIo::constructSol(
     {
       bool firstTime = true;
       std::unordered_set<Node, NodeHashFunction> intersection;
-      std::map<size_t, std::unordered_set<Node, NodeHashFunction>>::iterator
+      std::map<TypeNode, std::unordered_set<Node, NodeHashFunction>>::iterator
           pit;
       for (size_t i = 0, nvals = x.d_vals.size(); i < nvals; i++)
       {
         if (x.d_vals[i].getConst<bool>())
         {
-          pit = d_psolutions.find(i);
-          if (pit == d_psolutions.end())
+          pit = d_psolutions[i].find(etn);
+          if (pit == d_psolutions[i].end())
           {
             // no cached solution
             intersection.clear();
@@ -1135,12 +1136,31 @@ Node SygusUnifIo::constructSol(
       }
       if (!intersection.empty())
       {
-        ret_dt = *intersection.begin();
+        if (d_enableMinimality)
+        {
+          // if we are enabling minimality, the minimal cached solution may
+          // still not be the best solution, thus we remember it and keep it if
+          // we don't construct a better one below
+          std::vector<Node> intervec;
+          intervec.insert(
+              intervec.begin(), intersection.begin(), intersection.end());
+          cached_ret_dt = getMinimalTerm(intervec);
+        }
+        else
+        {
+          ret_dt = *intersection.begin();
+        }
         if (Trace.isOn("sygus-sui-dt"))
         {
           indent("sygus-sui-dt", ind);
           Trace("sygus-sui-dt") << "ConstructPBE: found in cache: ";
-          TermDbSygus::toStreamSygus("sygus-sui-dt", ret_dt);
+          Node csol = ret_dt;
+          if (d_enableMinimality)
+          {
+            csol = cached_ret_dt;
+            Trace("sygus-sui-dt") << "(minimal) ";
+          }
+          TermDbSygus::toStreamSygus("sygus-sui-dt", csol);
           Trace("sygus-sui-dt") << std::endl;
         }
       }
@@ -1303,7 +1323,6 @@ Node SygusUnifIo::constructSol(
       Trace("sygus-sui-dt")
           << "...try STRATEGY " << strat << "..." << std::endl;
 
-      std::map<unsigned, Node> look_ahead_solved_children;
       std::vector<Node> dt_children_cons;
       bool success = true;
 
@@ -1318,107 +1337,94 @@ Node SygusUnifIo::constructSol(
         Trace("sygus-sui-dt")
             << "construct PBE child #" << sc << "..." << std::endl;
         Node rec_c;
-        std::map<unsigned, Node>::iterator itla =
-            look_ahead_solved_children.find(sc);
-        if (itla != look_ahead_solved_children.end())
+
+        std::pair<Node, NodeRole>& cenum = etis->d_cenum[sc];
+
+        // update the context
+        std::vector<Node> prev;
+        if (strat == strat_ITE && sc > 0)
         {
-          rec_c = itla->second;
-          indent("sygus-sui-dt-debug", ind + 1);
-          Trace("sygus-sui-dt-debug")
-              << "ConstructPBE: look ahead solved : "
-              << d_tds->sygusToBuiltin(rec_c) << std::endl;
+          EnumCache& ecache_cond = d_ecache[split_cond_enum];
+          Assert(set_split_cond_res_index);
+          Assert(split_cond_res_index < ecache_cond.d_enum_vals_res.size());
+          prev = x.d_vals;
+          x.updateContext(this,
+                          ecache_cond.d_enum_vals_res[split_cond_res_index],
+                          sc == 1);
+          // return value of above call may be false in corner cases where we
+          // must choose a non-separating condition to traverse to another
+          // strategy node
         }
-        else
+
+        // recurse
+        if (strat == strat_ITE && sc == 0)
         {
-          std::pair<Node, NodeRole>& cenum = etis->d_cenum[sc];
+          Node ce = cenum.first;
 
-          // update the context
-          std::vector<Node> prev;
-          if (strat == strat_ITE && sc > 0)
+          EnumCache& ecache_child = d_ecache[ce];
+
+          // get the conditionals in the current context : they must be
+          // distinguishable
+          std::map<int, std::vector<Node> > possible_cond;
+          std::map<Node, int> solved_cond;  // stores branch
+          ecache_child.d_term_trie.getLeaves(x.d_vals, true, possible_cond);
+
+          std::map<int, std::vector<Node>>::iterator itpc =
+              possible_cond.find(0);
+          if (itpc != possible_cond.end())
           {
-            EnumCache& ecache_cond = d_ecache[split_cond_enum];
-            Assert(set_split_cond_res_index);
-            Assert(split_cond_res_index < ecache_cond.d_enum_vals_res.size());
-            prev = x.d_vals;
-            x.updateContext(this,
-                            ecache_cond.d_enum_vals_res[split_cond_res_index],
-                            sc == 1);
-            // return value of above call may be false in corner cases where we
-            // must choose a non-separating condition to traverse to another
-            // strategy node
-          }
-
-          // recurse
-          if (strat == strat_ITE && sc == 0)
-          {
-            Node ce = cenum.first;
-
-            EnumCache& ecache_child = d_ecache[ce];
-
-            // get the conditionals in the current context : they must be
-            // distinguishable
-            std::map<int, std::vector<Node> > possible_cond;
-            std::map<Node, int> solved_cond;  // stores branch
-            ecache_child.d_term_trie.getLeaves(x.d_vals, true, possible_cond);
-
-            std::map<int, std::vector<Node>>::iterator itpc =
-                possible_cond.find(0);
-            if (itpc != possible_cond.end())
+            if (Trace.isOn("sygus-sui-dt-debug"))
             {
-              if (Trace.isOn("sygus-sui-dt-debug"))
+              indent("sygus-sui-dt-debug", ind + 1);
+              Trace("sygus-sui-dt-debug")
+                  << "PBE : We have " << itpc->second.size()
+                  << " distinguishable conditionals:" << std::endl;
+              for (Node& cond : itpc->second)
               {
-                indent("sygus-sui-dt-debug", ind + 1);
+                indent("sygus-sui-dt-debug", ind + 2);
                 Trace("sygus-sui-dt-debug")
-                    << "PBE : We have " << itpc->second.size()
-                    << " distinguishable conditionals:" << std::endl;
-                for (Node& cond : itpc->second)
-                {
-                  indent("sygus-sui-dt-debug", ind + 2);
-                  Trace("sygus-sui-dt-debug")
-                      << d_tds->sygusToBuiltin(cond) << std::endl;
-                }
-              }
-              if (rec_c.isNull())
-              {
-                rec_c = constructBestConditional(ce, itpc->second);
-                Assert(!rec_c.isNull());
-                indent("sygus-sui-dt", ind);
-                Trace("sygus-sui-dt")
-                    << "PBE: ITE strategy : choose best conditional "
-                    << d_tds->sygusToBuiltin(rec_c) << std::endl;
+                    << d_tds->sygusToBuiltin(cond) << std::endl;
               }
             }
-            else
+            if (rec_c.isNull())
             {
-              // TODO (#1250) : degenerate case where children have different
-              // types?
+              rec_c = constructBestConditional(ce, itpc->second);
+              Assert(!rec_c.isNull());
               indent("sygus-sui-dt", ind);
-              Trace("sygus-sui-dt") << "return PBE: failed ITE strategy, "
-                                       "cannot find a distinguishable condition"
-                                    << std::endl;
-            }
-            if (!rec_c.isNull())
-            {
-              Assert(ecache_child.d_enum_val_to_index.find(rec_c)
-                     != ecache_child.d_enum_val_to_index.end());
-              split_cond_res_index = ecache_child.d_enum_val_to_index[rec_c];
-              set_split_cond_res_index = true;
-              split_cond_enum = ce;
-              Assert(split_cond_res_index
-                     < ecache_child.d_enum_vals_res.size());
+              Trace("sygus-sui-dt")
+                  << "PBE: ITE strategy : choose best conditional "
+                  << d_tds->sygusToBuiltin(rec_c) << std::endl;
             }
           }
           else
           {
-            did_recurse = true;
-            rec_c = constructSol(f, cenum.first, cenum.second, ind + 2, lemmas);
+            // TODO (#1250) : degenerate case where children have different
+            // types?
+            indent("sygus-sui-dt", ind);
+            Trace("sygus-sui-dt") << "return PBE: failed ITE strategy, "
+                                      "cannot find a distinguishable condition"
+                                  << std::endl;
           }
-
-          // undo update the context
-          if (strat == strat_ITE && sc > 0)
+          if (!rec_c.isNull())
           {
-            x.d_vals = prev;
+            Assert(ecache_child.d_enum_val_to_index.find(rec_c)
+                    != ecache_child.d_enum_val_to_index.end());
+            split_cond_res_index = ecache_child.d_enum_val_to_index[rec_c];
+            set_split_cond_res_index = true;
+            split_cond_enum = ce;
+            Assert(split_cond_res_index
+                    < ecache_child.d_enum_vals_res.size());
           }
+        }
+        else
+        {
+          did_recurse = true;
+          rec_c = constructSol(f, cenum.first, cenum.second, ind + 2, lemmas);
+        }
+        // undo update the context
+        if (strat == strat_ITE && sc > 0)
+        {
+          x.d_vals = prev;
         }
         if (!rec_c.isNull())
         {
@@ -1455,6 +1461,24 @@ Node SygusUnifIo::constructSol(
     sindex++;
   }
 
+  // if there was a cached solution, process it now
+  if (!cached_ret_dt.isNull() && cached_ret_dt != ret_dt)
+  {
+    if (ret_dt.isNull())
+    {
+      // take the cached one if it is the only one
+      ret_dt = cached_ret_dt;
+    }
+    else if (d_enableMinimality)
+    {
+      Assert(ret_dt.getType() == cached_ret_dt.getType());
+      // take the cached one if it is smaller
+      std::vector<Node> retDts;
+      retDts.push_back(cached_ret_dt);
+      retDts.push_back(ret_dt);
+      ret_dt = getMinimalTerm(retDts);
+    }
+  }
   Assert(ret_dt.isNull() || ret_dt.getType() == e.getType());
   if (Trace.isOn("sygus-sui-dt"))
   {
@@ -1479,7 +1503,7 @@ Node SygusUnifIo::constructSol(
             TermDbSygus::toStreamSygus("sygus-sui-cache", ret_dt);
             Trace("sygus-sui-cache") << std::endl;
           }
-          d_psolutions[i].insert(ret_dt);
+          d_psolutions[i][etn].insert(ret_dt);
         }
       }
     }

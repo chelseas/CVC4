@@ -1663,8 +1663,8 @@ void TheoryStrings::checkExtfEval( int effort ) {
         for (const Node& nrcc : nrc)
         {
           sendInternalInference(einfo.d_exp,
-                        einfo.d_const == d_false ? nrcc.negate() : nrcc,
-                        effort == 0 ? "EXTF_d" : "EXTF_d-N");
+                                einfo.d_const == d_false ? nrcc.negate() : nrcc,
+                                effort == 0 ? "EXTF_d" : "EXTF_d-N");
         }
       }else{
         to_reduce = nrc;
@@ -3195,7 +3195,6 @@ void TheoryStrings::processSimpleNEq( std::vector< std::vector< Node > > &normal
                       Node firstChar = stra.size() == 1 ? const_str : NodeManager::currentNM()->mkConst( isRev ? stra.suffix( 1 ) : stra.prefix( 1 ) );
                       Node sk = d_sk_cache.mkSkolemCached(
                           other_str,
-                          firstChar,
                           isRev ? SkolemCache::SK_ID_VC_SPT_REV
                                 : SkolemCache::SK_ID_VC_SPT,
                           "c_spt");
@@ -3570,11 +3569,10 @@ void TheoryStrings::processDeq( Node ni, Node nj ) {
                   }
                 }else{
                   Node sk = d_sk_cache.mkSkolemCached(
-                      nconst_k, firstChar, SkolemCache::SK_ID_DC_SPT, "dc_spt");
+                      nconst_k, SkolemCache::SK_ID_DC_SPT, "dc_spt");
                   registerLength(sk, LENGTH_ONE);
                   Node skr =
                       d_sk_cache.mkSkolemCached(nconst_k,
-                                                firstChar,
                                                 SkolemCache::SK_ID_DC_SPT_REM,
                                                 "dc_spt_rem");
                   Node eq1 = nconst_k.eqNode( NodeManager::currentNM()->mkNode( kind::STRING_CONCAT, sk, skr ) );
@@ -3891,6 +3889,23 @@ void TheoryStrings::registerTerm( Node n, int effort ) {
     Node lem = nm->mkNode(ITE, code_len, code_range, code_eq_neg1);
     Trace("strings-lemma") << "Strings::Lemma CODE : " << lem << std::endl;
     Trace("strings-assert") << "(assert " << lem << ")" << std::endl;
+    d_out->lemma(lem);
+  }
+  else if (n.getKind() == STRING_STRIDOF)
+  {
+    Node lower = n[2];
+    if (!TheoryStringsRewriter::checkEntailArith(lower)) {
+      lower = d_zero;
+    }
+    Node neg = Rewriter::rewrite(nm->mkNode(EQUAL, n, d_neg_one));
+    Node geq = Rewriter::rewrite(nm->mkNode(GEQ, n, lower));
+    Node lem = nm->mkNode(OR, neg, geq);
+    Trace("strings-lemma") << "Strings::Lemma STRIDOF : " << lem << std::endl;
+    Trace("strings-assert") << "(assert " << lem << ")" << std::endl;
+    //d_out->lemma(lem);
+    //d_out->requirePhase(neg, true);
+
+    lem = Rewriter::rewrite(nm->mkNode(GT, nm->mkNode(STRING_LENGTH, n[0]), n));
     d_out->lemma(lem);
   }
 }
