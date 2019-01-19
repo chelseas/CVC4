@@ -3919,6 +3919,11 @@ Node TheoryStringsRewriter::checkEntailContains(Node a,
                                                 Node b,
                                                 bool fullRewriter)
 {
+  if (!options::stringsRewriterEntailContainsChecks())
+  {
+    return Node::null();
+  }
+
   NodeManager* nm = NodeManager::currentNM();
   Node ctn = nm->mkNode(kind::STRING_STRCTN, a, b);
 

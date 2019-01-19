@@ -243,3 +243,12 @@ header = "options/strings_options.h"
   default    = "true"
   read_only  = true
   help       = "Enable the entailment checks in the strings rewriter"
+
+[[option]]
+  name       = "stringsRewriterEntailContainsChecks"
+  category   = "expert"
+  long       = "strings-rewriter-entail-contains-checks"
+  type       = "bool"
+  default    = "true"
+  read_only  = true
+  help       = "Enable the contains entailment checks in the strings rewriter"
