@@ -444,6 +444,8 @@ set(regress_0_tests
   regress0/fmf/sort-infer-typed-082718.smt2
   regress0/fmf/syn002-si-real-int.smt2
   regress0/fmf/tail_rec.smt2
+  regress0/fp/abs-unsound.smt2
+  regress0/fp/abs-unsound2.smt2
   regress0/fp/ext-rew-test.smt2
   regress0/fp/simple.smt2
   regress0/fuzz_1.smt
@@ -568,6 +570,8 @@ set(regress_0_tests
   regress0/preprocess/preprocess_14.cvc
   regress0/preprocess/preprocess_15.cvc
   regress0/print_lambda.cvc
+  regress0/printer/bv_consts_bin.smt2
+  regress0/printer/bv_consts_dec.smt2
   regress0/push-pop/boolean/fuzz_12.smt2
   regress0/push-pop/boolean/fuzz_13.smt2
   regress0/push-pop/boolean/fuzz_14.smt2
@@ -820,6 +824,7 @@ set(regress_0_tests
   regress0/strings/ilc-like.smt2
   regress0/strings/indexof-sym-simp.smt2
   regress0/strings/issue1189.smt2
+  regress0/strings/itos-entail.smt2
   regress0/strings/leadingzero001.smt2
   regress0/strings/loop001.smt2
   regress0/strings/model001.smt2
@@ -843,10 +848,10 @@ set(regress_0_tests
   regress0/strings/type001.smt2
   regress0/strings/unsound-0908.smt2
   regress0/strings/unsound-repl-rewrite.smt2
-  regress0/sygus/array-grammar-select.sy
-  regress0/sygus/array-grammar-store.sy
   regress0/sygus/General_plus10.sy
   regress0/sygus/aig-si.sy
+  regress0/sygus/array-grammar-select.sy
+  regress0/sygus/array-grammar-store.sy
   regress0/sygus/c100.sy
   regress0/sygus/ccp16.lus.sy
   regress0/sygus/check-generic-red.sy

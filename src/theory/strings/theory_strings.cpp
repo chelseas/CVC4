@@ -3341,6 +3341,7 @@ TheoryStrings::ProcessLoopResult TheoryStrings::processLoop(
   }
   else if (options::stringProcessLoopMode() == ProcessLoopMode::NONE)
   {
+    d_out->setIncomplete();
     return ProcessLoopResult::SKIPPED;
   }
 
@@ -3487,10 +3488,11 @@ TheoryStrings::ProcessLoopResult TheoryStrings::processLoop(
   {
     if (options::stringProcessLoopMode() == ProcessLoopMode::SIMPLE_ABORT)
     {
-      throw LogicException("Normal loop breaking not allowed");
+      throw LogicException("Normal looping word equation encountered.");
     }
     else if (options::stringProcessLoopMode() == ProcessLoopMode::SIMPLE)
     {
+      d_out->setIncomplete();
       return ProcessLoopResult::SKIPPED;
     }
 
