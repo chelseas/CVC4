@@ -93,6 +93,17 @@ if(BUILD_BINDINGS_JAVA)
   set_tests_properties(example/SimpleVCjava PROPERTIES LABELS "example")
 endif()
 
+if(BUILD_BINDINGS_PYTHON)
+  add_test(
+    NAME example/SimpleVCpython
+    COMMAND
+      "${PYTHON_EXECUTABLE}" "${CMAKE_SOURCE_DIR}/examples/SimpleVC.py"
+  )
+  set_tests_properties(example/SimpleVCpython PROPERTIES
+    LABELS "example"
+    ENVIRONMENT PYTHONPATH=${CMAKE_BINARY_DIR}/src/bindings/python)
+endif()
+
 add_subdirectory(api)
 add_subdirectory(hashsmt)
 add_subdirectory(nra-translate)

@@ -28,3 +28,7 @@ endforeach()
 if(BUILD_BINDINGS_JAVA)
   add_subdirectory(java)
 endif()
+
+if(BUILD_BINDINGS_PYTHON)
+  add_subdirectory(python)
+endif()
