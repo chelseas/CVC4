@@ -4413,6 +4413,11 @@ void TheoryStringsRewriter::getArithApproximations(Node a,
 
 bool TheoryStringsRewriter::checkEntailMultisetSubset(Node a, Node b)
 {
+  if (!options::stringsRewriterMultisetReasoning())
+  {
+    return false;
+  }
+
   NodeManager* nm = NodeManager::currentNM();
 
   std::vector<Node> avec;
@@ -4499,6 +4504,11 @@ bool TheoryStringsRewriter::checkEntailMultisetSubset(Node a, Node b)
 
 Node TheoryStringsRewriter::checkEntailHomogeneousString(Node a)
 {
+  if (!options::stringsRewriterMultisetReasoning())
+  {
+    return Node::null();
+  }
+
   NodeManager* nm = NodeManager::currentNM();
 
   std::vector<Node> avec;
