@@ -1939,6 +1939,7 @@ Node TheoryStringsRewriter::rewriteContains( Node node ) {
   {
     Node ret = NodeManager::currentNM()->mkNode(
         kind::STRING_STRCTN, mkConcat(kind::STRING_CONCAT, nc1), node[1]);
+    Trace("strip-constant-endpoints") << node << " ---> " << ret << std::endl;
     return returnRewrite(node, ret, "ctn-strip-endpt");
   }
 
@@ -2339,6 +2340,7 @@ Node TheoryStringsRewriter::rewriteIndexof( Node node ) {
     {
       Node ret = mkConcat(kind::STRING_CONCAT, children0);
       ret = nm->mkNode(STRING_STRIDOF, ret, node[1], node[2]);
+      Trace("strip-constant-endpoints") << node << " ---> " << ret << std::endl;
       // For example:
       // str.indexof( str.++( x, "A" ), "B", 0 ) ---> str.indexof( x, "B", 0 )
       return returnRewrite(node, ret, "rpl-pull-endpt");
@@ -2574,6 +2576,7 @@ Node TheoryStringsRewriter::rewriteReplace( Node node ) {
             node[2]));
         cc.insert(cc.end(), ce.begin(), ce.end());
         Node ret = mkConcat(kind::STRING_CONCAT, cc);
+        Trace("strip-constant-endpoints") << node << " ---> " << ret << std::endl;
         return returnRewrite(node, ret, "rpl-pull-endpt");
       }
     }
