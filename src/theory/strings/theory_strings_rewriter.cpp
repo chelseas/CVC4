@@ -3318,6 +3318,11 @@ int TheoryStringsRewriter::componentContains(std::vector<Node>& n1,
                                              bool computeRemainder,
                                              int remainderDir)
 {
+  if (!options::stringsRewriterEntailContainsChecks())
+  {
+    return -1;
+  }
+
   Assert(nb.empty());
   Assert(ne.empty());
   // if n2 is a singleton, we can do optimized version here
@@ -3584,6 +3589,11 @@ bool TheoryStringsRewriter::stripConstantEndpoints(std::vector<Node>& n1,
                                                    std::vector<Node>& ne,
                                                    int dir)
 {
+  if (options::stringsRewriterStripConstantEndpoints())
+  {
+    return false;
+  }
+
   Assert(nb.empty());
   Assert(ne.empty());
   bool changed = false;

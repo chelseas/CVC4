@@ -261,3 +261,12 @@ header = "options/strings_options.h"
   default    = "true"
   read_only  = true
   help       = "Enable multiset reasoning in the strings rewriter"
+
+[[option]]
+  name       = "stringsRewriterStripConstantEndpoints"
+  category   = "expert"
+  long       = "strings-rewriter-strip-constant-endpoints"
+  type       = "bool"
+  default    = "true"
+  read_only  = true
+  help       = "Enable stripping of constant endpoints"
