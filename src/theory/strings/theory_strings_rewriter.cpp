@@ -3589,7 +3589,7 @@ bool TheoryStringsRewriter::stripConstantEndpoints(std::vector<Node>& n1,
                                                    std::vector<Node>& ne,
                                                    int dir)
 {
-  if (options::stringsRewriterStripConstantEndpoints())
+  if (!options::stringsRewriterStripConstantEndpoints())
   {
     return false;
   }
