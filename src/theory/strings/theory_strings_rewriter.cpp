@@ -2286,17 +2286,47 @@ Node TheoryStringsRewriter::rewriteIndexof( Node node ) {
         // past the first position in node[0] that contains node[1], we can drop
         std::vector<Node> nb;
         std::vector<Node> ne;
-        int cc = componentContains(children0, children1, nb, ne, true, 0);
-        if (cc != -1 && (!nb.empty() || !ne.empty()))
+        int cc = componentContains(children0, children1, nb, ne, true, 1);
+        if (cc != -1 && !ne.empty())
         {
           // For example:
           // str.indexof(str.++(x,y,z),y,0) ---> str.indexof(str.++(x,y),y,0)
           Node nn = mkConcat(kind::STRING_CONCAT, children0);
-          Node ret = nm->mkNode(
-              PLUS,
-              nm->mkNode(STRING_LENGTH, mkConcat(STRING_CONCAT, nb)),
-              nm->mkNode(kind::STRING_STRIDOF, nn, node[1], node[2]));
+          Node ret = nm->mkNode(kind::STRING_STRIDOF, nn, node[1], node[2]);
           return returnRewrite(node, ret, "idof-def-ctn");
+        }
+
+        if (node[1].isConst())
+        {
+          CVC4::String t = node[1].getConst<String>();
+          if (t.size() == 1)
+          {
+            size_t i = 0;
+            std::vector<Node> children0;
+            getConcat(node[0], children0);
+            for (size_t size = children0.size(); i < size; i++)
+            {
+              Node ectn = checkEntailContains(children0[i], node[1]);
+              if (ectn.isNull() || ectn.getConst<bool>())
+              {
+                break;
+              }
+            }
+            Assert(i < children0.size());
+
+            if (i > 0)
+            {
+              std::vector<Node> pfxv(children0.begin(), children0.begin() + i);
+              children0.erase(children0.begin(), children0.begin() + i);
+              Node pfx = mkConcat(STRING_CONCAT, pfxv);
+              Node nn = mkConcat(STRING_CONCAT, children0);
+              Node ret = nm->mkNode(
+                  PLUS,
+                  nm->mkNode(STRING_LENGTH, pfx),
+                  nm->mkNode(kind::STRING_STRIDOF, nn, node[1], node[2]));
+              return returnRewrite(node, ret, "idof-def-ctn");
+            }
+          }
         }
       }
 
