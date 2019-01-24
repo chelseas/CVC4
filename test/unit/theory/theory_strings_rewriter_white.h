@@ -500,18 +500,32 @@ class TheoryStringsRewriterWhite : public CxxTest::TestSuite
       sameNormalForm(idof, negOne);
     }
 
-    // (str.indexof (str.++ (str.substr (str.substr x 0 (str.indexof "A" 0)) 0
-    // 1) "B") 0) ---> -1
+    Node substr_substr_idof =
+        d_nm->mkNode(kind::STRING_SUBSTR, substr_idof, zero, one);
+
+    // (str.indexof (str.++
+    //   (str.substr (str.substr x 0 (str.indexof "A" 0)) 0 1) "B") 0) --->
+    // -1
     {
-      Node idof = d_nm->mkNode(
-          kind::STRING_STRIDOF,
-          d_nm->mkNode(
-              kind::STRING_CONCAT,
-              d_nm->mkNode(kind::STRING_SUBSTR, substr_idof, zero, one),
-              b),
-          a,
-          zero);
+      Node idof =
+          d_nm->mkNode(kind::STRING_STRIDOF,
+                       d_nm->mkNode(kind::STRING_CONCAT, substr_substr_idof, b),
+                       a,
+                       zero);
       sameNormalForm(idof, negOne);
+    }
+
+    // (str.indexof (str.++
+    //   (str.substr (str.substr x 0 (str.indexof "A" 0)) 0 1) "A") 0) --->
+    // (str.len (str.substr (str.substr x 0 (str.indexof "A" 0)) 0 1))
+    {
+      Node lhs =
+          d_nm->mkNode(kind::STRING_STRIDOF,
+                       d_nm->mkNode(kind::STRING_CONCAT, substr_substr_idof, a),
+                       a,
+                       zero);
+      Node rhs = d_nm->mkNode(kind::STRING_LENGTH, substr_substr_idof);
+      sameNormalForm(lhs, rhs);
     }
   }
 
@@ -918,8 +932,10 @@ class TheoryStringsRewriterWhite : public CxxTest::TestSuite
     }
 
     {
-      // (str.contains (str.substr (str.substr x 0 (str.indexof x "AAC" zero)) 0
-      // n) "B") ---> false
+      // (str.contains
+      //   (str.substr
+      //     (str.substr x 0 (str.indexof x "AAC" zero)) 0 n) "B") --->
+      // false
       Node ctn = d_nm->mkNode(
           kind::STRING_STRCTN,
           d_nm->mkNode(kind::STRING_SUBSTR,
@@ -931,8 +947,9 @@ class TheoryStringsRewriterWhite : public CxxTest::TestSuite
     }
 
     {
-      // (str.contains (str.substr (str.substr x 0 (str.indexof x "A" zero)) 0
-      // 1) "A") ---> false
+      // (str.contains
+      //   (str.substr (str.substr x 0 (str.indexof x "A" zero)) 0 1) "A") --->
+      // false
       Node ctn = d_nm->mkNode(
           kind::STRING_STRCTN,
           d_nm->mkNode(

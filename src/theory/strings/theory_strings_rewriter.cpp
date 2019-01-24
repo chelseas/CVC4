@@ -2285,13 +2285,16 @@ Node TheoryStringsRewriter::rewriteIndexof( Node node ) {
         // past the first position in node[0] that contains node[1], we can drop
         std::vector<Node> nb;
         std::vector<Node> ne;
-        int cc = componentContains(children0, children1, nb, ne, true, 1);
-        if (cc != -1 && !ne.empty())
+        int cc = componentContains(children0, children1, nb, ne, true, 0);
+        if (cc != -1 && (!nb.empty() || !ne.empty()))
         {
           // For example:
           // str.indexof(str.++(x,y,z),y,0) ---> str.indexof(str.++(x,y),y,0)
           Node nn = mkConcat(kind::STRING_CONCAT, children0);
-          Node ret = nm->mkNode(kind::STRING_STRIDOF, nn, node[1], node[2]);
+          Node ret = nm->mkNode(
+              PLUS,
+              nm->mkNode(STRING_LENGTH, mkConcat(STRING_CONCAT, nb)),
+              nm->mkNode(kind::STRING_STRIDOF, nn, node[1], node[2]));
           return returnRewrite(node, ret, "idof-def-ctn");
         }
       }
