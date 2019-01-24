@@ -2017,13 +2017,6 @@ Node TheoryStringsRewriter::rewriteContains( Node node ) {
     return returnRewrite(node, ret, "ctn-mset-nss");
   }
 
-  if (checkEntailArith(len_n2, len_n1, false))
-  {
-    // len( n2 ) >= len( n1 ) => contains( n1, n2 ) ---> n1 = n2
-    Node ret = node[0].eqNode(node[1]);
-    return returnRewrite(node, ret, "ctn-len-ineq-nstrict");
-  }
-
   // splitting
   if (node[0].getKind() == kind::STRING_CONCAT)
   {
@@ -2068,14 +2061,25 @@ Node TheoryStringsRewriter::rewriteContains( Node node ) {
   }
   else if (node[0].getKind() == kind::STRING_SUBSTR)
   {
-    // (str.contains (str.substr x n (str.len y)) y) --->
-    //   (= (str.substr x n (str.len y)) y)
-    //
-    // TODO: Remove with under-/over-approximation
-    if (node[0][2] == nm->mkNode(kind::STRING_LENGTH, node[1]))
+    Node zero = nm->mkConst(Rational(0));
+    if (node[0][1] == zero && node[0][2].getKind() == kind::STRING_STRIDOF
+        && node[0][0] == node[0][2][0] && node[0][2][1] == node[1]
+        && node[0][2][2] == zero && checkEntailNonEmpty(node[1]))
     {
-      Node ret = nm->mkNode(kind::EQUAL, node[0], node[1]);
-      return returnRewrite(node, ret, "ctn-substr");
+      Node ret = nm->mkConst(false);
+      return returnRewrite(node, ret, "ctn-substr-idof");
+    }
+
+    Node substr = node[0];
+    while (substr.getKind() == kind::STRING_SUBSTR)
+    {
+      substr = substr[0];
+      Node ectn = checkEntailContains(substr, node[1]);
+      if (!ectn.isNull() && !ectn.getConst<bool>())
+      {
+        Node ret = nm->mkConst(false);
+        return returnRewrite(node, ret, "ctn-substr-nested");
+      }
     }
   }
   else if (node[0].getKind() == kind::STRING_STRREPL)
@@ -2148,6 +2152,18 @@ Node TheoryStringsRewriter::rewriteContains( Node node ) {
       Node ret = nm->mkNode(kind::EQUAL, emp, node[1]);
       return returnRewrite(node, ret, "ctn-repl-empty");
     }
+  }
+
+  // NOTE: This rewrite should be attempted at the end because we could miss
+  // out on other rewrites. E.g. if contains(x, y) can be rewritten to false
+  // then this rewrite might instead rewrite it to an equality and we have
+  // cannot detect that the equality is false because this rewrite applies
+  // again when we check if one side of the equality contains the other.
+  if (checkEntailArith(len_n2, len_n1, false))
+  {
+    // len( n2 ) >= len( n1 ) => contains( n1, n2 ) ---> n1 = n2
+    Node ret = node[0].eqNode(node[1]);
+    return returnRewrite(node, ret, "ctn-len-ineq-nstrict");
   }
 
   Trace("strings-rewrite-nf") << "No rewrites for : " << node << std::endl;
