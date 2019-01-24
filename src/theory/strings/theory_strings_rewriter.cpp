@@ -2061,13 +2061,17 @@ Node TheoryStringsRewriter::rewriteContains( Node node ) {
   }
   else if (node[0].getKind() == kind::STRING_SUBSTR)
   {
-    Node zero = nm->mkConst(Rational(0));
-    if (node[0][1] == zero && node[0][2].getKind() == kind::STRING_STRIDOF
-        && node[0][0] == node[0][2][0] && node[0][2][1] == node[1]
-        && node[0][2][2] == zero && checkEntailNonEmpty(node[1]))
+    if (checkEntailNonEmpty(node[1]))
     {
-      Node ret = nm->mkConst(false);
-      return returnRewrite(node, ret, "ctn-substr-idof");
+      Node lenNonCtn = nm->mkNode(
+          MINUS,
+          nm->mkNode(STRING_STRIDOF, node[0][0], node[1], node[0][1]),
+          node[0][1]);
+      if (checkEntailArith(lenNonCtn, node[0][2]))
+      {
+        Node ret = nm->mkConst(false);
+        return returnRewrite(node, ret, "ctn-substr-idof");
+      }
     }
 
     Node substr = node[0];
