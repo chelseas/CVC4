@@ -3075,7 +3075,17 @@ void TheoryStrings::processSimpleNEq( std::vector< std::vector< Node > > &normal
             Node length_eq = NodeManager::currentNM()->mkNode( kind::EQUAL, length_term_i, length_term_j );
             length_eq = Rewriter::rewrite( length_eq  );
             //set info
-            info.d_conc = NodeManager::currentNM()->mkNode( kind::OR, length_eq, length_eq.negate() );
+            if (TheoryStringsRewriter::checkEntailArith(length_term_i, length_term_j, true)) {
+              info.d_conc = Rewriter::rewrite(NodeManager::currentNM()->mkNode(kind::GT, length_term_i, length_term_j));
+            } else if (TheoryStringsRewriter::checkEntailArith(length_term_i, length_term_j, false)) {
+              info.d_conc = NodeManager::currentNM()->mkNode(kind::OR, length_eq, Rewriter::rewrite(NodeManager::currentNM()->mkNode(kind::GT, length_term_i, length_term_j)));
+            } else if (TheoryStringsRewriter::checkEntailArith(length_term_j, length_term_i, true)) {
+              info.d_conc = Rewriter::rewrite(NodeManager::currentNM()->mkNode(kind::GT, length_term_j, length_term_i));
+            } else if (TheoryStringsRewriter::checkEntailArith(length_term_i, length_term_j, false)) {
+              info.d_conc = NodeManager::currentNM()->mkNode(kind::OR, length_eq, Rewriter::rewrite(NodeManager::currentNM()->mkNode(kind::GT, length_term_j, length_term_i)));
+            } else {
+              info.d_conc = NodeManager::currentNM()->mkNode(kind::OR, length_eq, length_eq.negate());
+            }
             info.d_pending_phase[ length_eq ] = true;
             info.d_id = INFER_LEN_SPLIT;
             info_valid = true;
