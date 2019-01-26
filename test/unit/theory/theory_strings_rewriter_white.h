@@ -487,46 +487,6 @@ class TheoryStringsRewriterWhite : public CxxTest::TestSuite
                      a,
                      i);
     sameNormalForm(idof_substr, negOne);
-
-    Node substr_idof =
-        d_nm->mkNode(kind::STRING_SUBSTR,
-                     x,
-                     zero,
-                     d_nm->mkNode(kind::STRING_STRIDOF, x, a, zero));
-
-    // (str.indexof (str.substr x 0 (str.indexof "A" 0)) 0) ---> -1
-    {
-      Node idof = d_nm->mkNode(kind::STRING_STRIDOF, substr_idof, a, zero);
-      sameNormalForm(idof, negOne);
-    }
-
-    Node substr_substr_idof =
-        d_nm->mkNode(kind::STRING_SUBSTR, substr_idof, zero, one);
-
-    // (str.indexof (str.++
-    //   (str.substr (str.substr x 0 (str.indexof "A" 0)) 0 1) "B") 0) --->
-    // -1
-    {
-      Node idof =
-          d_nm->mkNode(kind::STRING_STRIDOF,
-                       d_nm->mkNode(kind::STRING_CONCAT, substr_substr_idof, b),
-                       a,
-                       zero);
-      sameNormalForm(idof, negOne);
-    }
-
-    // (str.indexof (str.++
-    //   (str.substr (str.substr x 0 (str.indexof "A" 0)) 0 1) "A") 0) --->
-    // (str.len (str.substr (str.substr x 0 (str.indexof "A" 0)) 0 1))
-    {
-      Node lhs =
-          d_nm->mkNode(kind::STRING_STRIDOF,
-                       d_nm->mkNode(kind::STRING_CONCAT, substr_substr_idof, a),
-                       a,
-                       zero);
-      Node rhs = d_nm->mkNode(kind::STRING_LENGTH, substr_substr_idof);
-      sameNormalForm(lhs, rhs);
-    }
   }
 
   void testRewriteReplace()
@@ -930,51 +890,6 @@ class TheoryStringsRewriterWhite : public CxxTest::TestSuite
       Node ctn = d_nm->mkNode(kind::STRING_STRCTN,
                               d_nm->mkNode(kind::STRING_CONCAT, x, a),
                               d_nm->mkNode(kind::STRING_CONCAT, b, x));
-      sameNormalForm(ctn, f);
-    }
-
-    {
-      // (str.contains (str.substr x 0 (str.indexof x "A" zero) "A")) ---> false
-      Node ctn = d_nm->mkNode(
-          kind::STRING_STRCTN,
-          d_nm->mkNode(kind::STRING_SUBSTR,
-                       x,
-                       zero,
-                       d_nm->mkNode(kind::STRING_STRIDOF, x, a, zero)),
-          a);
-      sameNormalForm(ctn, f);
-    }
-
-    {
-      // (str.contains
-      //   (str.substr
-      //     (str.substr x 0 (str.indexof x "AAC" zero)) 0 n) "B") --->
-      // false
-      Node ctn = d_nm->mkNode(
-          kind::STRING_STRCTN,
-          d_nm->mkNode(kind::STRING_SUBSTR,
-                       d_nm->mkNode(kind::STRING_SUBSTR, aac, zero, m),
-                       zero,
-                       n),
-          b);
-      sameNormalForm(ctn, f);
-    }
-
-    {
-      // (str.contains
-      //   (str.substr (str.substr x 0 (str.indexof x "A" zero)) 0 1) "A") --->
-      // false
-      Node ctn = d_nm->mkNode(
-          kind::STRING_STRCTN,
-          d_nm->mkNode(
-              kind::STRING_SUBSTR,
-              d_nm->mkNode(kind::STRING_SUBSTR,
-                           x,
-                           zero,
-                           d_nm->mkNode(kind::STRING_STRIDOF, x, a, zero)),
-              zero,
-              one),
-          a);
       sameNormalForm(ctn, f);
     }
   }

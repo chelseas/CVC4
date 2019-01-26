@@ -2018,6 +2018,13 @@ Node TheoryStringsRewriter::rewriteContains( Node node ) {
     return returnRewrite(node, ret, "ctn-mset-nss");
   }
 
+  if (checkEntailArith(len_n2, len_n1, false))
+  {
+    // len( n2 ) >= len( n1 ) => contains( n1, n2 ) ---> n1 = n2
+    Node ret = node[0].eqNode(node[1]);
+    return returnRewrite(node, ret, "ctn-len-ineq-nstrict");
+  }
+
   // splitting
   if (node[0].getKind() == kind::STRING_CONCAT)
   {
@@ -2057,29 +2064,6 @@ Node TheoryStringsRewriter::rewriteContains( Node node ) {
             return returnRewrite(node, ret, "ctn-split");
           }
         }
-      }
-    }
-  }
-  else if (node[0].getKind() == kind::STRING_SUBSTR)
-  {
-    Node zero = nm->mkConst(Rational(0));
-    if (node[0][1] == zero && node[0][2].getKind() == kind::STRING_STRIDOF
-        && node[0][0] == node[0][2][0] && node[0][2][1] == node[1]
-        && node[0][2][2] == zero && checkEntailNonEmpty(node[1]))
-    {
-      Node ret = nm->mkConst(false);
-      return returnRewrite(node, ret, "ctn-substr-idof");
-    }
-
-    Node substr = node[0];
-    while (substr.getKind() == kind::STRING_SUBSTR)
-    {
-      substr = substr[0];
-      Node ectn = checkEntailContains(substr, node[1]);
-      if (!ectn.isNull() && !ectn.getConst<bool>())
-      {
-        Node ret = nm->mkConst(false);
-        return returnRewrite(node, ret, "ctn-substr-nested");
       }
     }
   }
@@ -2153,18 +2137,6 @@ Node TheoryStringsRewriter::rewriteContains( Node node ) {
       Node ret = nm->mkNode(kind::EQUAL, emp, node[1]);
       return returnRewrite(node, ret, "ctn-repl-empty");
     }
-  }
-
-  // NOTE: This rewrite should be attempted at the end because we could miss
-  // out on other rewrites. E.g. if contains(x, y) can be rewritten to false
-  // then this rewrite might instead rewrite it to an equality and we have
-  // cannot detect that the equality is false because this rewrite applies
-  // again when we check if one side of the equality contains the other.
-  if (checkEntailArith(len_n2, len_n1, false))
-  {
-    // len( n2 ) >= len( n1 ) => contains( n1, n2 ) ---> n1 = n2
-    Node ret = node[0].eqNode(node[1]);
-    return returnRewrite(node, ret, "ctn-len-ineq-nstrict");
   }
 
   Trace("strings-rewrite-nf") << "No rewrites for : " << node << std::endl;
@@ -2294,39 +2266,6 @@ Node TheoryStringsRewriter::rewriteIndexof( Node node ) {
           Node nn = mkConcat(kind::STRING_CONCAT, children0);
           Node ret = nm->mkNode(kind::STRING_STRIDOF, nn, node[1], node[2]);
           return returnRewrite(node, ret, "idof-def-ctn");
-        }
-
-        if (node[1].isConst())
-        {
-          CVC4::String t = node[1].getConst<String>();
-          if (t.size() == 1)
-          {
-            size_t i = 0;
-            std::vector<Node> children0;
-            getConcat(node[0], children0);
-            for (size_t size = children0.size(); i < size; i++)
-            {
-              Node ectn = checkEntailContains(children0[i], node[1]);
-              if (ectn.isNull() || ectn.getConst<bool>())
-              {
-                break;
-              }
-            }
-            Assert(i < children0.size());
-
-            if (i > 0)
-            {
-              std::vector<Node> pfxv(children0.begin(), children0.begin() + i);
-              children0.erase(children0.begin(), children0.begin() + i);
-              Node pfx = mkConcat(STRING_CONCAT, pfxv);
-              Node nn = mkConcat(STRING_CONCAT, children0);
-              Node ret = nm->mkNode(
-                  PLUS,
-                  nm->mkNode(STRING_LENGTH, pfx),
-                  nm->mkNode(kind::STRING_STRIDOF, nn, node[1], node[2]));
-              return returnRewrite(node, ret, "idof-def-ctn");
-            }
-          }
         }
       }
 
