@@ -245,6 +245,15 @@ header = "options/strings_options.h"
   help       = "Enable the entailment checks in the strings rewriter"
 
 [[option]]
+  name       = "stringsRewriterApprox"
+  category   = "expert"
+  long       = "strings-rewriter-entail-approx"
+  type       = "bool"
+  default    = "true"
+  read_only  = true
+  help       = "Enable the entailment checks in the strings rewriter"
+
+[[option]]
   name       = "stringsRewriterEntailContainsChecks"
   category   = "expert"
   long       = "strings-rewriter-entail-contains-checks"

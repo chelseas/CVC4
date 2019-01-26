@@ -3925,7 +3925,7 @@ bool TheoryStringsRewriter::checkEntailArith(Node a, bool strict)
   }
 
   bool ret = checkEntailArithInternal(ar);
-  if (!ret)
+  if (!ret && options::stringsRewriterApprox())
   {
     // try with approximations
     ret = checkEntailArithApprox(ar);
