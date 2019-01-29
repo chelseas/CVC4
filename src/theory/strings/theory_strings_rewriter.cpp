@@ -512,7 +512,7 @@ Node TheoryStringsRewriter::rewriteStrEqualityExt(Node node)
         }
 
         // (= "" (str.substr "A" 0 z)) ---> (<= z 0)
-        if (checkEntailNonEmpty(ne[0]) && ne[1] == zero)
+        if (checkEntailArith(nm->mkNode(STRING_LENGTH, ne[0]), ne[1], true)) //checkEntailNonEmpty(ne[0]) && ne[1] == zero)
         {
           Node ret = nm->mkNode(LEQ, ne[2], zero);
           return returnRewrite(node, ret, "str-emp-substr-leq-z");
@@ -5145,6 +5145,8 @@ Node TheoryStringsRewriter::returnRewrite(Node node, Node ret, const char* c)
 {
   Trace("strings-rewrite") << "Rewrite " << node << " to " << ret << " by " << c
                            << "." << std::endl;
+  //std::cout << "Rewrite " << node << " to " << ret << " by " << c
+  //                         << "." << std::endl;
 
   NodeManager* nm = NodeManager::currentNM();
 
