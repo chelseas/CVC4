@@ -624,6 +624,13 @@ Node TheoryStringsRewriter::rewriteArithEqualityExt(Node node)
     }
   }
 
+  if (checkEntailArith(node[0], node[1], true)
+      || checkEntailArith(node[1], node[0], true))
+  {
+    Node ret = nm->mkConst(false);
+    return returnRewrite(node, ret, "int-eq-false");
+  }
+
   return node;
 }
 
