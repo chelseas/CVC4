@@ -1184,6 +1184,35 @@ class TheoryStringsRewriterWhite : public CxxTest::TestSuite
     }
   }
 
+  void testStripSymbolicLength()
+  {
+    TypeNode strType = d_nm->stringType();
+    TypeNode intType = d_nm->integerType();
+
+    Node empty = d_nm->mkConst(::CVC4::String(""));
+    Node a = d_nm->mkConst(::CVC4::String("A"));
+    Node aaa = d_nm->mkConst(::CVC4::String("AAA"));
+    Node b = d_nm->mkConst(::CVC4::String("B"));
+    Node x = d_nm->mkVar("x", strType);
+    Node y = d_nm->mkVar("y", strType);
+    Node xxa = d_nm->mkNode(kind::STRING_CONCAT, x, x, a);
+    Node f = d_nm->mkConst(false);
+    Node n = d_nm->mkVar("n", intType);
+    Node zero = d_nm->mkConst(Rational(0));
+    Node one = d_nm->mkConst(Rational(1));
+    Node three = d_nm->mkConst(Rational(3));
+
+    std::vector<Node> in = {aaa, x, y};
+    std::vector<Node> out;
+    Node len = d_nm->mkNode(kind::PLUS, d_nm->mkNode(kind::STRING_STRIDOF, x,
+                            y, zero), d_nm->mkConst(Rational(4)));
+    bool ret = TheoryStringsRewriter::stripSymbolicLength(in, out, 1, len);
+    std::cout << in << std::endl;
+    std::cout << out << std::endl;
+    std::cout << ret << std::endl;
+    // stripSymbolicLength( { x, "abc", y }, {}, 1, str.len(x)+1 )
+  }
+
  private:
   ExprManager* d_em;
   SmtEngine* d_smt;

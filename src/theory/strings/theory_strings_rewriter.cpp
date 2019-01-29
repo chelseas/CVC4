@@ -3182,6 +3182,7 @@ bool TheoryStringsRewriter::stripSymbolicLength(std::vector<Node>& n1,
 {
   Assert(dir == 1 || dir == -1);
   Assert(nr.empty());
+  NodeManager* nm = NodeManager::currentNM();
   Node zero = NodeManager::currentNM()->mkConst(CVC4::Rational(0));
   bool ret = false;
   bool success;
@@ -3193,7 +3194,17 @@ bool TheoryStringsRewriter::stripSymbolicLength(std::vector<Node>& n1,
     if (curr != zero && sindex < n1.size())
     {
       unsigned sindex_use = dir == 1 ? sindex : ((n1.size() - 1) - sindex);
-      if (n1[sindex_use].isConst())
+      Node next_s = nm->mkNode(
+          kind::MINUS, curr, nm->mkNode(kind::STRING_LENGTH, n1[sindex_use]));
+      next_s = Rewriter::rewrite(next_s);
+
+      if (checkEntailArith(next_s))
+      {
+        success = true;
+        curr = next_s;
+        sindex++;
+      }
+      else if (n1[sindex_use].isConst())
       {
         // could strip part of a constant
         Node lowerBound = getConstantArithBound(Rewriter::rewrite(curr));
@@ -3253,21 +3264,6 @@ bool TheoryStringsRewriter::stripSymbolicLength(std::vector<Node>& n1,
           {
             // we cannot remove the constant
           }
-        }
-      }
-      else
-      {
-        Node next_s = NodeManager::currentNM()->mkNode(
-            kind::MINUS,
-            curr,
-            NodeManager::currentNM()->mkNode(kind::STRING_LENGTH,
-                                             n1[sindex_use]));
-        next_s = Rewriter::rewrite(next_s);
-        if (checkEntailArith(next_s))
-        {
-          success = true;
-          curr = next_s;
-          sindex++;
         }
       }
     }
