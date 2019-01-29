@@ -3198,7 +3198,9 @@ bool TheoryStringsRewriter::stripSymbolicLength(std::vector<Node>& n1,
           kind::MINUS, curr, nm->mkNode(kind::STRING_LENGTH, n1[sindex_use]));
       next_s = Rewriter::rewrite(next_s);
 
-      if (checkEntailArith(next_s))
+      if (checkEntailArith(next_s)
+          && !(n1[sindex_use].isConst()
+               && n1[sindex_use].getConst<String>().size() == 0))
       {
         success = true;
         curr = next_s;
