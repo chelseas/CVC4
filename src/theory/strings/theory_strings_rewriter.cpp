@@ -1881,24 +1881,7 @@ Node TheoryStringsRewriter::rewriteContains( Node node ) {
     }
     else if (t.size() == 1)
     {
-      // The following rewrites are specific to a single character second
-      // argument of contains, where we can reason that this character is
-      // not split over multiple components in the first argument.
-      if (node[0].getKind() == STRING_CONCAT)
-      {
-        std::vector<Node> nc1;
-        getConcat(node[0], nc1);
-        NodeBuilder<> nb(OR);
-        for (const Node& ncc : nc1)
-        {
-          nb << nm->mkNode(STRING_STRCTN, ncc, node[1]);
-        }
-        Node ret = nb.constructNode();
-        // str.contains( x ++ y, "A" ) --->
-        //   str.contains( x, "A" ) OR str.contains( y, "A" )
-        return returnRewrite(node, ret, "ctn-concat-char");
-      }
-      else if (node[0].getKind() == STRING_STRREPL)
+      if (node[0].getKind() == STRING_STRREPL)
       {
         Node rplDomain = checkEntailContains(node[0][1], node[1]);
         if (!rplDomain.isNull() && !rplDomain.getConst<bool>())
@@ -2065,6 +2048,21 @@ Node TheoryStringsRewriter::rewriteContains( Node node ) {
           }
         }
       }
+    }
+
+    if (checkEntailLengthOne(node[1]))
+    {
+      std::vector<Node> nc1;
+      getConcat(node[0], nc1);
+      NodeBuilder<> nb(OR);
+      for (const Node& ncc : nc1)
+      {
+        nb << nm->mkNode(STRING_STRCTN, ncc, node[1]);
+      }
+      Node ret = nb.constructNode();
+      // str.contains( x ++ y, "A" ) --->
+      //   str.contains( x, "A" ) OR str.contains( y, "A" )
+      return returnRewrite(node, ret, "ctn-concat-char");
     }
   }
   else if (node[0].getKind() == kind::STRING_STRREPL)
