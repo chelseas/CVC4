@@ -2097,6 +2097,17 @@ Node TheoryStringsRewriter::rewriteContains( Node node ) {
   }
   else if (node[0].getKind() == kind::STRING_STRREPL)
   {
+    if (node[1].isConst() && node[0][1].isConst() && node[0][2].isConst())
+    {
+      String c = node[1].getConst<String>();
+      if (c.noOverlapWith(node[0][1].getConst<String>())
+          && c.noOverlapWith(node[0][2].getConst<String>()))
+      {
+        Node ret = nm->mkNode(STRING_STRCTN, node[0][0], node[1]);
+        return returnRewrite(node, ret, "ctn-repl-cnsts-to-ctn");
+      }
+    }
+
     if (node[0][0] == node[0][2])
     {
       // (str.contains (str.replace x y x) y) ---> (str.contains x y)

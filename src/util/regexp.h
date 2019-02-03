@@ -149,6 +149,13 @@ class CVC4_PUBLIC String {
 
   String prefix(std::size_t i) const { return substr(0, i); }
   String suffix(std::size_t i) const { return substr(size() - i, i); }
+
+  bool noOverlapWith(const String& y) const
+  {
+    return this->find(y) == std::string::npos && this->overlap(y) == 0
+           && y.overlap(*this) == 0;
+  }
+
   /** string overlap
   *
   * if overlap returns m>0,
