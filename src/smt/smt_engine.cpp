@@ -191,6 +191,9 @@ struct SmtEngineStatistics {
   /** time spent in processAssertions() */
   TimerStat d_processAssertionsTime;
 
+  IntStat d_extStringFunPre;
+  IntStat d_extStringFunPost;
+
   /** Has something simplified to false? */
   IntStat d_simplifiedToFalse;
   /** Number of resource units spent. */
@@ -208,6 +211,8 @@ struct SmtEngineStatistics {
     d_solveTime("smt::SmtEngine::solveTime"),
     d_pushPopTime("smt::SmtEngine::pushPopTime"),
     d_processAssertionsTime("smt::SmtEngine::processAssertionsTime"),
+    d_extStringFunPre("smt::SmtEngine::extStringFunPre", 0),
+    d_extStringFunPost("smt::SmtEngine::extStringFunPost", 0),
     d_simplifiedToFalse("smt::SmtEngine::simplifiedToFalse", 0),
     d_resourceUnitsUsed("smt::SmtEngine::resourceUnitsUsed")
  {
@@ -224,6 +229,8 @@ struct SmtEngineStatistics {
     smtStatisticsRegistry()->registerStat(&d_processAssertionsTime);
     smtStatisticsRegistry()->registerStat(&d_simplifiedToFalse);
     smtStatisticsRegistry()->registerStat(&d_resourceUnitsUsed);
+    smtStatisticsRegistry()->registerStat(&d_extStringFunPre);
+    smtStatisticsRegistry()->registerStat(&d_extStringFunPost);
   }
 
   ~SmtEngineStatistics() {
@@ -240,6 +247,8 @@ struct SmtEngineStatistics {
     smtStatisticsRegistry()->unregisterStat(&d_processAssertionsTime);
     smtStatisticsRegistry()->unregisterStat(&d_simplifiedToFalse);
     smtStatisticsRegistry()->unregisterStat(&d_resourceUnitsUsed);
+    smtStatisticsRegistry()->unregisterStat(&d_extStringFunPre);
+    smtStatisticsRegistry()->unregisterStat(&d_extStringFunPost);
   }
 };/* struct SmtEngineStatistics */
 
@@ -3480,6 +3489,51 @@ void SmtEnginePrivate::processAssertions() {
   getIteSkolemMap().clear();
 }
 
+namespace {
+
+size_t countExtStringFun(Node n)
+{
+  size_t count = 0;
+
+  std::unordered_map<TNode, bool, TNodeHashFunction> visited;
+  std::unordered_map<TNode, bool, TNodeHashFunction>::iterator it;
+  std::vector<TNode> visit;
+  TNode cur;
+  visit.push_back(n);
+  do
+  {
+    cur = visit.back();
+    visit.pop_back();
+    it = visited.find(cur);
+    if (it == visited.end())
+    {
+      visited[cur] = false;
+
+      Kind k = cur.getKind();
+      if (k == kind::STRING_STRCTN || k == kind::STRING_STRREPL
+          || k == kind::STRING_STRIDOF || k == kind::STRING_ITOS
+          || k == kind::STRING_STOI || k == kind::STRING_IN_REGEXP ||
+          k == kind::STRING_SUBSTR)
+      {
+        count++;
+      }
+
+      visit.push_back(cur);
+      for (unsigned i = 0; i < cur.getNumChildren(); i++)
+      {
+        visit.push_back(cur[i]);
+      }
+    }
+    else if (!it->second)
+    {
+      visited[cur] = true;
+    }
+  } while (!visit.empty());
+
+  return count;
+}
+}
+
 void SmtEnginePrivate::addFormula(TNode n,
                                   bool inUnsatCore,
                                   bool inInput,
@@ -3514,6 +3568,11 @@ void SmtEnginePrivate::addFormula(TNode n,
       ProofManager::currentPM()->addUnsatCore(n.toExpr());
     }
   );
+
+  d_smt.d_stats->d_extStringFunPre += countExtStringFun(n);
+  theory::quantifiers::ExtendedRewriter extr(options::extRewPrepAgg());
+  Node rn = extr.extendedRewrite(n);
+  d_smt.d_stats->d_extStringFunPost += countExtStringFun(n);
 
   // Add the normalized formula to the queue
   d_assertions.push_back(n, isAssumption);
@@ -3568,6 +3627,10 @@ Result SmtEngine::checkSatisfiability(const vector<Expr>& assumptions,
                                       bool inUnsatCore,
                                       bool isQuery)
 {
+  std::cout << "PRE " << d_stats->d_extStringFunPost.getData() << std::endl;
+  std::cout << "POST " << d_stats->d_extStringFunPre.getData() << std::endl;
+  exit(0);
+
   try
   {
     SmtScope smts(this);
