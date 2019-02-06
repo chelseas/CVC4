@@ -3095,6 +3095,52 @@ bool SmtEnginePrivate::checkForBadSkolems(TNode n, TNode skolem, unordered_map<N
   return false;
 }
 
+namespace {
+
+size_t countExtStringFun(Node n)
+{
+  std::unordered_map<TNode, size_t, TNodeHashFunction> visited;
+  std::unordered_map<TNode, size_t, TNodeHashFunction>::iterator it;
+  std::vector<TNode> visit;
+  TNode cur;
+  visit.push_back(n);
+  do
+  {
+    cur = visit.back();
+    visit.pop_back();
+    it = visited.find(cur);
+    if (it == visited.end())
+    {
+      visited[cur] = 0;
+
+      visit.push_back(cur);
+      for (unsigned i = 0; i < cur.getNumChildren(); i++)
+      {
+        visit.push_back(cur[i]);
+      }
+    }
+    else if (!it->second)
+    {
+      for (const TNode c : cur) {
+        visited[cur] += visited[c];
+      }
+
+      Kind k = cur.getKind();
+      if (k == kind::STRING_STRCTN || k == kind::STRING_STRREPL
+          || k == kind::STRING_STRIDOF || k == kind::STRING_ITOS
+          || k == kind::STRING_STOI || k == kind::STRING_IN_REGEXP
+          || k == kind::STRING_SUBSTR || k == kind::STRING_CHARAT
+          || k == kind::STRING_PREFIX || k == kind::STRING_SUFFIX)
+      {
+        visited[cur]++;
+      }
+    }
+  } while (!visit.empty());
+
+  return visited[n];
+}
+}
+
 void SmtEnginePrivate::processAssertions() {
   TimerStat::CodeTimer paTimer(d_smt.d_stats->d_processAssertionsTime);
   spendResource(options::preprocessStep());
@@ -3216,6 +3262,10 @@ void SmtEnginePrivate::processAssertions() {
   Debug("smt") << " d_assertions     : " << d_assertions.size() << endl;
 
   bool noConflict = true;
+
+  for (unsigned i = 0; i < d_assertions.size(); ++ i) {
+    d_smt.d_stats->d_extStringFunPre += countExtStringFun(d_assertions[i]);
+  }
 
   if (options::extRewPrep())
   {
@@ -3473,6 +3523,14 @@ void SmtEnginePrivate::processAssertions() {
     d_preprocessingPassContext->recordSymbolsInAssertions(d_assertions.ref());
   }
 
+  for (unsigned i = 0; i < d_assertions.size(); ++ i) {
+    d_smt.d_stats->d_extStringFunPost += countExtStringFun(d_assertions[i]);
+  }
+
+  std::cout << "PRE " << d_smt.d_stats->d_extStringFunPre.getData() << std::endl;
+  std::cout << "POST " << d_smt.d_stats->d_extStringFunPost.getData() << std::endl;
+  exit(0);
+
   // Push the formula to SAT
   {
     Chat() << "converting to CNF..." << endl;
@@ -3487,52 +3545,6 @@ void SmtEnginePrivate::processAssertions() {
 
   d_assertions.clear();
   getIteSkolemMap().clear();
-}
-
-namespace {
-
-size_t countExtStringFun(Node n)
-{
-  std::unordered_map<TNode, size_t, TNodeHashFunction> visited;
-  std::unordered_map<TNode, size_t, TNodeHashFunction>::iterator it;
-  std::vector<TNode> visit;
-  TNode cur;
-  visit.push_back(n);
-  do
-  {
-    cur = visit.back();
-    visit.pop_back();
-    it = visited.find(cur);
-    if (it == visited.end())
-    {
-      visited[cur] = 0;
-
-      visit.push_back(cur);
-      for (unsigned i = 0; i < cur.getNumChildren(); i++)
-      {
-        visit.push_back(cur[i]);
-      }
-    }
-    else if (!it->second)
-    {
-      for (const TNode c : cur) {
-        visited[cur] += visited[c];
-      }
-
-      Kind k = cur.getKind();
-      if (k == kind::STRING_STRCTN || k == kind::STRING_STRREPL
-          || k == kind::STRING_STRIDOF || k == kind::STRING_ITOS
-          || k == kind::STRING_STOI || k == kind::STRING_IN_REGEXP
-          || k == kind::STRING_SUBSTR || k == kind::STRING_CHARAT
-          || k == kind::STRING_PREFIX || k == kind::STRING_SUFFIX)
-      {
-        visited[cur]++;
-      }
-    }
-  } while (!visit.empty());
-
-  return visited[n];
-}
 }
 
 void SmtEnginePrivate::addFormula(TNode n,
@@ -3569,11 +3581,6 @@ void SmtEnginePrivate::addFormula(TNode n,
       ProofManager::currentPM()->addUnsatCore(n.toExpr());
     }
   );
-
-  d_smt.d_stats->d_extStringFunPre += countExtStringFun(n);
-  theory::quantifiers::ExtendedRewriter extr(options::extRewPrepAgg());
-  Node rn = extr.extendedRewrite(n);
-  d_smt.d_stats->d_extStringFunPost += countExtStringFun(rn);
 
   // Add the normalized formula to the queue
   d_assertions.push_back(n, isAssumption);
@@ -3628,10 +3635,6 @@ Result SmtEngine::checkSatisfiability(const vector<Expr>& assumptions,
                                       bool inUnsatCore,
                                       bool isQuery)
 {
-  std::cout << "PRE " << d_stats->d_extStringFunPre.getData() << std::endl;
-  std::cout << "POST " << d_stats->d_extStringFunPost.getData() << std::endl;
-  exit(0);
-
   try
   {
     SmtScope smts(this);
