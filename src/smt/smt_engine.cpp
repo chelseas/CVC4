@@ -3493,10 +3493,8 @@ namespace {
 
 size_t countExtStringFun(Node n)
 {
-  size_t count = 0;
-
-  std::unordered_map<TNode, bool, TNodeHashFunction> visited;
-  std::unordered_map<TNode, bool, TNodeHashFunction>::iterator it;
+  std::unordered_map<TNode, size_t, TNodeHashFunction> visited;
+  std::unordered_map<TNode, size_t, TNodeHashFunction>::iterator it;
   std::vector<TNode> visit;
   TNode cur;
   visit.push_back(n);
@@ -3507,16 +3505,7 @@ size_t countExtStringFun(Node n)
     it = visited.find(cur);
     if (it == visited.end())
     {
-      visited[cur] = false;
-
-      Kind k = cur.getKind();
-      if (k == kind::STRING_STRCTN || k == kind::STRING_STRREPL
-          || k == kind::STRING_STRIDOF || k == kind::STRING_ITOS
-          || k == kind::STRING_STOI || k == kind::STRING_IN_REGEXP ||
-          k == kind::STRING_SUBSTR)
-      {
-        count++;
-      }
+      visited[cur] = 0;
 
       visit.push_back(cur);
       for (unsigned i = 0; i < cur.getNumChildren(); i++)
@@ -3526,11 +3515,23 @@ size_t countExtStringFun(Node n)
     }
     else if (!it->second)
     {
-      visited[cur] = true;
+      for (const TNode c : cur) {
+        visited[cur] += visited[c];
+      }
+
+      Kind k = cur.getKind();
+      if (k == kind::STRING_STRCTN || k == kind::STRING_STRREPL
+          || k == kind::STRING_STRIDOF || k == kind::STRING_ITOS
+          || k == kind::STRING_STOI || k == kind::STRING_IN_REGEXP
+          || k == kind::STRING_SUBSTR || k == kind::STRING_CHARAT
+          || k == kind::STRING_PREFIX || k == kind::STRING_SUFFIX)
+      {
+        visited[cur]++;
+      }
     }
   } while (!visit.empty());
 
-  return count;
+  return visited[n];
 }
 }
 
