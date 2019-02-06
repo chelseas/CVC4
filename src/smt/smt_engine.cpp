@@ -3572,7 +3572,7 @@ void SmtEnginePrivate::addFormula(TNode n,
   d_smt.d_stats->d_extStringFunPre += countExtStringFun(n);
   theory::quantifiers::ExtendedRewriter extr(options::extRewPrepAgg());
   Node rn = extr.extendedRewrite(n);
-  d_smt.d_stats->d_extStringFunPost += countExtStringFun(n);
+  d_smt.d_stats->d_extStringFunPost += countExtStringFun(rn);
 
   // Add the normalized formula to the queue
   d_assertions.push_back(n, isAssumption);
@@ -3627,8 +3627,8 @@ Result SmtEngine::checkSatisfiability(const vector<Expr>& assumptions,
                                       bool inUnsatCore,
                                       bool isQuery)
 {
-  std::cout << "PRE " << d_stats->d_extStringFunPost.getData() << std::endl;
-  std::cout << "POST " << d_stats->d_extStringFunPre.getData() << std::endl;
+  std::cout << "PRE " << d_stats->d_extStringFunPre.getData() << std::endl;
+  std::cout << "POST " << d_stats->d_extStringFunPost.getData() << std::endl;
   exit(0);
 
   try
