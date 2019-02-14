@@ -38,6 +38,8 @@ libcvc4_add_sources(
   lib/strtok_r.h
   preprocessing/assertion_pipeline.cpp
   preprocessing/assertion_pipeline.h
+  preprocessing/passes/anonymize_strings.cpp
+  preprocessing/passes/anonymize_strings.h
   preprocessing/passes/apply_substs.cpp
   preprocessing/passes/apply_substs.h
   preprocessing/passes/apply_to_const.cpp

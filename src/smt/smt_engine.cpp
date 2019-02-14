@@ -3108,6 +3108,11 @@ void SmtEnginePrivate::processAssertions() {
     return;
   }
 
+  if (options::anonymizeStrings())
+  {
+    d_passes["anonymize-strings"]->apply(&d_assertions);
+  }
+
   if (options::bvGaussElim())
   {
     d_passes["bv-gauss"]->apply(&d_assertions);

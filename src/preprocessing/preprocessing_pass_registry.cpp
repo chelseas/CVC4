@@ -23,6 +23,7 @@
 #include "base/cvc4_assert.h"
 #include "base/map_util.h"
 #include "base/output.h"
+#include "preprocessing/passes/anonymize_strings.h"
 #include "preprocessing/passes/apply_substs.h"
 #include "preprocessing/passes/apply_to_const.h"
 #include "preprocessing/passes/bool_to_bv.h"
@@ -116,6 +117,7 @@ PreprocessingPass* callCtor(PreprocessingPassContext* ppCtx)
 
 PreprocessingPassRegistry::PreprocessingPassRegistry()
 {
+  registerPassInfo("anonymize-strings", callCtor<AnonymizeStrings>);
   registerPassInfo("apply-substs", callCtor<ApplySubsts>);
   registerPassInfo("bv-gauss", callCtor<BVGauss>);
   registerPassInfo("static-learning", callCtor<StaticLearning>);

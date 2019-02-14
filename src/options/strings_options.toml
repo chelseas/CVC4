@@ -3,6 +3,30 @@ name   = "Strings theory"
 header = "options/strings_options.h"
 
 [[option]]
+  name       = "anonymizeStrings"
+  category   = "regular"
+  long       = "anonymize-strings"
+  type       = "bool"
+  default    = "false"
+  help       = "anonymize strings"
+
+[[option]]
+  name       = "anonymizeStringsPreserveLengths"
+  category   = "regular"
+  long       = "anonymize-strings-preserve-lengths"
+  type       = "bool"
+  default    = "true"
+  help       = "preserve lengths when anonymizing strings"
+
+[[option]]
+  name       = "anonymizeStringsUseDistinct"
+  category   = "regular"
+  long       = "anonymize-strings-use-distinct"
+  type       = "bool"
+  default    = "false"
+  help       = "use distinct instead of negative contains when anonymizing strings"
+
+[[option]]
   name       = "stringExp"
   category   = "regular"
   long       = "strings-exp"
