@@ -499,7 +499,7 @@ Node StringsPreprocess::simplify( Node t, std::vector< Node > &new_nodes ) {
                   NodeManager::currentNM()->mkNode( kind::LEQ, b1, NodeManager::currentNM()->mkNode( kind::MINUS, lenx, lens ) ),
                   NodeManager::currentNM()->mkNode( kind::EQUAL, NodeManager::currentNM()->mkNode(kind::STRING_SUBSTR, x, b1, lens), s )                
                 );
-    retNode = nm->mkNode(kind::AND, nm->mkNode(kind::LEQ, lens, lenx), NodeManager::currentNM()->mkNode( kind::EXISTS, b1v, body ));
+    retNode = nm->mkNode(kind::ITE, nm->mkNode(kind::LEQ, lens, lenx), NodeManager::currentNM()->mkNode( kind::EXISTS, b1v, body ), nm->mkConst(false));
   }
   else if (t.getKind() == kind::STRING_LEQ)
   {
