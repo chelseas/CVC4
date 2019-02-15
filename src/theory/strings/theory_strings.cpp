@@ -1873,7 +1873,11 @@ void TheoryStrings::checkExtfInference( Node n, Node nr, ExtfInfoTmp& in, int ef
               }
               else
               {
-                do_infer = !areEqual(lit, pol ? d_true : d_false);
+                do_infer = areEqual(lit, !pol ? d_true : d_false);
+              }
+              if (hasTerm(lit))
+              {
+                getExtTheory()->markReduced(lit);
               }
               if (do_infer)
               {
@@ -1885,8 +1889,6 @@ void TheoryStrings::checkExtfInference( Node n, Node nr, ExtfInfoTmp& in, int ef
                              d_extf_info_tmp[ofrom].d_exp.begin(),
                              d_extf_info_tmp[ofrom].d_exp.end());
                 sendInference(exp_c, conc, "CTN_Trans2");
-              } else if (hasTerm(lit)) {
-                getExtTheory()->markReduced(lit);
               }
             }
           }
