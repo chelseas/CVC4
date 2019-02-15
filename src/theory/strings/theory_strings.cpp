@@ -1848,6 +1848,49 @@ void TheoryStrings::checkExtfInference( Node n, Node nr, ExtfInfoTmp& in, int ef
             sendInference(exp_c, conc, "CTN_Trans");
           }
         }
+
+        for (const auto& kv : d_extf_info_tmp)
+        {
+          if (kv.second.d_ctn.find(opol) != kv.second.d_ctn.end())
+          {
+            auto it = std::find(kv.second.d_ctn.at(opol).begin(),
+                                kv.second.d_ctn.at(opol).end(),
+                                nr[1]);
+            if (it != kv.second.d_ctn.at(opol).end())
+            {
+              Node conc = nm->mkNode(STRING_STRCTN,
+                                     pol ? kv.first : nr[0],
+                                     pol ? nr[0] : kv.first);
+              conc = Rewriter::rewrite(conc);
+              conc = conc.negate();
+              bool do_infer = false;
+              bool pol = conc.getKind() != NOT;
+              Node lit = pol ? conc : conc[0];
+              if (lit.getKind() == EQUAL)
+              {
+                do_infer = pol ? !areEqual(lit[0], lit[1])
+                               : !areDisequal(lit[0], lit[1]);
+              }
+              else
+              {
+                do_infer = !areEqual(lit, pol ? d_true : d_false);
+              }
+              if (do_infer)
+              {
+                std::vector<Node> exp_c(in.d_exp.begin(), in.d_exp.end());
+                size_t i = std::distance(kv.second.d_ctn.at(opol).begin(), it);
+                Node ofrom = d_extf_info_tmp[kv.first].d_ctn_from[opol][i];
+                Assert(d_extf_info_tmp.find(ofrom) != d_extf_info_tmp.end());
+                exp_c.insert(exp_c.end(),
+                             d_extf_info_tmp[ofrom].d_exp.begin(),
+                             d_extf_info_tmp[ofrom].d_exp.end());
+                sendInference(exp_c, conc, "CTN_Trans2");
+              } else if (hasTerm(lit)) {
+                getExtTheory()->markReduced(lit);
+              }
+            }
+          }
+        }
       }
       else
       {
