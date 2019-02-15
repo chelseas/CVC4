@@ -1834,7 +1834,7 @@ void TheoryStrings::checkExtfInference( Node n, Node nr, ExtfInfoTmp& in, int ef
           }
           else
           {
-            do_infer = areEqual(lit, !pol ? d_true : d_false);
+            do_infer = !areEqual(lit, pol ? d_true : d_false);
           }
           if (do_infer)
           {
