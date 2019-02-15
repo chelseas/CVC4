@@ -1834,7 +1834,7 @@ void TheoryStrings::checkExtfInference( Node n, Node nr, ExtfInfoTmp& in, int ef
           }
           else
           {
-            do_infer = !areEqual(lit, pol ? d_true : d_false);
+            do_infer = areEqual(lit, !pol ? d_true : d_false);
           }
           if (do_infer)
           {
@@ -1849,6 +1849,7 @@ void TheoryStrings::checkExtfInference( Node n, Node nr, ExtfInfoTmp& in, int ef
           }
         }
 
+        /*
         for (const auto& kv : d_extf_info_tmp)
         {
           if (kv.second.d_ctn.find(opol) != kv.second.d_ctn.end())
@@ -1893,6 +1894,7 @@ void TheoryStrings::checkExtfInference( Node n, Node nr, ExtfInfoTmp& in, int ef
             }
           }
         }
+        */
       }
       else
       {
