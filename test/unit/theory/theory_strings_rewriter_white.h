@@ -1228,7 +1228,10 @@ class TheoryStringsRewriterWhite : public CxxTest::TestSuite
     {
       // (= (str.++ "A" (int.to.str n)) "A") -/-> false
       Node eq = d_nm->mkNode(
-          kind::EQUAL, d_nm->mkNode(kind::STRING_CONCAT, a, d_nm->mkNode(kind::STRING_ITOS, n)), a);
+          kind::EQUAL,
+          d_nm->mkNode(
+              kind::STRING_CONCAT, a, d_nm->mkNode(kind::STRING_ITOS, n)),
+          a);
       differentNormalForms(eq, f);
     }
   }
