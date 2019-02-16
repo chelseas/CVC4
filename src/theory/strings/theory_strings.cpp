@@ -1829,12 +1829,12 @@ void TheoryStrings::checkExtfInference( Node n, Node nr, ExtfInfoTmp& in, int ef
           Node lit = pol ? conc : conc[0];
           if (lit.getKind() == EQUAL)
           {
-            do_infer = !pol ? areEqual(lit[0], lit[1])
+            do_infer = pol ? areEqual(lit[0], lit[1])
                            : areDisequal(lit[0], lit[1]);
           }
           else
           {
-            do_infer = areEqual(lit, !pol ? d_true : d_false);
+            do_infer = !areEqual(lit, pol ? d_true : d_false);
           }
           if (hasTerm(lit))
           {
@@ -1853,7 +1853,6 @@ void TheoryStrings::checkExtfInference( Node n, Node nr, ExtfInfoTmp& in, int ef
           }
         }
 
-        /*
         for (const auto& kv : d_extf_info_tmp)
         {
           if (kv.second.d_ctn.find(opol) != kv.second.d_ctn.end())
@@ -1898,7 +1897,6 @@ void TheoryStrings::checkExtfInference( Node n, Node nr, ExtfInfoTmp& in, int ef
             }
           }
         }
-        */
       }
       else
       {
