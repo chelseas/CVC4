@@ -133,8 +133,9 @@ void ClausalBitVectorProof::optimizeDratProof()
   dratStream.close();
 
 #if CVC4_USE_DRAT2ER
-  drat2er::drat_trim::OptimizeWithDratTrim(
+  int dratTrimExitCode = drat2er::drat_trim::OptimizeWithDratTrim(
       formulaFilename, dratFilename, optDratFilename, drat2er::options::QUIET);
+  AlwaysAssert(dratTrimExitCode == 0, "drat-trim exited with %d", dratTrimExitCode);
 #else
   Unimplemented(
       "Proof production when using CryptoMiniSat requires drat2er.\n"

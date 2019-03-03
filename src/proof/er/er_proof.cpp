@@ -162,14 +162,6 @@ ErProof::ErProof(const ClauseUseRecord& usedClauses,
           originalClause{usedClauses[i].second.begin(),
                          usedClauses[i].second.end()};
       Assert(traceCheckClause == originalClause);
-      Assert(d_tracecheck.d_lines[i].d_idx = i + 1);
-      Assert(d_tracecheck.d_lines[i].d_chain.size() == 0);
-      Assert(d_tracecheck.d_lines[i].d_clause.size()
-             == usedClauses[i].second.size());
-      for (size_t j = 0, m = usedClauses[i].second.size(); j < m; ++j)
-      {
-        Assert(usedClauses[i].second[j] == d_tracecheck.d_lines[i].d_clause[j]);
-      }
     }
   }
 
