@@ -141,7 +141,8 @@ void ClausalBitVectorProof::optimizeDratProof()
       "Run contrib/get-drat2er, reconfigure with --drat2er, and rebuild");
 #endif
 
-  d_binaryDratProof.clear();
+  d_binaryDratProof = std::ostringstream{};
+  Assert(d_binaryDratProof.str().size() == 0);
   std::ifstream lratStream(optDratFilename);
   std::copy(std::istreambuf_iterator<char>(lratStream),
             std::istreambuf_iterator<char>(),
