@@ -1,4 +1,7 @@
 ; COMMAND-LINE: --bitblast=eager --no-check-models  --no-check-unsat-cores
+; COMMAND-LINE: --bitblast=eager --bv-sat-solver=cryptominisat --bv-proof-format=er --no-check-models  --no-check-unsat-cores
+; COMMAND-LINE: --bitblast=eager --bv-sat-solver=cryptominisat --bv-proof-format=lrat --no-check-models  --no-check-unsat-cores
+; COMMAND-LINE: --bitblast=eager --bv-sat-solver=cryptominisat --bv-proof-format=drat --no-check-models  --no-check-unsat-cores
 ; EXPECT: unsat
 (set-logic QF_UFBV)
 (set-info :smt-lib-version 2.0)

@@ -17,16 +17,23 @@
 #include "cvc4_private.h"
 
 #include <algorithm>
+#include <iostream>
 #include <iterator>
 #include <set>
 
 #include "options/bv_options.h"
 #include "proof/clausal_bitvector_proof.h"
+#include "proof/dimacs_printer.h"
 #include "proof/drat/drat_proof.h"
 #include "proof/er/er_proof.h"
 #include "proof/lfsc_proof_printer.h"
 #include "proof/lrat/lrat_proof.h"
 #include "theory/bv/theory_bv.h"
+
+#if CVC4_USE_DRAT2ER
+#include "drat2er_options.h"
+#include "drat_trim_interface.h"
+#endif
 
 namespace CVC4 {
 
@@ -74,6 +81,8 @@ void ClausalBitVectorProof::registerUsedClause(ClauseId id,
 
 void ClausalBitVectorProof::calculateAtomsInBitblastingProof()
 {
+  optimizeDratProof();
+
   // Debug dump of DRAT Proof
   if (Debug.isOn("bv::clausal"))
   {
@@ -97,6 +106,50 @@ void ClausalBitVectorProof::calculateAtomsInBitblastingProof()
     d_cnfProof->collectAtoms(&usedIndexAndClause.second,
                              d_atomsInBitblastingProof);
   }
+}
+
+void ClausalBitVectorProof::optimizeDratProof()
+{
+  Debug("bv::clausal") << "Optimizing DRAT" << std::endl;
+  char formulaFilename[] = "/tmp/cvc4-dimacs-XXXXXX";
+  char dratFilename[] = "/tmp/cvc4-drat-XXXXXX";
+  char optDratFilename[] = "/tmp/cvc4-optimized-drat-XXXXXX";
+  int r;
+  r = mkstemp(formulaFilename);
+  AlwaysAssert(r > 0);
+  close(r);
+  r = mkstemp(dratFilename);
+  AlwaysAssert(r > 0);
+  close(r);
+  r = mkstemp(optDratFilename);
+  AlwaysAssert(r > 0);
+  close(r);
+  std::ofstream formStream(formulaFilename);
+  printDimacs(formStream, d_usedClauses);
+  formStream.close();
+
+  std::ofstream dratStream(dratFilename);
+  dratStream << d_binaryDratProof.str();
+  dratStream.close();
+
+#if CVC4_USE_DRAT2ER
+  drat2er::drat_trim::OptimizeWithDratTrim(
+      formulaFilename, dratFilename, optDratFilename, drat2er::options::QUIET);
+#else
+  Unimplemented(
+      "Proof production when using CryptoMiniSat requires drat2er.\n"
+      "Run contrib/get-drat2er, reconfigure with --drat2er, and rebuild");
+#endif
+
+  d_binaryDratProof.clear();
+  std::ifstream lratStream(optDratFilename);
+  std::copy(std::istreambuf_iterator<char>(lratStream),
+            std::istreambuf_iterator<char>(),
+            std::ostreambuf_iterator<char>(d_binaryDratProof));
+  remove(formulaFilename);
+  remove(dratFilename);
+  remove(optDratFilename);
+  Debug("bv::clausal") << "Optimized DRAT" << std::endl;
 }
 
 void LfscClausalBitVectorProof::printTheoryLemmaProof(std::vector<Expr>& lemma,

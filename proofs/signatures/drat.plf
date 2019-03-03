@@ -115,7 +115,7 @@
 ; Return a new cnf with one copy of this clause removed.
 (program cnf_remove_clause ((c clause) (cs cnf)) cnf
          (match cs
-                (cnfn (fail cnf))
+                (cnfn cnfn)
                 ((cnfc c' cs')
                  (match (clause_eq c c')
                         (tt cs')

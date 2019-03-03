@@ -64,6 +64,9 @@ class ClausalBitVectorProof : public BitVectorProof
   std::vector<std::pair<ClauseId, prop::SatClause>> d_usedClauses;
   // Stores the proof recieved from the SAT solver.
   std::ostringstream d_binaryDratProof;
+
+ private:
+  void optimizeDratProof();
 };
 
 /**
