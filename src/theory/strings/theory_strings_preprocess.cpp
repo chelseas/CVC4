@@ -487,6 +487,7 @@ Node StringsPreprocess::simplify( Node t, std::vector< Node > &new_nodes ) {
     // Thus, replaceall( x, y, z ) = rpaw
     retNode = rpaw;
   } else if( t.getKind() == kind::STRING_STRCTN ){
+    std::cout << "NREDUCING " << t << std::endl;
     Node x = t[0];
     Node s = t[1];
     //negative contains reduces to existential

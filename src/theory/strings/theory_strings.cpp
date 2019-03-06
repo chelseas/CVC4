@@ -135,7 +135,9 @@ TheoryStrings::TheoryStrings(context::Context* c,
       d_cardinality_lits(u),
       d_curr_cardinality(c, 0),
       d_sslds(nullptr),
-      d_strategy_init(false)
+      d_strategy_init(false),
+      d_userContext(u),
+      d_satContext(c)
 {
   setupExtTheory();
   getExtTheory()->addFunctionKind(kind::STRING_SUBSTR);
@@ -480,6 +482,7 @@ bool TheoryStrings::doReduction(int effort, Node n, bool& isCd)
       << "Process reduction for " << n << ", pol = " << pol << std::endl;
   if (k == STRING_STRCTN && pol == 1)
   {
+    std::cout << "REDUCING: " << n << " " << effort << std::endl;
     Node x = n[0];
     Node s = n[1];
     // positive contains reduces to a equality
@@ -1552,6 +1555,7 @@ void TheoryStrings::checkExtfEval( int effort ) {
   std::vector< Node > sterms; 
   std::vector< std::vector< Node > > exp;
   getExtTheory()->getSubstitutedTerms( effort, terms, sterms, exp );
+  //std::cout << "checkExtfEval " << effort << " " << terms << std::endl;
   for( unsigned i=0; i<terms.size(); i++ ){
     Node n = terms[i];
     Node sn = sterms[i];
@@ -1639,6 +1643,7 @@ void TheoryStrings::checkExtfEval( int effort ) {
                 einfo.d_exp, conc, effort == 0 ? "EXTF" : "EXTF-N", true);
             if( d_conflict ){
               Trace("strings-extf-debug") << "  conflict, return." << std::endl;
+              //std::cout << "/checkExtfEval (conflict) " << effort << std::endl;
               return;
             }
           }
@@ -1678,7 +1683,26 @@ void TheoryStrings::checkExtfEval( int effort ) {
       if( effort==1 ){
         Trace("strings-extf") << "  cannot rewrite extf : " << to_reduce << std::endl;
       }
-      checkExtfInference(n, to_reduce, einfo, effort);
+      //std::cout << "checkExtfInference " << n << " " << to_reduce << std::endl;
+      NodeManager* nm = NodeManager::currentNM();
+      if (to_reduce.getKind() == kind::EQUAL
+          && to_reduce[0].getType().isString())
+      {
+        checkExtfInference(
+            n,
+            nm->mkNode(kind::STRING_STRCTN, to_reduce[0], to_reduce[1]),
+            einfo,
+            effort);
+        checkExtfInference(
+            n,
+            nm->mkNode(kind::STRING_STRCTN, to_reduce[1], to_reduce[0]),
+            einfo,
+            effort);
+      }
+      else
+      {
+        checkExtfInference(n, to_reduce, einfo, effort);
+      }
       if( Trace.isOn("strings-extf-list") ){
         Trace("strings-extf-list") << "  * " << to_reduce;
         if (!einfo.d_const.isNull())
@@ -1697,6 +1721,7 @@ void TheoryStrings::checkExtfEval( int effort ) {
     }
   }
   d_has_extf = has_nreduce;
+  //std::cout << "/checkExtfEval " << effort << std::endl;
 }
 
 void TheoryStrings::checkExtfInference( Node n, Node nr, ExtfInfoTmp& in, int effort ){
@@ -1736,10 +1761,13 @@ void TheoryStrings::checkExtfInference( Node n, Node nr, ExtfInfoTmp& in, int ef
 
   if (nr.getKind() == STRING_STRCTN)
   {
+    Node nrr[2];
+    nrr[0] = getRepresentative(nr[0]);
+    nrr[1] = getRepresentative(nr[1]);
     Assert(in.d_const.isConst());
     bool pol = in.d_const.getConst<bool>();
-    if ((pol && nr[1].getKind() == STRING_CONCAT)
-        || (!pol && nr[0].getKind() == STRING_CONCAT))
+    if ((pol && nrr[1].getKind() == STRING_CONCAT)
+        || (!pol && nrr[0].getKind() == STRING_CONCAT))
     {
       // If str.contains( x, str.++( y1, ..., yn ) ),
       //   we may infer str.contains( x, y1 ), ..., str.contains( x, yn )
@@ -1759,9 +1787,9 @@ void TheoryStrings::checkExtfInference( Node n, Node nr, ExtfInfoTmp& in, int ef
 
         int index = pol ? 1 : 0;
         std::vector<Node> children;
-        children.push_back(nr[0]);
-        children.push_back(nr[1]);
-        for (const Node& nrc : nr[index])
+        children.push_back(nrr[0]);
+        children.push_back(nrr[1]);
+        for (const Node& nrc : nrr[index])
         {
           children[index] = nrc;
           Node conc = nm->mkNode(STRING_STRCTN, children);
@@ -1785,16 +1813,17 @@ void TheoryStrings::checkExtfInference( Node n, Node nr, ExtfInfoTmp& in, int ef
     }
     else
     {
-      if (std::find(d_extf_info_tmp[nr[0]].d_ctn[pol].begin(),
-                    d_extf_info_tmp[nr[0]].d_ctn[pol].end(),
-                    nr[1])
-          == d_extf_info_tmp[nr[0]].d_ctn[pol].end())
+      if (std::find(d_extf_info_tmp[nrr[0]].d_ctn[pol].begin(),
+                    d_extf_info_tmp[nrr[0]].d_ctn[pol].end(),
+                    nrr[1])
+          == d_extf_info_tmp[nrr[0]].d_ctn[pol].end())
       {
-        Trace("strings-extf-debug") << "  store contains info : " << nr[0]
-                                    << " " << pol << " " << nr[1] << std::endl;
+        Trace("strings-extf-debug") << "  store contains info : " << nrr[0]
+                                    << " " << pol << " " << nrr[1] << std::endl;
         // Store s (does not) contains t, since nr = (~)contains( s, t ) holds.
-        d_extf_info_tmp[nr[0]].d_ctn[pol].push_back(nr[1]);
-        d_extf_info_tmp[nr[0]].d_ctn_from[pol].push_back(n);
+        AlwaysAssert(std::find(d_extf_info_tmp[nrr[0]].d_ctn[pol].begin(), d_extf_info_tmp[nrr[0]].d_ctn[pol].end(), nrr[1]) == d_extf_info_tmp[nrr[0]].d_ctn[pol].end());
+        d_extf_info_tmp[nrr[0]].d_ctn[pol].push_back(nrr[1]);
+        d_extf_info_tmp[nrr[0]].d_ctn_from[pol].push_back(n);
         // Do transistive closure on contains, e.g.
         // if contains( s, t ) and ~contains( s, r ), then ~contains( t, r ).
 
@@ -1815,13 +1844,13 @@ void TheoryStrings::checkExtfInference( Node n, Node nr, ExtfInfoTmp& in, int ef
         // we prefer being lazy: only if ~contains( s, r ) appears later do we
         // infer ~contains( t, r ), which suffices to show a conflict.
         bool opol = !pol;
-        for (unsigned i = 0, size = d_extf_info_tmp[nr[0]].d_ctn[opol].size();
+        for (unsigned i = 0, size = d_extf_info_tmp[nrr[0]].d_ctn[opol].size();
              i < size;
              i++)
         {
-          Node onr = d_extf_info_tmp[nr[0]].d_ctn[opol][i];
+          Node onr = d_extf_info_tmp[nrr[0]].d_ctn[opol][i];
           Node conc =
-              nm->mkNode(STRING_STRCTN, pol ? nr[1] : onr, pol ? onr : nr[1]);
+              nm->mkNode(STRING_STRCTN, pol ? nrr[1] : onr, pol ? onr : nrr[1]);
           conc = Rewriter::rewrite(conc);
           conc = conc.negate();
           bool do_infer = false;
@@ -1840,7 +1869,7 @@ void TheoryStrings::checkExtfInference( Node n, Node nr, ExtfInfoTmp& in, int ef
           {
             std::vector<Node> exp_c;
             exp_c.insert(exp_c.end(), in.d_exp.begin(), in.d_exp.end());
-            Node ofrom = d_extf_info_tmp[nr[0]].d_ctn_from[opol][i];
+            Node ofrom = d_extf_info_tmp[nrr[0]].d_ctn_from[opol][i];
             Assert(d_extf_info_tmp.find(ofrom) != d_extf_info_tmp.end());
             exp_c.insert(exp_c.end(),
                          d_extf_info_tmp[ofrom].d_exp.begin(),
@@ -1855,12 +1884,12 @@ void TheoryStrings::checkExtfInference( Node n, Node nr, ExtfInfoTmp& in, int ef
           {
             auto it = std::find(kv.second.d_ctn.at(opol).begin(),
                                 kv.second.d_ctn.at(opol).end(),
-                                nr[1]);
+                                nrr[1]);
             if (it != kv.second.d_ctn.at(opol).end())
             {
               Node conc = nm->mkNode(STRING_STRCTN,
-                                     pol ? kv.first : nr[0],
-                                     pol ? nr[0] : kv.first);
+                                     pol ? kv.first : nrr[0],
+                                     pol ? nrr[0] : kv.first);
               conc = Rewriter::rewrite(conc);
               conc = conc.negate();
               bool do_infer = false;
@@ -1875,7 +1904,30 @@ void TheoryStrings::checkExtfInference( Node n, Node nr, ExtfInfoTmp& in, int ef
               {
                 do_infer = !areEqual(lit, pol ? d_true : d_false);
               }
-              if (do_infer)
+              // std::cout << effort << " Do not reduce " << " -> "
+              //           << lit << " " << getExtTheory()->isActive(lit)
+              //           << std::endl;
+              // std::cout << "LEVEL: " << d_userContext->getLevel() << " "
+              //           << d_satContext->getLevel() << std::endl;
+              if (false && hasTerm(lit)) {
+                std::vector<Node> exp_c(in.d_exp.begin(), in.d_exp.end());
+                size_t i = std::distance(kv.second.d_ctn.at(opol).begin(), it);
+                Node ofrom = d_extf_info_tmp[kv.first].d_ctn_from[opol][i];
+                Assert(d_extf_info_tmp.find(ofrom) != d_extf_info_tmp.end());
+                exp_c.insert(exp_c.end(),
+                             d_extf_info_tmp[ofrom].d_exp.begin(),
+                             d_extf_info_tmp[ofrom].d_exp.end());
+                if (false /*true*/) //d_userContext->getLevel() + 1 == d_satContext->getLevel())
+                {
+                  std::cout << effort << " Do not reduce " << exp_c << " -> "
+                            << lit << " " << getExtTheory()->isActive(lit)
+                            << std::endl;
+                  std::cout << "LEVEL: " << d_userContext->getLevel() << " "
+                            << d_satContext->getLevel() << std::endl;
+                }
+                getExtTheory()->markReduced(lit); 
+              }
+              if (getExtTheory()->isActive(lit)) //do_infer /* || (hasTerm(lit) && !getExtTheory()->isActive(lit))*/)
               {
                 std::vector<Node> exp_c(in.d_exp.begin(), in.d_exp.end());
                 size_t i = std::distance(kv.second.d_ctn.at(opol).begin(), it);
@@ -1884,9 +1936,14 @@ void TheoryStrings::checkExtfInference( Node n, Node nr, ExtfInfoTmp& in, int ef
                 exp_c.insert(exp_c.end(),
                              d_extf_info_tmp[ofrom].d_exp.begin(),
                              d_extf_info_tmp[ofrom].d_exp.end());
+                std::cout << exp_c << " -> " << conc << std::endl;
                 sendInference(exp_c, conc, "CTN_Trans2");
-              } else if (hasTerm(lit)) {
-                getExtTheory()->markReduced(lit);
+                getExtTheory()->markReduced(lit); 
+              } else {
+                std::cout << effort << " Do not reduce "
+                          << lit << " " << getExtTheory()->isActive(lit)
+                          << std::endl;
+                getExtTheory()->markReduced(lit); 
               }
             }
           }
@@ -5355,6 +5412,7 @@ void TheoryStrings::initializeStrategy()
     }
     if (options::stringExp() && !options::stringGuessModel())
     {
+      addStrategyStep(CHECK_EXTF_EVAL, 2);
       addStrategyStep(CHECK_EXTF_REDUCTION, 2);
     }
     addStrategyStep(CHECK_MEMBERSHIP);
@@ -5364,6 +5422,7 @@ void TheoryStrings::initializeStrategy()
     {
       step_begin[EFFORT_LAST_CALL] = d_infer_steps.size();
       // these two steps are run in parallel
+      addStrategyStep(CHECK_EXTF_EVAL, 2);
       addStrategyStep(CHECK_EXTF_REDUCTION, 2, false);
       addStrategyStep(CHECK_EXTF_EVAL, 3);
       step_end[EFFORT_LAST_CALL] = d_infer_steps.size() - 1;

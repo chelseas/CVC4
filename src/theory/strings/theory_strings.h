@@ -1031,6 +1031,8 @@ private:
   void runStrategy(unsigned sbegin, unsigned send);
   //-----------------------end representation of the strategy
 
+  context::Context* d_userContext;
+  context::Context* d_satContext;
 };/* class TheoryStrings */
 
 }/* CVC4::theory::strings namespace */

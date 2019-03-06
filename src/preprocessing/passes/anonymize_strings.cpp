@@ -95,6 +95,43 @@ computeContainsRels(
   return containsRels;
 }
 
+bool isNotCtn(
+    Node t,
+    Node s,
+    const std::unordered_map<Node, std::vector<Node>, NodeHashFunction>&
+        containsRels)
+{
+  std::vector<Node> toVisit = containsRels.at(t);
+  while (!toVisit.empty())
+  {
+    Node curr = toVisit.back();
+    toVisit.pop_back();
+
+    Assert(curr != t);
+    if (curr == s)
+    {
+      return false;
+    } else {
+      toVisit.insert(toVisit.end(), containsRels.at(curr).begin(), containsRels.at(curr).end());
+    }
+  }
+
+  return true;
+}
+
+bool needNegCtn(
+    Node t,
+    Node s,
+    const std::unordered_map<Node, std::vector<Node>, NodeHashFunction>&
+        containsRels)
+{
+  return true;
+  if (!containsRels.at(s).empty()) {
+    std::cout << "Unnecessary neg ctn: " << s << " " << t << std::endl;
+  }
+  return containsRels.at(s).empty();
+}
+
 std::vector<Node> mkQueries(
     const std::unordered_map<Node, Node, NodeHashFunction>& lits,
     const std::unordered_map<Node, std::vector<Node>, NodeHashFunction>&
@@ -104,6 +141,7 @@ std::vector<Node> mkQueries(
   std::vector<Node> queries;
 
   std::unordered_map<Node, size_t, NodeHashFunction> lengths;
+  unsigned i = 0;
   if (options::anonymizeStringsPreserveLengths())
   {
     for (const auto& kv : lits)
@@ -113,6 +151,15 @@ std::vector<Node> mkQueries(
       queries.push_back(nm->mkNode(kind::EQUAL,
                                    nm->mkNode(kind::STRING_LENGTH, kv.second),
                                    nm->mkConst(Rational(length))));
+
+      if (length == 1)
+      {
+        queries.push_back(
+            nm->mkNode(kind::EQUAL,
+                       kv.second,
+                       nm->mkConst(String(std::vector<unsigned>{i}))));
+        i++;
+      }
     }
   }
 
@@ -144,15 +191,22 @@ std::vector<Node> mkQueries(
         for (const auto& kv2 : containsRels)
         {
           if (kv1.first != kv2.first
-              && std::find(kv1.second.begin(), kv1.second.end(), kv2.first)
-                     == kv1.second.end())
+              && isNotCtn(kv1.first, kv2.first, containsRels))
           {
-            if (!options::anonymizeStringsPreserveLengths()
-                || lengths[kv1.first] > lengths[kv2.first])
+            if (needNegCtn(kv1.first, kv2.first, containsRels))
             {
-              queries.push_back(nm->mkNode(
-                  kind::NOT,
-                  nm->mkNode(kind::STRING_STRCTN, kv1.first, kv2.first)));
+              if (!options::anonymizeStringsPreserveLengths()
+                  || lengths[kv1.first] > lengths[kv2.first])
+              {
+                queries.push_back(nm->mkNode(
+                    kind::NOT,
+                    nm->mkNode(kind::STRING_STRCTN, kv1.first, kv2.first)));
+              }
+              else if (lengths[kv1.first] == lengths[kv2.first])
+              {
+                queries.push_back(nm->mkNode(
+                    kind::NOT, nm->mkNode(kind::EQUAL, kv1.first, kv2.first)));
+              }
             }
           }
         }
