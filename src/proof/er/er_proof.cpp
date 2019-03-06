@@ -116,7 +116,8 @@ ErProof ErProof::fromBinaryDratProof(const ClauseUseRecord& usedClauses,
                                              dratFilename,
                                              tracecheckFilename,
                                              false,
-                                             drat2er::options::QUIET);
+                                             drat2er::options::QUIET,
+                                             false);
 
 #else
   Unimplemented(
@@ -126,7 +127,8 @@ ErProof ErProof::fromBinaryDratProof(const ClauseUseRecord& usedClauses,
 
   // Parse the resulting TRACECHECK proof into an ER proof.
   std::ifstream tracecheckStream(tracecheckFilename);
-  ErProof proof(usedClauses, TraceCheckProof::fromText(tracecheckStream));
+  TraceCheckProof pf = TraceCheckProof::fromText(tracecheckStream);
+  ErProof proof(usedClauses, std::move(pf));
   tracecheckStream.close();
 
   unlink(formulaFilename);
