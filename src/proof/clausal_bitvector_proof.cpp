@@ -29,6 +29,7 @@
 #include "proof/lfsc_proof_printer.h"
 #include "proof/lrat/lrat_proof.h"
 #include "theory/bv/theory_bv.h"
+#include "util/utility.h"
 
 #if CVC4_USE_DRAT2ER
 #include "drat2er_options.h"
@@ -111,24 +112,17 @@ void ClausalBitVectorProof::calculateAtomsInBitblastingProof()
 void ClausalBitVectorProof::optimizeDratProof()
 {
   Debug("bv::clausal") << "Optimizing DRAT" << std::endl;
-  char formulaFilename[] = "/tmp/cvc4-dimacs-XXXXXX";
-  char dratFilename[] = "/tmp/cvc4-drat-XXXXXX";
-  char optDratFilename[] = "/tmp/cvc4-optimized-drat-XXXXXX";
-  int r;
-  r = mkstemp(formulaFilename);
-  AlwaysAssert(r > 0);
-  close(r);
-  r = mkstemp(dratFilename);
-  AlwaysAssert(r > 0);
-  close(r);
-  r = mkstemp(optDratFilename);
-  AlwaysAssert(r > 0);
-  close(r);
-  std::ofstream formStream(formulaFilename);
+  std::string formulaFilename("cvc4-dimacs-XXXXXX");
+  std::string dratFilename("cvc4-drat-XXXXXX");
+  std::string optDratFilename("cvc4-optimized-drat-XXXXXX");
+
+  std::fstream formStream;
+  openTmpFile(&formStream, &formulaFilename);
   printDimacs(formStream, d_usedClauses);
   formStream.close();
 
-  std::ofstream dratStream(dratFilename);
+  std::fstream dratStream;
+  openTmpFile(&dratStream, &dratFilename);
   dratStream << d_binaryDratProof.str();
   dratStream.close();
 
@@ -144,13 +138,14 @@ void ClausalBitVectorProof::optimizeDratProof()
 
   d_binaryDratProof = std::ostringstream{};
   Assert(d_binaryDratProof.str().size() == 0);
-  std::ifstream lratStream(optDratFilename);
+  std::fstream lratStream;
+  openTmpFile(&lratStream, &optDratFilename);
   std::copy(std::istreambuf_iterator<char>(lratStream),
             std::istreambuf_iterator<char>(),
             std::ostreambuf_iterator<char>(d_binaryDratProof));
-  remove(formulaFilename);
-  remove(dratFilename);
-  remove(optDratFilename);
+  remove(formulaFilename.c_str());
+  remove(dratFilename.c_str());
+  remove(optDratFilename.c_str());
   Debug("bv::clausal") << "Optimized DRAT" << std::endl;
 }
 

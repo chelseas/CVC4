@@ -28,6 +28,7 @@
 #include "base/output.h"
 #include "proof/dimacs_printer.h"
 #include "proof/lfsc_proof_printer.h"
+#include "util/utility.h"
 
 #if CVC4_USE_DRAT2ER
 #include "drat2er_options.h"
@@ -127,24 +128,17 @@ LratProof LratProof::fromDratProof(
     const std::string& dratBinary)
 {
   std::ostringstream cmd;
-  char formulaFilename[] = "/tmp/cvc4-dimacs-XXXXXX";
-  char dratFilename[] = "/tmp/cvc4-drat-XXXXXX";
-  char lratFilename[] = "/tmp/cvc4-lrat-XXXXXX";
-  int r;
-  r = mkstemp(formulaFilename);
-  AlwaysAssert(r > 0);
-  close(r);
-  r = mkstemp(dratFilename);
-  AlwaysAssert(r > 0);
-  close(r);
-  r = mkstemp(lratFilename);
-  AlwaysAssert(r > 0);
-  close(r);
-  std::ofstream formStream(formulaFilename);
+  std::string formulaFilename("cvc4-dimacs-XXXXXX");
+  std::string dratFilename("cvc4-drat-XXXXXX");
+  std::string lratFilename("cvc4-lrat-XXXXXX");
+
+  std::fstream formStream;
+  openTmpFile(&formStream, &formulaFilename);
   printDimacs(formStream, usedClauses);
   formStream.close();
 
-  std::ofstream dratStream(dratFilename);
+  std::fstream dratStream;
+  openTmpFile(&dratStream, &dratFilename);
   dratStream << dratBinary;
   dratStream.close();
 
@@ -157,11 +151,12 @@ LratProof LratProof::fromDratProof(
       "Run contrib/get-drat2er, reconfigure with --drat2er, and rebuild");
 #endif
 
-  std::ifstream lratStream(lratFilename);
+  std::fstream lratStream;
+  openTmpFile(&lratStream, &lratFilename);
   LratProof lrat(lratStream);
-  remove(formulaFilename);
-  remove(dratFilename);
-  remove(lratFilename);
+  remove(formulaFilename.c_str());
+  remove(dratFilename.c_str());
+  remove(lratFilename.c_str());
   return lrat;
 }
 

@@ -34,6 +34,7 @@
 #include "proof/dimacs_printer.h"
 #include "proof/lfsc_proof_printer.h"
 #include "proof/proof_manager.h"
+#include "util/utility.h"
 
 #if CVC4_USE_DRAT2ER
 #include "drat2er.h"
@@ -84,29 +85,20 @@ ErProof ErProof::fromBinaryDratProof(const ClauseUseRecord& usedClauses,
                                      const std::string& dratBinary)
 {
   std::ostringstream cmd;
-  char formulaFilename[] = "/tmp/cvc4-dimacs-XXXXXX";
-  char dratFilename[] = "/tmp/cvc4-drat-XXXXXX";
-  char tracecheckFilename[] = "/tmp/cvc4-tracecheck-er-XXXXXX";
-
-  int r;
-  r = mkstemp(formulaFilename);
-  AlwaysAssert(r > 0);
-  close(r);
-  r = mkstemp(dratFilename);
-  AlwaysAssert(r > 0);
-  close(r);
-  r = mkstemp(tracecheckFilename);
-  AlwaysAssert(r > 0);
-  close(r);
+  std::string formulaFilename("/tmp/cvc4-dimacs-XXXXXX");
+  std::string dratFilename("/tmp/cvc4-drat-XXXXXX");
+  std::string tracecheckFilename("/tmp/cvc4-tracecheck-er-XXXXXX");
 
   // Write the formula
-  std::ofstream formStream(formulaFilename);
+  std::fstream formStream;
+  openTmpFile(&formStream, &formulaFilename);
   printDimacs(formStream, usedClauses);
   formStream.close();
 
 
   // Write the (binary) DRAT proof
-  std::ofstream dratStream(dratFilename);
+  std::fstream dratStream;
+  openTmpFile(&dratStream, &dratFilename);
   dratStream << dratBinary;
   dratStream.close();
 
@@ -126,14 +118,15 @@ ErProof ErProof::fromBinaryDratProof(const ClauseUseRecord& usedClauses,
 #endif
 
   // Parse the resulting TRACECHECK proof into an ER proof.
-  std::ifstream tracecheckStream(tracecheckFilename);
+  std::fstream tracecheckStream;
+  openTmpFile(&tracecheckStream, &tracecheckFilename);
   TraceCheckProof pf = TraceCheckProof::fromText(tracecheckStream);
   ErProof proof(usedClauses, std::move(pf));
   tracecheckStream.close();
 
-  unlink(formulaFilename);
-  unlink(dratFilename);
-  unlink(tracecheckFilename);
+  remove(formulaFilename.c_str());
+  remove(dratFilename.c_str());
+  remove(tracecheckFilename.c_str());
 
   return proof;
 }
