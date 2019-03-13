@@ -2862,8 +2862,13 @@ void TheoryStrings::processNEqc( std::vector< std::vector< Node > > &normal_form
                                           -1,
                                           false,
                                           antec);
+          //antec.push_back(eq);
 
-          sendInternalInference(antec, eqr, "__equality_rew");
+          if (getExtTheory()->isActive(eq)) {
+            getExtTheory()->markReduced(eq);
+          }
+          sendInference(antec, eqr, "__equality_rew");
+          return;
         }
 
         //process the reverse direction first (check for easy conflicts and inferences)
