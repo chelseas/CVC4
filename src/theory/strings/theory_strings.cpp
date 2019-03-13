@@ -2831,6 +2831,7 @@ void TheoryStrings::getExplanationVectorForPrefixEq( std::vector< std::vector< N
 
 void TheoryStrings::processNEqc( std::vector< std::vector< Node > > &normal_forms, std::vector< Node > &normal_form_src,
                                  std::vector< std::vector< Node > > &normal_forms_exp, std::vector< std::map< Node, std::map< bool, int > > >& normal_forms_exp_depend ){
+  NodeManager* nm = NodeManager::currentNM();
   //the possible inferences
   std::vector< InferInfo > pinfer;
   // loop over all pairs 
@@ -2842,6 +2843,29 @@ void TheoryStrings::processNEqc( std::vector< std::vector< Node > > &normal_form
       if( isNormalFormPair( normal_form_src[i], normal_form_src[j] ) ) {
         Trace("strings-solve") << "Strings: Already cached." << std::endl;
       }else{
+        Node eq = nm->mkNode(
+            EQUAL,
+            TheoryStringsRewriter::mkConcat(STRING_CONCAT, normal_forms[i]),
+            TheoryStringsRewriter::mkConcat(STRING_CONCAT, normal_forms[j]));
+        Node eqr = TheoryStringsRewriter::rewriteEqualityExt(eq);
+        if (eq != eqr)
+        {
+          eqr = Rewriter::rewrite(eqr);
+          std::vector<Node> antec;
+          getExplanationVectorForPrefixEq(normal_forms,
+                                          normal_form_src,
+                                          normal_forms_exp,
+                                          normal_forms_exp_depend,
+                                          i,
+                                          j,
+                                          -1,
+                                          -1,
+                                          false,
+                                          antec);
+
+          sendInternalInference(antec, eqr, "__equality_rew");
+        }
+
         //process the reverse direction first (check for easy conflicts and inferences)
         unsigned rindex = 0;
         processReverseNEq( normal_forms, normal_form_src, normal_forms_exp, normal_forms_exp_depend, i, j, rindex, 0, pinfer );
@@ -2852,6 +2876,8 @@ void TheoryStrings::processNEqc( std::vector< std::vector< Node > > &normal_form
         }
         //AJR: for less aggressive endpoint inference
         //rindex = 0;
+        //std::cout << normal_forms[i] << std::endl;
+        //std::cout << normal_forms[j] << std::endl;
 
         unsigned index = 0;
         processSimpleNEq( normal_forms, normal_form_src, normal_forms_exp, normal_forms_exp_depend, i, j, index, false, rindex, pinfer );

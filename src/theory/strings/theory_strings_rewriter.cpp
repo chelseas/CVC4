@@ -459,7 +459,7 @@ Node TheoryStringsRewriter::rewriteStrEqualityExt(Node node)
     }
   }
 
-  // ------- rewrites for (= "" _)
+  // ------- rewrites for (= c _) where c is a constant
   Node empty = nm->mkConst(::CVC4::String(""));
   for (size_t i = 0; i < 2; i++)
   {
@@ -516,6 +516,41 @@ Node TheoryStringsRewriter::rewriteStrEqualityExt(Node node)
         {
           Node ret = nm->mkNode(LEQ, ne[2], zero);
           return returnRewrite(node, ret, "str-emp-substr-leq-z");
+        }
+      }
+    }
+    else if (node[i].isConst())
+    {
+      String c = node[i].getConst<String>();
+      std::vector<Node> nc;
+      getConcat(node[1 - i], nc);
+      for (size_t j = 0, size = nc.size(); j < size; j++)
+      {
+        Node nnc = nc[j];
+        if (nnc.isConst())
+        {
+          String nncs = nnc.getConst<String>();
+          size_t pos = c.find(nncs);
+          if (pos == std::string::npos)
+          {
+            Node ret = nm->mkConst(false);
+            return returnRewrite(node, ret, "eq-const-str-no-match");
+          }
+          else if (c.find(nncs, pos + 1) == std::string::npos)
+          {
+            std::vector<Node> beforeVec(nc.begin(), nc.begin() + j);
+            Node before = mkConcat(STRING_CONCAT, beforeVec);
+            std::vector<Node> afterVec(nc.begin() + j + 1, nc.end());
+            Node after = mkConcat(STRING_CONCAT, afterVec);
+            Node ret = nm->mkNode(
+                AND,
+                nm->mkNode(EQUAL, nm->mkConst(c.substr(0, pos)), before),
+                nm->mkNode(
+                    EQUAL,
+                    nm->mkConst(c.substr(pos + nncs.size(),
+                                         c.size() - pos - nncs.size())), after));
+            return returnRewrite(node, ret, "eq-const-single-match");
+          }
         }
       }
     }

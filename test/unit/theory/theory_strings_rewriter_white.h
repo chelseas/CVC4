@@ -1026,7 +1026,14 @@ class TheoryStringsRewriterWhite : public CxxTest::TestSuite
     Node empty = d_nm->mkConst(::CVC4::String(""));
     Node a = d_nm->mkConst(::CVC4::String("A"));
     Node aaa = d_nm->mkConst(::CVC4::String("AAA"));
+    Node ab = d_nm->mkConst(::CVC4::String("AB"));
+    Node abcde = d_nm->mkConst(::CVC4::String("ABCDE"));
     Node b = d_nm->mkConst(::CVC4::String("B"));
+    Node bcd = d_nm->mkConst(::CVC4::String("BCD"));
+    Node c = d_nm->mkConst(::CVC4::String("C"));
+    Node cde = d_nm->mkConst(::CVC4::String("CDE"));
+    Node d = d_nm->mkConst(::CVC4::String("D"));
+    Node e = d_nm->mkConst(::CVC4::String("E"));
     Node x = d_nm->mkVar("x", strType);
     Node y = d_nm->mkVar("y", strType);
     Node xxa = d_nm->mkNode(kind::STRING_CONCAT, x, x, a);
@@ -1230,6 +1237,32 @@ class TheoryStringsRewriterWhite : public CxxTest::TestSuite
       Node eq = d_nm->mkNode(
           kind::EQUAL, d_nm->mkNode(kind::STRING_CONCAT, a, d_nm->mkNode(kind::STRING_ITOS, n)), a);
       differentNormalForms(eq, f);
+    }
+
+    {
+      // Same normal form for:
+      //
+      // (= "ABCDE" (str.++ "A" x "C" y "D"))
+      //
+      // (= "BCD" (str.++ x "C" y))
+      Node lhs = d_nm->mkNode(
+          kind::EQUAL, abcde, d_nm->mkNode(kind::STRING_CONCAT, a, x, c, y, e));
+      Node rhs = d_nm->mkNode(
+          kind::EQUAL, bcd, d_nm->mkNode(kind::STRING_CONCAT, x, c, y));
+      sameNormalForm(lhs, rhs);
+    }
+
+    {
+      // Same normal form for:
+      //
+      // (= "ABCDE" (str.++ "AB" x "D" y))
+      //
+      // (= "CDE" (str.++ x "D" y))
+      Node lhs = d_nm->mkNode(
+          kind::EQUAL, abcde, d_nm->mkNode(kind::STRING_CONCAT, ab, x, d, y));
+      Node rhs = d_nm->mkNode(
+          kind::EQUAL, cde, d_nm->mkNode(kind::STRING_CONCAT, x, d, y));
+      sameNormalForm(lhs, rhs);
     }
   }
 
