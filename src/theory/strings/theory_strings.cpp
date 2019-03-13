@@ -24,6 +24,7 @@
 #include "smt/logic_exception.h"
 #include "smt/smt_statistics_registry.h"
 #include "theory/ext_theory.h"
+#include "theory/quantifiers/extended_rewrite.h"
 #include "theory/rewriter.h"
 #include "theory/strings/theory_strings_rewriter.h"
 #include "theory/strings/type_enumerator.h"
@@ -2843,6 +2844,7 @@ void TheoryStrings::processNEqc( std::vector< std::vector< Node > > &normal_form
       if( isNormalFormPair( normal_form_src[i], normal_form_src[j] ) ) {
         Trace("strings-solve") << "Strings: Already cached." << std::endl;
       }else{
+        /*
         Node eq = nm->mkNode(
             EQUAL,
             TheoryStringsRewriter::mkConcat(STRING_CONCAT, normal_forms[i]),
@@ -2869,6 +2871,7 @@ void TheoryStrings::processNEqc( std::vector< std::vector< Node > > &normal_form
             sendInternalInference(antec, eqr, "__equality_rew");
           }
         }
+        */
 
         //process the reverse direction first (check for easy conflicts and inferences)
         unsigned rindex = 0;
@@ -4026,7 +4029,7 @@ void TheoryStrings::sendInternalInference(std::vector<Node>& exp,
 }
 
 void TheoryStrings::sendInference( std::vector< Node >& exp, std::vector< Node >& exp_n, Node eq, const char * c, bool asLemma ) {
-  eq = eq.isNull() ? d_false : Rewriter::rewrite( eq );
+  eq = eq.isNull() ? d_false : Rewriter::rewrite(eq);
   if( eq!=d_true ){
     if( Trace.isOn("strings-infer-debug") ){
       Trace("strings-infer-debug") << "By " << c << ", infer : " << eq << " from: " << std::endl;
