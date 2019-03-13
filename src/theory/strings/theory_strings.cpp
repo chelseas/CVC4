@@ -2847,28 +2847,27 @@ void TheoryStrings::processNEqc( std::vector< std::vector< Node > > &normal_form
             EQUAL,
             TheoryStringsRewriter::mkConcat(STRING_CONCAT, normal_forms[i]),
             TheoryStringsRewriter::mkConcat(STRING_CONCAT, normal_forms[j]));
-        Node eqr = TheoryStringsRewriter::rewriteEqualityExt(eq);
-        if (eq != eqr)
+        eq = Rewriter::rewrite(eq);
+        if (eq.getKind() == EQUAL)
         {
-          eqr = Rewriter::rewrite(eqr);
-          std::vector<Node> antec;
-          getExplanationVectorForPrefixEq(normal_forms,
-                                          normal_form_src,
-                                          normal_forms_exp,
-                                          normal_forms_exp_depend,
-                                          i,
-                                          j,
-                                          -1,
-                                          -1,
-                                          false,
-                                          antec);
-          //antec.push_back(eq);
+          Node eqr = TheoryStringsRewriter::rewriteEqualityExt(eq);
+          if (eq != eqr)
+          {
+            eqr = Rewriter::rewrite(eqr);
+            std::vector<Node> antec;
+            getExplanationVectorForPrefixEq(normal_forms,
+                                            normal_form_src,
+                                            normal_forms_exp,
+                                            normal_forms_exp_depend,
+                                            i,
+                                            j,
+                                            -1,
+                                            -1,
+                                            false,
+                                            antec);
 
-          if (getExtTheory()->isActive(eq)) {
-            getExtTheory()->markReduced(eq);
+            sendInternalInference(antec, eqr, "__equality_rew");
           }
-          sendInference(antec, eqr, "__equality_rew");
-          return;
         }
 
         //process the reverse direction first (check for easy conflicts and inferences)
