@@ -19,9 +19,11 @@
 #include <sstream>
 #include <string>
 
+#include "expr/variable_type_map.h"
 #include "base/exception.h"
-#include "expr/expr_manager.h"
 #include "expr/expr.h"
+#include "expr/expr_manager.h"
+#include "expr/node_manager.h"
 #include "options/options.h"
 
 using namespace CVC4;
@@ -465,5 +467,47 @@ private:
     TS_ASSERT(i2->getExprManager() == d_em);
     TS_ASSERT(r1->getExprManager() == d_em);
     TS_ASSERT(r2->getExprManager() == d_em);
+  }
+
+  void testExport() {
+
+    ExprManager em2;
+    ExprManagerMapCollection varMap;
+
+    Expr e1, e2, e3;
+    {
+    NodeManager* nm = NodeManager::fromExprManager(&em2);
+    NodeManagerScope nms(nm);
+
+    e1 = nm->mkSkolem("a", nm->booleanType()).toExpr();
+    e2 = e1.exportTo(d_em, varMap);
+    }
+
+    {
+    NodeManager* nm = NodeManager::fromExprManager(d_em);
+    NodeManagerScope nms(nm);
+
+    e3 = nm->mkSkolem("a", nm->booleanType()).toExpr();
+    }
+
+    //NodeManager* nm = NodeManager::fromExprManager(&em2);
+    //NodeManagerScope nms(nm);
+
+    /*
+    //Expr e1 = nm->mkSkolem("a", nm->booleanType()).toExpr();
+    Expr e1;
+    {
+    //NodeManagerScope nms(nullptr);
+    e1 = d_em->mkBoundVar("a", em2.booleanType());
+    }
+    Expr e2 = e1.exportTo(&em2, varMap);
+    */
+    /*
+    TS_ASSERT_EQUALS(NodeManager::fromExprManager(e1.getExprManager()), NodeManager::fromExprManager(&em2));
+    TS_ASSERT_DIFFERS(NodeManager::fromExprManager(e2.getExprManager()), NodeManager::fromExprManager(&em2));
+    TS_ASSERT_EQUALS(NodeManager::fromExprManager(e2.getExprManager()), NodeManager::fromExprManager(d_em));
+    */
+
+    //std::cout << e3 << std::endl;
   }
 };

@@ -200,6 +200,8 @@ public:
             TypeNode typeNode = TypeNode::fromType(type);
             NodeManager* to_nm = NodeManager::fromExprManager(to);
             Node n = to_nm->mkBoundVar(name, typeNode);  // FIXME thread safety
+
+            //NodeManagerScope nms(to_nm);
             to_e = n.toExpr();
           } else if(n.getKind() == kind::VARIABLE) {
             bool isGlobal;
@@ -207,13 +209,14 @@ public:
 
             // Temporarily set the node manager to nullptr; this gets around
             // a check that mkVar isn't called internally
-            NodeManagerScope nullScope(nullptr);
             to_e = to->mkVar(name, type, isGlobal ? ExprManager::VAR_FLAG_GLOBAL : flags);// FIXME thread safety
           } else if(n.getKind() == kind::SKOLEM) {
             // skolems are only available at the Node level (not the Expr level)
             TypeNode typeNode = TypeNode::fromType(type);
             NodeManager* to_nm = NodeManager::fromExprManager(to);
             Node n = to_nm->mkSkolem(name, typeNode, "is a skolem variable imported from another ExprManager");// FIXME thread safety
+
+            //NodeManagerScope nms(to_nm);
             to_e = n.toExpr();
           } else {
             Unhandled();
@@ -244,6 +247,8 @@ public:
         vmap.d_from[to_int] = from_int;
         vmap.d_to[from_int] = to_int;
         vmap.d_typeMap[to_e] = from_e;// insert other direction too
+        //Assert(from_e.getExprManager() == from);
+        //Assert(to_e.getExprManager() == to);
         return Node::fromExpr(to_e);
       }
     } else {

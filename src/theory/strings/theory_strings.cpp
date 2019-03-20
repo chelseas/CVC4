@@ -482,7 +482,7 @@ bool TheoryStrings::doReduction(int effort, Node n, bool& isCd)
       << "Process reduction for " << n << ", pol = " << pol << std::endl;
   if (k == STRING_STRCTN && pol == 1)
   {
-    std::cout << "REDUCING: " << n << " " << effort << std::endl;
+    //std::cout << "REDUCING: " << n << " " << effort << std::endl;
     Node x = n[0];
     Node s = n[1];
     // positive contains reduces to a equality
@@ -1919,11 +1919,11 @@ void TheoryStrings::checkExtfInference( Node n, Node nr, ExtfInfoTmp& in, int ef
                              d_extf_info_tmp[ofrom].d_exp.end());
                 if (false /*true*/) //d_userContext->getLevel() + 1 == d_satContext->getLevel())
                 {
-                  std::cout << effort << " Do not reduce " << exp_c << " -> "
-                            << lit << " " << getExtTheory()->isActive(lit)
-                            << std::endl;
-                  std::cout << "LEVEL: " << d_userContext->getLevel() << " "
-                            << d_satContext->getLevel() << std::endl;
+                  // std::cout << effort << " Do not reduce " << exp_c << " -> "
+                  //           << lit << " " << getExtTheory()->isActive(lit)
+                  //           << std::endl;
+                  // std::cout << "LEVEL: " << d_userContext->getLevel() << " "
+                  //           << d_satContext->getLevel() << std::endl;
                 }
                 getExtTheory()->markReduced(lit); 
               }
@@ -1936,13 +1936,13 @@ void TheoryStrings::checkExtfInference( Node n, Node nr, ExtfInfoTmp& in, int ef
                 exp_c.insert(exp_c.end(),
                              d_extf_info_tmp[ofrom].d_exp.begin(),
                              d_extf_info_tmp[ofrom].d_exp.end());
-                std::cout << exp_c << " -> " << conc << std::endl;
+                // std::cout << exp_c << " -> " << conc << std::endl;
                 sendInference(exp_c, conc, "CTN_Trans2");
                 getExtTheory()->markReduced(lit); 
               } else {
-                std::cout << effort << " Do not reduce "
-                          << lit << " " << getExtTheory()->isActive(lit)
-                          << std::endl;
+                // std::cout << effort << " Do not reduce "
+                //           << lit << " " << getExtTheory()->isActive(lit)
+                //           << std::endl;
                 getExtTheory()->markReduced(lit); 
               }
             }

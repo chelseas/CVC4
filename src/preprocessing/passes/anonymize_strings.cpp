@@ -119,16 +119,38 @@ bool isNotCtn(
   return true;
 }
 
+void indirectContains(
+    const std::unordered_map<Node, std::vector<Node>, NodeHashFunction>&
+        containsRels,
+    Node t,
+    std::unordered_set<Node, NodeHashFunction>& res)
+{
+  res.insert(t);
+  for(const Node& n : containsRels.at(t)) {
+    indirectContains(containsRels, n, res);
+  }
+}
+
 bool needNegCtn(
     Node t,
     Node s,
     const std::unordered_map<Node, std::vector<Node>, NodeHashFunction>&
         containsRels)
 {
-  return true;
+  /*return true;
   if (!containsRels.at(s).empty()) {
     std::cout << "Unnecessary neg ctn: " << s << " " << t << std::endl;
+  }*/
+
+  std::unordered_set<Node, NodeHashFunction> ic;
+  indirectContains(containsRels, t, ic);
+
+  for (const Node& n : containsRels.at(s)) {
+    if (ic.find(n) != ic.end()) {
+      return true;
+    }
   }
+
   return containsRels.at(s).empty();
 }
 
@@ -245,7 +267,6 @@ PreprocessingPassResult AnonymizeStrings::applyInternal(
 
   bool dumpBenchmark = Dump.on("benchmark");
 
-  ExprManagerMapCollection varMap;
   ExprManager em(nm->getOptions());
   SmtEngine checker(&em);
 
@@ -258,6 +279,7 @@ PreprocessingPassResult AnonymizeStrings::applyInternal(
   checker.setOption("preprocess-only", false);
   checker.setOption("produce-models", true);
 
+  ExprManagerMapCollection varMap;
   for (const Node& query : queries)
   {
     Expr equery = query.toExpr().exportTo(&em, varMap);
