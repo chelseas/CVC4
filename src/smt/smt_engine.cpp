@@ -1142,6 +1142,14 @@ void SmtEngine::setLogic(const LogicInfo& logic)
 void SmtEngine::setLogic(const std::string& s)
 {
   SmtScope smts(this);
+
+  // HACK
+  if (!d_isInternalSubsolver && options::anonymizeStrings()
+      && !Dump.isOn("anonymization-benchmark"))
+  {
+    Dump.setDumpFromString("declarations");
+  }
+
   try {
     setLogic(LogicInfo(s));
   } catch(IllegalArgumentException& e) {
@@ -1178,6 +1186,11 @@ void SmtEngine::setDefaults() {
   if (options::inputLanguage() == language::input::LANG_SYGUS)
   {
     is_sygus = true;
+  }
+
+  if (!d_isInternalSubsolver && options::anonymizeStrings())
+  {
+    setOption("produce-models", SExpr("true"));
   }
 
   if (options::bitblastMode() == theory::bv::BITBLAST_MODE_EAGER)
@@ -3148,9 +3161,10 @@ void SmtEnginePrivate::processAssertions() {
     return;
   }
 
-  if (options::anonymizeStrings())
+  if (!d_smt.d_isInternalSubsolver && options::anonymizeStrings())
   {
     d_passes["anonymize-strings"]->apply(&d_assertions);
+    return;
   }
 
   if (options::bvGaussElim())

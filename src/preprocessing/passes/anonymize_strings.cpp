@@ -265,33 +265,52 @@ PreprocessingPassResult AnonymizeStrings::applyInternal(
 
   Trace("anonymize-strings") << "Queries: " << queries << std::endl;
 
-  bool dumpBenchmark = Dump.on("benchmark");
+  bool dumpBenchmark = Dump.isOn("anonymization-benchmark");
 
-  ExprManager em(nm->getOptions());
-  SmtEngine checker(&em);
+  SmtEngine checker(nm->toExprManager());
+  checker.setIsInternalSubsolver();
 
   {
     smt::SmtScope smts(&checker);
-    Dump.off();
+
+    if (Dump.isOn("anonymization-benchmark"))
+    {
+      Dump.on("raw-benchmark");
+    }
+    else
+    {
+      Dump.off();
+    }
   }
 
-  checker.setOption("anonymize-strings", false);
-  checker.setOption("preprocess-only", false);
-  checker.setOption("produce-models", true);
+  // checker.setOption("anonymize-strings", false);
+  // checker.setOption("preprocess-only", false);
+  // checker.setOption("produce-models", true);
 
   ExprManagerMapCollection varMap;
   for (const Node& query : queries)
   {
-    Expr equery = query.toExpr().exportTo(&em, varMap);
+    Expr equery = query.toExpr();
     checker.assertFormula(equery);
   }
-  checker.checkSat();
+
+  if (dumpBenchmark)
+  {
+    // HACK
+    std::cout << "(check-sat)" << std::endl;
+    Dump.off();
+    return PreprocessingPassResult::NO_CONFLICT;
+  }
+  else
+  {
+    checker.checkSat();
+  }
 
   std::unordered_map<Node, Node, NodeHashFunction> substs;
   Trace("anonymize-strings") << "Values:" << std::endl;
   for (const auto& kv : lits)
   {
-    Expr esk = kv.second.toExpr().exportTo(&em, varMap);
+    Expr esk = kv.second.toExpr();
     substs[kv.first] = Node::fromExpr(checker.getValue(esk));
     Trace("anonymize-strings") << "..." << kv.second << " = " << kv.first
                                << " -> " << checker.getValue(esk) << std::endl;
@@ -304,19 +323,12 @@ PreprocessingPassResult AnonymizeStrings::applyInternal(
                                     (*assertionsToPreprocess)[i].substitute(
                                         substs.begin(), substs.end(), cache));
 
-    if (dumpBenchmark)
-    {
-      // HACK!!!!
-      std::cout << "(assert " << (*assertionsToPreprocess)[i] << ")"
-                << std::endl;
-    }
+    // HACK!!!!
+    std::cout << "(assert " << (*assertionsToPreprocess)[i] << ")" << std::endl;
   }
 
-  if (dumpBenchmark)
-  {
-    // HACK!!!!
-    std::cout << "(check-sat)" << std::endl;
-  }
+  // HACK!!!!
+  std::cout << "(check-sat)" << std::endl;
 
   return PreprocessingPassResult::NO_CONFLICT;
 }
