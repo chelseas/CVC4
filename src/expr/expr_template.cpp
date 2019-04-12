@@ -211,6 +211,7 @@ public:
 
             // Temporarily set the node manager to nullptr; this gets around
             // a check that mkVar isn't called internally
+            NodeManagerScope nullScope(nullptr);
             to_e = to->mkVar(name, type, isGlobal ? ExprManager::VAR_FLAG_GLOBAL : flags);// FIXME thread safety
           } else if(n.getKind() == kind::SKOLEM) {
             // skolems are only available at the Node level (not the Expr level)
