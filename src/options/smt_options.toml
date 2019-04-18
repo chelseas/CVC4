@@ -297,6 +297,14 @@ header = "options/smt_options.h"
   help       = "use aggressive extended rewriter as a preprocessing pass"
 
 [[option]]
+  name       = "extRewPrepOnly"
+  category   = "regular"
+  long       = "ext-rew-prep-only"
+  type       = "bool"
+  default    = "false"
+  help       = "use extended rewriter as the only preprocessing pass"
+
+[[option]]
   name       = "simplifyWithCareEnabled"
   category   = "regular"
   long       = "simp-with-care"

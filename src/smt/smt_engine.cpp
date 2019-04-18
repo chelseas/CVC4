@@ -3148,6 +3148,13 @@ void SmtEnginePrivate::processAssertions() {
     return;
   }
 
+  if (options::extRewPrepOnly())
+  {
+    d_passes["ext-rew-pre"]->apply(&d_assertions);
+    dumpAssertions("post-everything", d_assertions);
+    return;
+  }
+
   if (options::bvGaussElim())
   {
     d_passes["bv-gauss"]->apply(&d_assertions);
