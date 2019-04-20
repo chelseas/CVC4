@@ -745,6 +745,8 @@ class TheoryStringsRewriter {
    * and the list of nodes that are compared to the empty string
    */
   static std::pair<bool, std::vector<Node> > collectEmptyEqs(Node x);
+
+  static bool hasExtOp(TNode n);
 };/* class TheoryStringsRewriter */
 
 }/* CVC4::theory::strings namespace */

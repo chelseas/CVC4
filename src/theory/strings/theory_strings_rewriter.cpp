@@ -1537,6 +1537,16 @@ RewriteResponse TheoryStringsRewriter::postRewrite(TNode node) {
         retNode = nm->mkNode(STRING_LENGTH, node[0][0]);
       }
     }
+    else if (nk0 == STRING_SUBSTR)
+    {
+      Node len = nm->mkNode(STRING_LENGTH, node[0][0]);
+      Node end = nm->mkNode(PLUS, node[0][1], node[0][2]);
+      if (checkEntailArith(node[0][1]) && checkEntailArith(node[0][2]) && checkEntailArith(len, end))
+      {
+        //std::cout << len << " > " << end << std::endl;
+        retNode = node[0][2];
+      }
+    }
   }
   else if (nk == kind::STRING_CHARAT)
   {
@@ -4783,7 +4793,7 @@ bool TheoryStringsRewriter::checkEntailArithWithEqAssumption(Node assumption,
   }
 
   Node solution = ArithMSum::solveEqualityFor(assumption, v);
-  if (solution.isNull())
+  if (solution.isNull())// || hasExtOp(solution))
   {
     // Could not solve for v
     return false;
@@ -5348,4 +5358,40 @@ Node TheoryStringsRewriter::returnRewrite(Node node, Node ret, const char* c)
     ret = rewriteEqualityExt(ret);
   }
   return ret;
+}
+
+bool TheoryStringsRewriter::hasExtOp(TNode n)
+{
+  std::unordered_set<TNode, TNodeHashFunction> visited;
+  std::unordered_set<TNode, TNodeHashFunction>::iterator it;
+  std::vector<TNode> visit;
+  TNode cur;
+  visit.push_back(n);
+  do
+  {
+    cur = visit.back();
+    visit.pop_back();
+    it = visited.find(cur);
+    if (it == visited.end())
+    {
+      visited.insert(cur);
+
+      Kind k = cur.getKind();
+      if (k == kind::STRING_STRCTN || k == kind::STRING_STRREPL
+          || k == kind::STRING_STRIDOF || k == kind::STRING_ITOS
+          || k == kind::STRING_STOI || k == kind::STRING_IN_REGEXP
+          || k == kind::STRING_SUBSTR || k == kind::STRING_CHARAT
+          || k == kind::STRING_PREFIX || k == kind::STRING_SUFFIX)
+      {
+        return true;
+      }
+
+      for (unsigned i = 0; i < cur.getNumChildren(); i++)
+      {
+        visit.push_back(cur[i]);
+      }
+    }
+  } while (!visit.empty());
+
+  return false;
 }
