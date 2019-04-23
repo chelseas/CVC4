@@ -41,7 +41,7 @@ namespace strings {
 class NormalForm
 {
  public:
-  NormalForm() : d_isRev(false) {}
+  NormalForm() : d_isRev(false), d_complexity(0), d_complexityComputed(false) {}
   /**
    * The "base" of the normal form. This is some term in the equivalence
    * class of t that the normal form is based on. This is an arbitrary term
@@ -150,6 +150,12 @@ class NormalForm
                                         int index_i,
                                         int index_j,
                                         std::vector<Node>& curr_exp);
+
+  uint64_t getComplexity();
+
+ private:
+  uint64_t d_complexity;
+  bool d_complexityComputed;
 };
 
 }  // namespace strings

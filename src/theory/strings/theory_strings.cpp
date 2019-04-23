@@ -2653,6 +2653,7 @@ void TheoryStrings::normalizeEquivalenceClass( Node eqc ) {
 
     //construct the normal form
     Assert( !normal_forms.empty() );
+
     unsigned nf_index = 0;
     std::map<Node, unsigned>::iterator it = term_to_nf_index.find(eqc);
     // we prefer taking the normal form whose base is the equivalence
@@ -2662,7 +2663,15 @@ void TheoryStrings::normalizeEquivalenceClass( Node eqc ) {
     {
       nf_index = it->second;
     }
-    d_normal_form[eqc] = normal_forms[nf_index];
+
+    NormalForm& min = normal_forms[nf_index];
+    for (NormalForm& nf : normal_forms) {
+      if (nf.getComplexity() < min.getComplexity()) {
+        min = nf;
+      }
+    }
+    d_normal_form[eqc] = min;
+
     Trace("strings-process-debug")
         << "Return process equivalence class " << eqc
         << " : returned, size = " << d_normal_form[eqc].d_nf.size()

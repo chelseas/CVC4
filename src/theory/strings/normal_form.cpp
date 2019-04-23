@@ -40,6 +40,8 @@ void NormalForm::init(Node base)
   {
     d_nf.push_back(base);
   }
+
+  d_complexityComputed = false;
 }
 
 void NormalForm::reverse()
@@ -75,6 +77,7 @@ void NormalForm::splitConstant(unsigned index, Node c1, Node c2)
       }
     }
   }
+  d_complexityComputed = false;
 }
 
 void NormalForm::addToExplanation(Node exp,
@@ -156,6 +159,60 @@ void NormalForm::getExplanationForPrefixEq(NormalForm& nfi,
     Node eq = nfi.d_base.eqNode(nfj.d_base);
     curr_exp.push_back(eq);
   }
+}
+
+uint64_t NormalForm::getComplexity()
+{
+  if (d_complexityComputed)
+  {
+    return d_complexity;
+  }
+
+  std::unordered_map<TNode, uint64_t, TNodeHashFunction> visited;
+  std::unordered_map<TNode, uint64_t, TNodeHashFunction>::iterator it;
+  std::vector<Node> visit = d_nf;
+  do
+  {
+    Node cur = visit.back();
+    visit.pop_back();
+    it = visited.find(cur);
+    if (it == visited.end())
+    {
+      visited[cur] = 0;
+
+      visit.push_back(cur);
+      for (unsigned i = 0; i < cur.getNumChildren(); i++)
+      {
+        visit.push_back(cur[i]);
+      }
+    }
+    else if (!it->second)
+    {
+      for (const Node& c : cur)
+      {
+        visited[cur] += visited[c];
+      }
+
+      Kind k = cur.getKind();
+      if (k == kind::STRING_STRCTN || k == kind::STRING_STRREPL
+          || k == kind::STRING_STRIDOF || k == kind::STRING_ITOS
+          || k == kind::STRING_STOI || k == kind::STRING_IN_REGEXP
+          || k == kind::STRING_SUBSTR || k == kind::STRING_CHARAT
+          || k == kind::STRING_PREFIX || k == kind::STRING_SUFFIX)
+      {
+        visited[cur]++;
+      }
+    }
+  } while (!visit.empty());
+
+  d_complexity = 0;
+  for (const Node& n : d_nf)
+  {
+    d_complexity += visited[n];
+  }
+
+  d_complexityComputed = true;
+  return d_complexity;
 }
 
 }  // namespace strings
