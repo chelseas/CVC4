@@ -205,10 +205,13 @@ uint64_t NormalForm::getComplexity()
     }
   } while (!visit.empty());
 
-  d_complexity = 0;
+  d_complexity = d_exp.size();
   for (const Node& n : d_nf)
   {
     d_complexity += visited[n];
+    if (!n.isConst()) {
+      d_complexity++;
+    }
   }
 
   d_complexityComputed = true;
