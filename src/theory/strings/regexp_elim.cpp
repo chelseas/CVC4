@@ -575,5 +575,5 @@ Node RegExpElimination::returnElim(Node atom, Node atomElim, const char* id)
 {
   Trace("re-elim") << "re-elim: " << atom << " to " << atomElim << " by " << id
                    << "." << std::endl;
-  return atomElim;
+  return Rewriter::rewrite(atomElim);
 }
