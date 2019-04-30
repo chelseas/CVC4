@@ -703,6 +703,7 @@ Node TheoryStringsRewriter::rewriteArithEqualityExt(Node node)
 
   // notice we cannot rewrite str.to.int(x)=n to x="n" due to leading zeroes.
 
+  NodeManager* nm = NodeManager::currentNM();
   if (checkEntailArith(node[0], node[1], true)
       || checkEntailArith(node[1], node[0], true))
   {
