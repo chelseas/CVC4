@@ -2,9 +2,9 @@
 /*! \file theory_strings_rewriter.cpp
  ** \verbatim
  ** Top contributors (to current version):
- **   Andrew Reynolds, Tianyi Liang, Andres Noetzli
+ **   Andrew Reynolds, Andres Noetzli, Tianyi Liang
  ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2018 by the authors listed in the file AUTHORS
+ ** Copyright (c) 2009-2019 by the authors listed in the file AUTHORS
  ** in the top-level source directory) and their institutional affiliations.
  ** All rights reserved.  See the file COPYING in the top-level source
  ** directory for licensing information.\endverbatim
@@ -592,6 +592,106 @@ Node TheoryStringsRewriter::rewriteStrEqualityExt(Node node)
     }
   }
 
+  if (node[0].getKind() == STRING_CONCAT && node[1].getKind() == STRING_CONCAT)
+  {
+    // (= (str.++ x_1 ... x_i x_{i + 1} ... x_n)
+    //    (str.++ y_1 ... y_j y_{j + 1} ... y_m)) --->
+    //  (and (= (str.++ x_1 ... x_i) (str.++ y_1 ... y_j))
+    //       (= (str.++ x_{i + 1} ... x_n) (str.++ y_{j + 1} ... y_m)))
+    //
+    // if (str.len (str.++ x_1 ... x_i)) = (str.len (str.++ y_1 ... y_j))
+    //
+    // This rewrite performs length-based equality splitting: If we can show
+    // that two prefixes have the same length, we can split an equality into
+    // two equalities, one over the prefixes and another over the suffixes.
+    std::vector<Node> v0, v1;
+    getConcat(node[0], v0);
+    getConcat(node[1], v1);
+    size_t startRhs = 0;
+    for (size_t i = 0, size0 = v0.size(); i <= size0; i++)
+    {
+      std::vector<Node> pfxv0(v0.begin(), v0.begin() + i);
+      Node pfx0 = mkConcat(STRING_CONCAT, pfxv0);
+      for (size_t j = startRhs, size1 = v1.size(); j <= size1; j++)
+      {
+        if (!(i == 0 && j == 0) && !(i == v0.size() && j == v1.size()))
+        {
+          std::vector<Node> pfxv1(v1.begin(), v1.begin() + j);
+          Node pfx1 = mkConcat(STRING_CONCAT, pfxv1);
+          Node lenPfx0 = nm->mkNode(STRING_LENGTH, pfx0);
+          Node lenPfx1 = nm->mkNode(STRING_LENGTH, pfx1);
+
+          if (checkEntailArithEq(lenPfx0, lenPfx1))
+          {
+            std::vector<Node> sfxv0(v0.begin() + i, v0.end());
+            std::vector<Node> sfxv1(v1.begin() + j, v1.end());
+            Node ret = nm->mkNode(kind::AND,
+                                  pfx0.eqNode(pfx1),
+                                  mkConcat(STRING_CONCAT, sfxv0)
+                                      .eqNode(mkConcat(STRING_CONCAT, sfxv1)));
+            return returnRewrite(node, ret, "split-eq");
+          }
+          else if (checkEntailArith(lenPfx1, lenPfx0, true))
+          {
+            // The prefix on the right-hand side is strictly longer than the
+            // prefix on the left-hand side, so we try to strip the right-hand
+            // prefix by the length of the left-hand prefix
+            //
+            // Example:
+            // (= (str.++ "A" x y) (str.++ x "AB" z)) --->
+            //   (and (= (str.++ "A" x) (str.++ x "A")) (= y (str.++ "B" z)))
+            std::vector<Node> rpfxv1;
+            if (stripSymbolicLength(pfxv1, rpfxv1, 1, lenPfx0))
+            {
+              std::vector<Node> sfxv0(v0.begin() + i, v0.end());
+              pfxv1.insert(pfxv1.end(), v1.begin() + j, v1.end());
+              Node ret =
+                  nm->mkNode(kind::AND,
+                             pfx0.eqNode(mkConcat(STRING_CONCAT, rpfxv1)),
+                             mkConcat(STRING_CONCAT, sfxv0)
+                                 .eqNode(mkConcat(STRING_CONCAT, pfxv1)));
+              return returnRewrite(node, ret, "split-eq-strip-r");
+            }
+
+            // If the prefix of the right-hand side is (strictly) longer than
+            // the prefix of the left-hand side, we can advance the left-hand
+            // side (since the length of the right-hand side is only increasing
+            // in the inner loop)
+            break;
+          }
+          else if (checkEntailArith(lenPfx0, lenPfx1, true))
+          {
+            // The prefix on the left-hand side is strictly longer than the
+            // prefix on the right-hand side, so we try to strip the left-hand
+            // prefix by the length of the right-hand prefix
+            //
+            // Example:
+            // (= (str.++ x "AB" z) (str.++ "A" x y)) --->
+            //   (and (= (str.++ x "A") (str.++ "A" x)) (= (str.++ "B" z) y))
+            std::vector<Node> rpfxv0;
+            if (stripSymbolicLength(pfxv0, rpfxv0, 1, lenPfx1))
+            {
+              pfxv0.insert(pfxv0.end(), v0.begin() + i, v0.end());
+              std::vector<Node> sfxv1(v1.begin() + j, v1.end());
+              Node ret =
+                  nm->mkNode(kind::AND,
+                             mkConcat(STRING_CONCAT, rpfxv0).eqNode(pfx1),
+                             mkConcat(STRING_CONCAT, pfxv0)
+                                 .eqNode(mkConcat(STRING_CONCAT, sfxv1)));
+              return returnRewrite(node, ret, "split-eq-strip-l");
+            }
+
+            // If the prefix of the left-hand side is (strictly) longer than
+            // the prefix of the right-hand side, then we don't need to check
+            // that right-hand prefix for future left-hand prefixes anymore
+            // (since they are increasing in length)
+            startRhs = j + 1;
+          }
+        }
+      }
+    }
+  }
+
   return node;
 }
 
@@ -599,31 +699,11 @@ Node TheoryStringsRewriter::rewriteArithEqualityExt(Node node)
 {
   Assert(node.getKind() == EQUAL && node[0].getType().isInteger());
 
-  NodeManager* nm = NodeManager::currentNM();
-
   // cases where we can solve the equality
-  for (unsigned i = 0; i < 2; i++)
-  {
-    if (node[i].isConst())
-    {
-      Node on = node[1 - i];
-      Kind onk = on.getKind();
-      if (onk == STRING_STOI)
-      {
-        Rational r = node[i].getConst<Rational>();
-        int sgn = r.sgn();
-        Node onEq;
-        std::stringstream ss;
-        if (sgn >= 0)
-        {
-          ss << r.getNumerator();
-        }
-        Node new_ret = on[0].eqNode(nm->mkConst(String(ss.str())));
-        return returnRewrite(node, new_ret, "stoi-solve");
-      }
-    }
-  }
 
+  // notice we cannot rewrite str.to.int(x)=n to x="n" due to leading zeroes.
+
+  NodeManager* nm = NodeManager::currentNM();
   if (checkEntailArith(node[0], node[1], true)
       || checkEntailArith(node[1], node[0], true))
   {
@@ -1497,7 +1577,7 @@ RewriteResponse TheoryStringsRewriter::postRewrite(TNode node) {
       if(s.isNumber()) {
         retNode = nm->mkConst(s.toNumber());
       } else {
-        retNode = nm->mkConst(::CVC4::Rational(-1));
+        retNode = nm->mkConst(Rational(-1));
       }
     } else if(node[0].getKind() == kind::STRING_CONCAT) {
       for(unsigned i=0; i<node[0].getNumChildren(); ++i) {
@@ -2313,6 +2393,22 @@ Node TheoryStringsRewriter::rewriteIndexof( Node node ) {
           Node nn = mkConcat(kind::STRING_CONCAT, children0);
           Node ret = nm->mkNode(kind::STRING_STRIDOF, nn, node[1], node[2]);
           return returnRewrite(node, ret, "idof-def-ctn");
+        }
+
+        // Strip components from the beginning that are guaranteed not to match
+        if (stripConstantEndpoints(children0, children1, nb, ne, 1))
+        {
+          // str.indexof(str.++("AB", x, "C"), "C", 0) --->
+          // 2 + str.indexof(str.++(x, "C"), "C", 0)
+          Node ret =
+              nm->mkNode(kind::PLUS,
+                         nm->mkNode(kind::STRING_LENGTH,
+                                    mkConcat(kind::STRING_CONCAT, nb)),
+                         nm->mkNode(kind::STRING_STRIDOF,
+                                    mkConcat(kind::STRING_CONCAT, children0),
+                                    node[1],
+                                    node[2]));
+          return returnRewrite(node, ret, "idof-strip-cnst-endpts");
         }
       }
 
@@ -3621,6 +3717,8 @@ bool TheoryStringsRewriter::stripConstantEndpoints(std::vector<Node>& n1,
 
   Assert(nb.empty());
   Assert(ne.empty());
+
+  NodeManager* nm = NodeManager::currentNM();
   bool changed = false;
   // for ( forwards, backwards ) direction
   for (unsigned r = 0; r < 2; r++)
@@ -3670,6 +3768,14 @@ bool TheoryStringsRewriter::stripConstantEndpoints(std::vector<Node>& n1,
               // str.contains( str.++( "c", x ), str.++( "cd", y ) )
               overlap = r == 0 ? s.overlap(t) : t.overlap(s);
             }
+            else
+            {
+              // if we are looking at a substring, we can remove the component
+              // if there is no overlap
+              //   e.g. str.contains( str.++( str.substr( "c", i, j ), x), "a" )
+              //        --> str.contains( x, "a" )
+              removeComponent = ((r == 0 ? s.overlap(t) : t.overlap(s)) == 0);
+            }
           }
           else if (sss.empty())  // only if not substr
           {
@@ -3701,15 +3807,13 @@ bool TheoryStringsRewriter::stripConstantEndpoints(std::vector<Node>& n1,
             // component
             if (r == 0)
             {
-              nb.push_back(
-                  NodeManager::currentNM()->mkConst(s.prefix(overlap)));
-              n1[index0] = NodeManager::currentNM()->mkConst(s.suffix(overlap));
+              nb.push_back(nm->mkConst(s.prefix(s.size() - overlap)));
+              n1[index0] = nm->mkConst(s.suffix(overlap));
             }
             else
             {
-              ne.push_back(
-                  NodeManager::currentNM()->mkConst(s.suffix(overlap)));
-              n1[index0] = NodeManager::currentNM()->mkConst(s.prefix(overlap));
+              ne.push_back(nm->mkConst(s.suffix(s.size() - overlap)));
+              n1[index0] = nm->mkConst(s.prefix(overlap));
             }
           }
         }
