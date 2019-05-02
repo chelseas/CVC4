@@ -45,7 +45,10 @@ class SygusEnumerator : public EnumValGenerator
 {
  public:
   SygusEnumerator(TermDbSygus* tds, SynthConjecture* p);
-  ~SygusEnumerator() {}
+  ~SygusEnumerator()
+  {
+    smtStatisticsRegistry()->unregisterStat(&d_rewriteChecks);
+  }
   /** initialize this class with enumerator e */
   void initialize(Node e) override;
   /** Inform this generator that abstract value v was enumerated. */
@@ -100,7 +103,8 @@ class SygusEnumerator : public EnumValGenerator
     void initialize(Node e,
                     TypeNode tn,
                     TermDbSygus* tds,
-                    SygusPbe* pbe = nullptr);
+                    SygusPbe* pbe = nullptr,
+                    IntStat* rewriteChecks = nullptr);
     /** get last constructor class index for weight
      *
      * This returns a minimal index n such that all constructor classes at
@@ -183,6 +187,8 @@ class SygusEnumerator : public EnumValGenerator
     quantifiers::SygusSampler d_samplerRrV;
     /** is the above sampler initialized? */
     bool d_sampleRrVInit;
+
+    IntStat* d_rewriteChecks;
   };
   /** above cache for each sygus type */
   std::map<TypeNode, TermCache> d_tcache;
@@ -448,6 +454,8 @@ class SygusEnumerator : public EnumValGenerator
    */
   std::unordered_set<Node, NodeHashFunction> d_sbExcTlCons;
   //-------------------------------- end externally specified symmetry breaking
+
+  IntStat d_rewriteChecks;
 };
 
 }  // namespace quantifiers

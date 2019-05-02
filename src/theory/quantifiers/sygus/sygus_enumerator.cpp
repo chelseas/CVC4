@@ -25,8 +25,13 @@ namespace theory {
 namespace quantifiers {
 
 SygusEnumerator::SygusEnumerator(TermDbSygus* tds, SynthConjecture* p)
-    : d_tds(tds), d_parent(p), d_tlEnum(nullptr), d_abortSize(-1)
+    : d_tds(tds),
+      d_parent(p),
+      d_tlEnum(nullptr),
+      d_abortSize(-1),
+      d_rewriteChecks("sygus-rr-verify-rewrite-checks", 0)
 {
+  smtStatisticsRegistry()->registerStat(&d_rewriteChecks);
 }
 
 void SygusEnumerator::initialize(Node e)
@@ -152,7 +157,8 @@ SygusEnumerator::TermCache::TermCache()
 void SygusEnumerator::TermCache::initialize(Node e,
                                             TypeNode tn,
                                             TermDbSygus* tds,
-                                            SygusPbe* pbe)
+                                            SygusPbe* pbe,
+                                            IntStat* rewriteChecks)
 {
   Trace("sygus-enum-debug") << "Init term cache " << tn << "..." << std::endl;
   d_enum = e;
@@ -161,6 +167,7 @@ void SygusEnumerator::TermCache::initialize(Node e,
   d_pbe = pbe;
   d_sizeStartIndex[0] = 0;
   d_isSygusType = false;
+  d_rewriteChecks = rewriteChecks;
 
   // compute static information about tn
   if (!d_tn.isDatatype())
@@ -320,7 +327,7 @@ bool SygusEnumerator::TermCache::addTerm(Node n)
         {
           d_sampleRrVInit = true;
           d_samplerRrV.initializeSygus(
-              d_tds, d_enum, options::sygusSamples(), false);
+              d_tds, d_enum, options::sygusSamples(), false, d_rewriteChecks);
         }
         d_samplerRrV.checkEquivalent(bn, bnr);
       }
@@ -539,7 +546,7 @@ void SygusEnumerator::initializeTermCache(TypeNode tn)
       pbe = nullptr;
     }
   }
-  d_tcache[tn].initialize(d_enum, tn, d_tds, pbe);
+  d_tcache[tn].initialize(d_enum, tn, d_tds, pbe, &d_rewriteChecks);
 }
 
 SygusEnumerator::TermEnum* SygusEnumerator::getMasterEnumForType(TypeNode tn)

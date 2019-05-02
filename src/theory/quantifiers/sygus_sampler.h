@@ -18,6 +18,7 @@
 #define CVC4__THEORY__QUANTIFIERS__SYGUS_SAMPLER_H
 
 #include <map>
+#include "smt/smt_statistics_registry.h"
 #include "theory/evaluator.h"
 #include "theory/quantifiers/lazy_trie.h"
 #include "theory/quantifiers/sygus/term_database_sygus.h"
@@ -65,6 +66,7 @@ class SygusSampler : public LazyTrieEvaluator
 {
  public:
   SygusSampler();
+
   ~SygusSampler() override {}
 
   /** initialize
@@ -94,7 +96,8 @@ class SygusSampler : public LazyTrieEvaluator
   virtual void initializeSygus(TermDbSygus* tds,
                                Node f,
                                unsigned nsamples,
-                               bool useSygusType);
+                               bool useSygusType,
+                               IntStat* rewriteChecks = nullptr);
   /** register term n with this sampler database
    *
    * forceKeep is whether we wish to force that n is chosen as a representative
@@ -316,6 +319,8 @@ class SygusSampler : public LazyTrieEvaluator
   std::map<Node, std::vector<TypeNode> > d_const_sygus_types;
   /** register sygus type, initializes the above two data structures */
   void registerSygusType(TypeNode tn);
+
+  IntStat* d_rewriteChecks;
 };
 
 } /* CVC4::theory::quantifiers namespace */

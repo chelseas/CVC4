@@ -85,12 +85,14 @@ void SygusSampler::initialize(TypeNode tn,
 void SygusSampler::initializeSygus(TermDbSygus* tds,
                                    Node f,
                                    unsigned nsamples,
-                                   bool useSygusType)
+                                   bool useSygusType,
+                                   IntStat* rewriteChecks)
 {
   d_tds = tds;
   d_use_sygus_type = useSygusType;
   d_is_valid = true;
   d_ftn = f.getType();
+  d_rewriteChecks = rewriteChecks;
   Assert(d_ftn.isDatatype());
   const Datatype& dt = static_cast<DatatypeType>(d_ftn.toType()).getDatatype();
   Assert(dt.isSygus());
@@ -773,6 +775,8 @@ void SygusSampler::checkEquivalent(Node bv, Node bvr)
 {
   Trace("sygus-rr-verify") << "Testing rewrite rule " << bv << " ---> " << bvr
                            << std::endl;
+
+  (*d_rewriteChecks) += 1;
 
   // see if they evaluate to same thing on all sample points
   bool ptDisequal = false;
