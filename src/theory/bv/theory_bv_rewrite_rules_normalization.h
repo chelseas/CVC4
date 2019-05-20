@@ -228,7 +228,7 @@ inline Node RewriteRule<FlattenAssocCommut>::apply(TNode node)
   std::vector<Node> children;
   Kind kind = node.getKind();
 
-  while (!processingStack.empty())
+  /*while (!processingStack.empty())
   {
     TNode current = processingStack.back();
     processingStack.pop_back();
@@ -245,7 +245,16 @@ inline Node RewriteRule<FlattenAssocCommut>::apply(TNode node)
     {
       children.push_back(current);
     }
+  }*/
+
+  for (const Node& n : node) {
+    if (n.getKind() == node.getKind()) {
+      children.insert(children.end(), n.begin(), n.end());
+    } else {
+      children.push_back(n);
+    }
   }
+
   if (node.getKind() == kind::BITVECTOR_PLUS
       || node.getKind() == kind::BITVECTOR_MULT)
   {
