@@ -300,6 +300,11 @@ class CVC4_PUBLIC SmtEngine {
   UnsatCore getUnsatCoreInternal();
 
   /**
+   * Reduce an unsatisfiability core to make it minimal.
+   */
+  UnsatCore reduceUnsatCore(const UnsatCore& core);
+
+  /**
    * Check that an unsatisfiable core is indeed unsatisfiable.
    */
   void checkUnsatCore();
