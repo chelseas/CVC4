@@ -3953,6 +3953,23 @@ void TheoryStrings::registerTerm( Node n, int effort ) {
       // can register length term if it does not rewrite
       if (lsum == lsumb)
       {
+        if (n.getKind() == STRING_STRREPL)
+        {
+          Node len = mkLength(n[0]);
+          Node cond = nm->mkNode(GEQ, mkLength(n[1]), mkLength(n[2]));
+          Node lem = nm->mkNode(
+              ITE,
+              cond,
+              nm->mkNode(LEQ, lsum, len),
+              nm->mkNode(
+                  LEQ,
+                  lsum,
+                  nm->mkNode(
+                      PLUS,
+                      len,
+                      nm->mkNode(MINUS, mkLength(n[2]), mkLength(n[1])))));
+          d_out->lemma(lem);
+        }
         registerLength(n, LENGTH_SPLIT);
         return;
       }
