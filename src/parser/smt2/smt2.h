@@ -27,6 +27,7 @@
 
 #include "parser/parser.h"
 #include "parser/smt1/smt1.h"
+#include "smt/command.h"
 #include "theory/logic_info.h"
 #include "util/abstract_value.h"
 
@@ -43,27 +44,31 @@ namespace parser {
 class Smt2 : public Parser {
   friend class ParserBuilder;
 
-public:
- enum Theory
- {
-   THEORY_ARRAYS,
-   THEORY_BITVECTORS,
-   THEORY_CORE,
-   THEORY_DATATYPES,
-   THEORY_INTS,
-   THEORY_REALS,
-   THEORY_TRANSCENDENTALS,
-   THEORY_REALS_INTS,
-   THEORY_QUANTIFIERS,
-   THEORY_SETS,
-   THEORY_STRINGS,
-   THEORY_UF,
-   THEORY_FP,
-   THEORY_SEP
- };
+ public:
+  enum Theory
+  {
+    THEORY_ARRAYS,
+    THEORY_BITVECTORS,
+    THEORY_CORE,
+    THEORY_DATATYPES,
+    THEORY_INTS,
+    THEORY_REALS,
+    THEORY_TRANSCENDENTALS,
+    THEORY_REALS_INTS,
+    THEORY_QUANTIFIERS,
+    THEORY_SETS,
+    THEORY_STRINGS,
+    THEORY_UF,
+    THEORY_FP,
+    THEORY_SEP
+  };
 
-private:
+ private:
+  /** Has the logic been set (either by forcing it or a set-logic command)? */
   bool d_logicSet;
+  /** Have we seen a set-logic command yet? */
+  bool d_seenSetLogic;
+
   LogicInfo d_logic;
   std::unordered_map<std::string, Kind> operatorKindMap;
   std::pair<Expr, std::string> d_lastNamedTerm;
@@ -153,8 +158,11 @@ private:
    * theory symbols.
    *
    * @param name the name of the logic (e.g., QF_UF, AUFLIA)
+   * @param fromCommand should be set to true if the request originates from a
+   *                    set-logic command and false otherwise
+   * @return the command corresponding to setting the logic
    */
-  void setLogic(std::string name);
+  Command* setLogic(std::string name, bool fromCommand = true);
 
   /**
    * Get the logic.
