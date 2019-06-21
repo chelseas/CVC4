@@ -223,16 +223,6 @@ void RegExpSolver::check()
           // remember that we have unfolded a membership for x
           repUnfold.insert(x);
         }
-        else if (repUnfold.find(x) != repUnfold.end())
-        {
-          // do not unfold negative memberships of strings that have new
-          // positive unfoldings. For example:
-          //   x in ("A")* ^ NOT x in ("B")*
-          // We unfold x = "A" ++ x' only. The intution here is that positive
-          // unfoldings lead to stronger constraints (equalities are stronger
-          // than disequalities), and are easier to check.
-          continue;
-        }
         if (changed)
         {
           Node tmp = Rewriter::rewrite(nm->mkNode(STRING_IN_REGEXP, x, r));
@@ -254,6 +244,17 @@ void RegExpSolver::check()
             addedLemma = true;
             break;
           }
+        }
+
+        if (repUnfold.find(x) != repUnfold.end())
+        {
+          // do not unfold negative memberships of strings that have new
+          // positive unfoldings. For example:
+          //   x in ("A")* ^ NOT x in ("B")*
+          // We unfold x = "A" ++ x' only. The intution here is that positive
+          // unfoldings lead to stronger constraints (equalities are stronger
+          // than disequalities), and are easier to check.
+          continue;
         }
 
         if (polarity)
