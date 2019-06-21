@@ -218,11 +218,6 @@ void RegExpSolver::check()
         }
         Trace("strings-regexp-nf") << "Term " << atom << " is normalized to "
                                    << x << " IN " << r << std::endl;
-        if (e == 0)
-        {
-          // remember that we have unfolded a membership for x
-          repUnfold.insert(x);
-        }
         if (changed)
         {
           Node tmp = Rewriter::rewrite(nm->mkNode(STRING_IN_REGEXP, x, r));
@@ -246,7 +241,11 @@ void RegExpSolver::check()
           }
         }
 
-        if (repUnfold.find(x) != repUnfold.end())
+        if (e == 0)
+        {
+          // remember that we have unfolded a membership for x
+          repUnfold.insert(x);
+        } else if (repUnfold.find(x) != repUnfold.end())
         {
           // do not unfold negative memberships of strings that have new
           // positive unfoldings. For example:
