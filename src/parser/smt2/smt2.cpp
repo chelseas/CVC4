@@ -559,14 +559,17 @@ Command* Smt2::setLogic(std::string name, bool fromCommand)
     addTheory(THEORY_SEP);
   }
 
+  Command* cmd = nullptr;
   if (sygus())
   {
-    return new SetBenchmarkLogicCommand(d_logic.getLogicString());
+    cmd = new SetBenchmarkLogicCommand(d_logic.getLogicString());
   }
   else
   {
-    return new SetBenchmarkLogicCommand(name);
+    cmd = new SetBenchmarkLogicCommand(name);
   }
+  cmd->setMuted(true);
+  return cmd;
 } /* Smt2::setLogic() */
 
 void Smt2::setInfo(const std::string& flag, const SExpr& sexpr) {
