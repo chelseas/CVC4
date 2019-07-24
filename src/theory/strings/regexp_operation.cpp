@@ -1504,6 +1504,85 @@ Node RegExpOpr::intersect(Node r1, Node r2, bool &spflag) {
   if(checkConstRegExp(r1) && checkConstRegExp(r2)) {
     Node rr1 = removeIntersection(r1);
     Node rr2 = removeIntersection(r2);
+
+    NodeManager* nm = NodeManager::currentNM();
+
+    for (size_t i = 0; i < 2; i++)
+    {
+      Node rrr1 = i == 0 ? rr1 : rr2;
+      Node rrr2 = i == 0 ? rr2 : rr1;
+      if (rrr1.getKind() == kind::REGEXP_CONCAT && rrr1.getNumChildren() >= 3
+          && rrr1[0].getKind() == kind::REGEXP_STAR
+          && rrr1[0][0].getKind() == kind::REGEXP_SIGMA
+          && rrr1[1].getKind() == kind::STRING_TO_REGEXP
+          && rrr1[2].getKind() == kind::REGEXP_STAR
+          && rrr1[2][0].getKind() == kind::REGEXP_SIGMA
+          && ((rrr2.getKind() == kind::REGEXP_CONCAT
+               && rrr2[0].getKind() == kind::STRING_TO_REGEXP)
+              || rrr2.getKind() == kind::STRING_TO_REGEXP))
+      {
+        String s1 = rrr1[1][0].getConst<String>();
+        String s2 = rrr2.getKind() == kind::STRING_TO_REGEXP
+                        ? rrr2[0].getConst<String>()
+                        : rrr2[0][0].getConst<String>();
+        size_t idx = s2.find(s1);
+        if (idx != std::string::npos)
+        {
+          String x1 = s2.substr(0, idx + s1.size());
+          String x2 = s2.substr(idx + s1.size());
+
+          std::vector<Node> nrrr1v(rrr1.begin() + 2, rrr1.end());
+          std::vector<Node> nrrr2v;
+          nrrr2v.push_back(nm->mkNode(kind::STRING_TO_REGEXP, nm->mkConst(x2)));
+          nrrr2v.insert(nrrr2v.end(), rrr2.begin() + 1, rrr2.end());
+
+          Node nrrr1 = Rewriter::rewrite(
+              nrrr1v.size() == 1 ? nrrr1v[0]
+                                 : nm->mkNode(kind::REGEXP_CONCAT, nrrr1v));
+          Node nrrr2 = Rewriter::rewrite(
+              nrrr2v.size() == 1 ? nrrr2v[0]
+                                 : nm->mkNode(kind::REGEXP_CONCAT, nrrr2v));
+
+          Node ret = Rewriter::rewrite(
+              nm->mkNode(kind::REGEXP_CONCAT,
+                         nm->mkNode(kind::STRING_TO_REGEXP, nm->mkConst(x1)),
+                         intersect(nrrr1, nrrr2, spflag)));
+          return ret;
+        }
+      }
+    }
+
+    if (rr1.getKind() == kind::REGEXP_CONCAT && rr1.getNumChildren() >= 3
+        && rr1[0].getKind() == kind::REGEXP_STAR
+        && rr1[0][0].getKind() == kind::REGEXP_SIGMA
+        && rr1[1].getKind() == kind::STRING_TO_REGEXP
+        && rr1[2].getKind() == kind::REGEXP_STAR
+        && rr1[2][0].getKind() == kind::REGEXP_SIGMA
+        && rr2.getKind() == kind::REGEXP_CONCAT
+        && rr2.getNumChildren() >= 3
+        && rr2[0].getKind() == kind::REGEXP_STAR
+        && rr2[0][0].getKind() == kind::REGEXP_SIGMA
+        && rr2[1].getKind() == kind::STRING_TO_REGEXP
+        && rr2[2].getKind() == kind::REGEXP_STAR
+        && rr2[2][0].getKind() == kind::REGEXP_SIGMA
+        && rr1[1] == rr2[1])
+    {
+      std::vector<Node> nrr1v(rr1.begin() + 2, rr1.end());
+      std::vector<Node> nrr2v(rr2.begin() + 2, rr2.end());
+      Node nrr1 = Rewriter::rewrite(
+          nrr1v.size() == 1 ? nrr1v[0]
+                            : nm->mkNode(kind::REGEXP_CONCAT, nrr1v));
+      Node nrr2 = Rewriter::rewrite(
+          nrr2v.size() == 1 ? nrr2v[0]
+                            : nm->mkNode(kind::REGEXP_CONCAT, nrr2v));
+
+      Node ret = Rewriter::rewrite(
+          nm->mkNode(kind::REGEXP_CONCAT,
+                     nm->mkNode(kind::REGEXP_CONCAT, rr1[0], rr1[1]),
+                     intersect(nrr1, nrr2, spflag)));
+      return ret;
+    }
+
     std::map< PairNodes, Node > cache;
     Trace("regexp-intersect") << "Start INTERSECTION(\n\t" << mkString(r1) << ",\n\t"<< mkString(r2) << ")" << std::endl;
     Node retNode = intersectInternal(rr1, rr2, cache, 1);
