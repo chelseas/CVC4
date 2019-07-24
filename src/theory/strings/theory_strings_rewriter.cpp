@@ -1329,6 +1329,21 @@ Node TheoryStringsRewriter::rewriteMembership(TNode node) {
     retNode = nm->mkNode(AND,
                          nm->mkNode(LEQ, nm->mkNode(STRING_CODE, r[0]), xcode),
                          nm->mkNode(LEQ, xcode, nm->mkNode(STRING_CODE, r[1])));
+  }
+  else if (r.getKind() == kind::REGEXP_LOOP)
+  {
+    Node lenb = getFixedLengthForRegexp(r[0]);
+    if (!lenb.isNull())
+    {
+      retNode = nm->mkNode(
+          AND,
+          nm->mkNode(STRING_IN_REGEXP, x, nm->mkNode(REGEXP_STAR, r[0])),
+          nm->mkNode(
+              GEQ, nm->mkNode(STRING_LENGTH, x), nm->mkNode(MULT, lenb, r[1])),
+          nm->mkNode(
+              LEQ, nm->mkNode(STRING_LENGTH, x), nm->mkNode(MULT, lenb, r[2])));
+      return returnRewrite(node, retNode, "re-loop-const-len-body");
+    }
   }else if(x != node[0] || r != node[1]) {
     retNode = NodeManager::currentNM()->mkNode( kind::STRING_IN_REGEXP, x, r );
   }
@@ -1585,7 +1600,12 @@ bool TheoryStringsRewriter::hasEpsilonNode(TNode node) {
 }
 
 RewriteResponse TheoryStringsRewriter::preRewrite(TNode node) {
-  return RewriteResponse(REWRITE_DONE, node);
+  Node retNode = node;
+  if (node.getKind() == kind::STRING_IN_REGEXP)
+  {
+    retNode = rewriteMembership(node);
+  }
+  return RewriteResponse(REWRITE_DONE, retNode);
 }
 
 Node TheoryStringsRewriter::rewriteSubstr(Node node)
