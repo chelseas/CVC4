@@ -746,10 +746,17 @@ bool BoundedIntegers::getBoundElements( RepSetIterator * rsi, bool initial, Node
         if( ra==d_quantEngine->getTermUtil()->d_true ){
           long rr = range.getConst<Rational>().getNumerator().getLong()+1;
           Trace("bound-int-rsi")  << "Actual bound range is " << rr << std::endl;
-          for( unsigned k=0; k<rr; k++ ){
-            Node t = NodeManager::currentNM()->mkNode(PLUS, tl, NodeManager::currentNM()->mkConst( Rational(k) ) );
-            t = Rewriter::rewrite( t );
-            elements.push_back( t );
+          for (unsigned k = 0; k < rr; k++)
+          {
+            Node t = NodeManager::currentNM()->mkNode(
+                PLUS, tl, NodeManager::currentNM()->mkConst(Rational(k)));
+            t = Rewriter::rewrite(t);
+            elements.push_back(t);
+
+            Node t2 = NodeManager::currentNM()->mkNode(
+                MINUS, tu, NodeManager::currentNM()->mkConst(Rational(k)));
+            t2 = Rewriter::rewrite(t2);
+            elements.push_back(t2);
           }
           return true;
         }else{
