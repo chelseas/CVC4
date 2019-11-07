@@ -251,6 +251,7 @@ class TheoryStringsRewriter {
    * Returns the rewritten form of node.
    */
   static Node rewriteStringCode(Node node);
+  static Node rewriteCodeString(Node node);
 
   static Node splitConstant( Node a, Node b, int& index, bool isRev );
   /** can constant contain list

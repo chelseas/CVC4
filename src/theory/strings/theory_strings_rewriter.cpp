@@ -1686,6 +1686,10 @@ RewriteResponse TheoryStringsRewriter::postRewrite(TNode node) {
   {
     retNode = rewriteStringCode(node);
   }
+  else if (nk == CODE_STRING)
+  {
+    retNode = rewriteCodeString(node);
+  }
   else if (nk == REGEXP_CONCAT)
   {
     retNode = rewriteConcatRegExp(node);
@@ -3346,6 +3350,32 @@ Node TheoryStringsRewriter::rewriteStringCode(Node n)
     else
     {
       ret = NodeManager::currentNM()->mkConst(Rational(-1));
+    }
+    return returnRewrite(n, ret, "code-eval");
+  }
+
+  return n;
+}
+
+Node TheoryStringsRewriter::rewriteCodeString(Node n)
+{
+  Assert(n.getKind() == kind::CODE_STRING);
+  if (n[0].isConst())
+  {
+    Rational r = n[0].getConst<Rational>();
+    Node ret;
+    if (r.sgn() >= 0 && r < Rational(CVC4::String::num_codes()))
+    {
+      Assert(r.getDenominator() == 1);
+      Integer i = r.getNumerator();
+      std::vector<unsigned> vec;
+      vec.push_back(CVC4::String::convertCodeToUnsignedInt(i.toUnsignedInt()));
+      Assert(vec.size() == 1);
+      ret = NodeManager::currentNM()->mkConst(String(vec));
+    }
+    else
+    {
+      ret = NodeManager::currentNM()->mkConst(String(""));
     }
     return returnRewrite(n, ret, "code-eval");
   }

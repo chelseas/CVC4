@@ -126,6 +126,7 @@ TheoryStrings::TheoryStrings(context::Context* c,
   getExtTheory()->addFunctionKind(kind::STRING_IN_REGEXP);
   getExtTheory()->addFunctionKind(kind::STRING_LEQ);
   getExtTheory()->addFunctionKind(kind::STRING_CODE);
+  getExtTheory()->addFunctionKind(kind::CODE_STRING);
   getExtTheory()->addFunctionKind(kind::STRING_TOLOWER);
   getExtTheory()->addFunctionKind(kind::STRING_TOUPPER);
 
@@ -134,6 +135,7 @@ TheoryStrings::TheoryStrings(context::Context* c,
   d_equalityEngine.addFunctionKind(kind::STRING_CONCAT);
   d_equalityEngine.addFunctionKind(kind::STRING_IN_REGEXP);
   d_equalityEngine.addFunctionKind(kind::STRING_CODE);
+  d_equalityEngine.addFunctionKind(kind::CODE_STRING);
 
   // extended functions
   d_equalityEngine.addFunctionKind(kind::STRING_STRCTN);
@@ -436,7 +438,7 @@ bool TheoryStrings::doReduction(int effort, Node n, bool& isCd)
     Assert(k == STRING_SUBSTR || k == STRING_STRCTN || k == STRING_STRIDOF
            || k == STRING_ITOS || k == STRING_STOI || k == STRING_STRREPL
            || k == STRING_STRREPLALL || k == STRING_LEQ || k == STRING_TOLOWER
-           || k == STRING_TOUPPER);
+           || k == STRING_TOUPPER || k == CODE_STRING);
     std::vector<Node> new_nodes;
     Node res = d_preproc.simplify(n, new_nodes);
     Assert(res != n);
@@ -2579,7 +2581,18 @@ void TheoryStrings::checkCodes()
         Node vc = nm->mkNode(STRING_CODE, cp);
         if (!d_state.areEqual(cc, vc))
         {
-          d_im.sendInference(d_empty_vec, cc.eqNode(vc), "Code_Proxy");
+          Node rcs = Rewriter::rewrite(nm->mkNode(CODE_STRING, cc));
+          Node inf = cc.eqNode(vc);
+
+          if (c.getConst<String>().size() == 1)
+          {
+            inf = nm->mkNode(
+                AND,
+                inf,
+                nm->mkNode(CODE_STRING, vc).eqNode(getProxyVariableFor(rcs)));
+          }
+
+          d_im.sendInference(d_empty_vec, inf, "Code_Proxy");
         }
         const_codes.push_back(vc);
       }
@@ -2598,27 +2611,16 @@ void TheoryStrings::checkCodes()
       return;
     }
     // now, ensure that str.code is injective
-    std::vector<Node> cmps;
-    cmps.insert(cmps.end(), const_codes.rbegin(), const_codes.rend());
-    cmps.insert(cmps.end(), nconst_codes.rbegin(), nconst_codes.rend());
-    for (unsigned i = 0, num_ncc = nconst_codes.size(); i < num_ncc; i++)
+    for (const Node& c : nconst_codes)
     {
-      Node c1 = nconst_codes[i];
-      cmps.pop_back();
-      for (const Node& c2 : cmps)
+      Node codeStr = nm->mkNode(CODE_STRING, c);
+      if (!d_state.areEqual(codeStr, c[0]) && !d_state.areEqual(c, d_neg_one))
       {
-        Trace("strings-code-debug")
-            << "Compare codes : " << c1 << " " << c2 << std::endl;
-        if (!d_state.areDisequal(c1, c2) && !d_state.areEqual(c1, d_neg_one))
-        {
-          Node eq_no = c1.eqNode(d_neg_one);
-          Node deq = c1.eqNode(c2).negate();
-          Node eqn = c1[0].eqNode(c2[0]);
-          // str.code(x)==-1 V str.code(x)!=str.code(y) V x==y
-          Node inj_lem = nm->mkNode(kind::OR, eq_no, deq, eqn);
-          d_im.sendPhaseRequirement(deq, false);
-          d_im.sendInference(d_empty_vec, inj_lem, "Code_Inj");
-        }
+        Node eq_no = c.eqNode(d_neg_one);
+        Node inv = nm->mkNode(EQUAL, codeStr, c[0]);
+        // str.code(x) == -1 V code.str(str.code(x)) == x
+        Node inj_lem = nm->mkNode(kind::OR, eq_no, inv);
+        d_im.sendInference(d_empty_vec, inj_lem, "Code_Inj");
       }
     }
   }
@@ -4103,6 +4105,21 @@ void TheoryStrings::registerTerm( Node n, int effort ) {
         nm->mkNode(GEQ, n, d_zero),
         nm->mkNode(LT, n, nm->mkConst(Rational(CVC4::String::num_codes()))));
     Node lem = nm->mkNode(ITE, code_len, code_range, code_eq_neg1);
+    Trace("strings-lemma") << "Strings::Lemma CODE : " << lem << std::endl;
+    Trace("strings-assert") << "(assert " << lem << ")" << std::endl;
+    d_out->lemma(lem);
+  }
+  else if (n.getKind() == CODE_STRING)
+  {
+    d_has_str_code = true;
+    // ite( str.len(s)==1, 0 <= str.code(s) < num_codes, str.code(s)=-1 )
+    Node code_len = utils::mkNLength(n).eqNode(d_one);
+    Node code_range = nm->mkNode(
+        AND,
+        nm->mkNode(GEQ, n[0], d_zero),
+        nm->mkNode(LT, n[0], nm->mkConst(Rational(CVC4::String::num_codes()))));
+    Node lem = nm->mkNode(
+        ITE, code_range, code_len, n.eqNode(nm->mkConst(String(""))));
     Trace("strings-lemma") << "Strings::Lemma CODE : " << lem << std::endl;
     Trace("strings-assert") << "(assert " << lem << ")" << std::endl;
     d_out->lemma(lem);
