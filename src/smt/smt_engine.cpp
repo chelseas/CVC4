@@ -88,6 +88,7 @@
 #include "smt/model_blocker.h"
 #include "smt/model_core_builder.h"
 #include "smt/smt_engine_scope.h"
+#include "smt/smt_statistics_registry.h"
 #include "smt/term_formula_removal.h"
 #include "smt/update_ostream.h"
 #include "smt_util/boolean_simplification.h"

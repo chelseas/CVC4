@@ -42,12 +42,6 @@ class TheoryUF : public Theory
   /** Register a term that is in the formula */
   void preRegisterTerm(TNode) override;
 
-  /** Set up the solving data structures */
-  void presolve() override;
-
-  /** Clean up the solving data structures */
-  void postsolve() override;
-
   /** Pre-processing of input atoms */
   Node ppRewrite(TNode atom) override;
 

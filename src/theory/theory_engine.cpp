@@ -35,6 +35,7 @@
 #include "proof/proof_manager.h"
 #include "proof/theory_proof.h"
 #include "smt/logic_exception.h"
+#include "smt/smt_statistics_registry.h"
 #include "smt/term_formula_removal.h"
 #include "smt_util/lemma_output_channel.h"
 #include "smt_util/node_visitor.h"

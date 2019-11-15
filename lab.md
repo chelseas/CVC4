@@ -6,7 +6,10 @@ state-of-the-art SMT solver and the goal of this lab is to give a taste of what
 it takes to implement new theories in an SMT solver. The individual steps of
 this lab build on each other, so it is advisable to follow them in order.
 
-## Compiling CVC4
+## Getting the Source Code and Compiling CVC4
+
+Use [Git](https://git-scm.com/) to clone this repository and use `git checkout
+assignment3` to use the branch that corresponds to this assignment.
 
 Before we get started, we have to compile CVC4. CVC4 can currently be compiled
 on Linux and macOS. It can be cross-compiled for Windows but compilation on

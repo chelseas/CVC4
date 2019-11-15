@@ -28,21 +28,11 @@ TheoryUF::TheoryUF(context::Context* c,
                    OutputChannel& out,
                    Valuation valuation,
                    const LogicInfo& logicInfo)
-    : Theory(THEORY_UF, c, u, out, valuation, logicInfo), d_em(&out)
+    : Theory(THEORY_UF, c, u, out, valuation, logicInfo)
 {
 }
 
 void TheoryUF::preRegisterTerm(TNode node)
-{
-  // Nothing to do here
-}
-
-void TheoryUF::presolve()
-{
-  // Nothing to do here
-}
-
-void TheoryUF::postsolve()
 {
   // Nothing to do here
 }
