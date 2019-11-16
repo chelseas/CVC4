@@ -65,8 +65,9 @@ class BitblastSolver : public SubtheorySolver {
   std::unique_ptr<QuickXPlain> d_quickXplain;
   //  Node getModelValueRec(TNode node);
   void setConflict(TNode conflict);
-public:
-  BitblastSolver(context::Context* c, TheoryBV* bv);
+
+ public:
+  BitblastSolver(Environment* env, context::Context* c, TheoryBV* bv);
   ~BitblastSolver();
 
   void preRegister(TNode node) override;

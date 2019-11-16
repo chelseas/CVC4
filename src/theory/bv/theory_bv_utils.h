@@ -25,6 +25,7 @@
 #include <vector>
 
 #include "expr/node_manager.h"
+#include "smt/environment.h"
 
 namespace CVC4 {
 namespace theory {
@@ -76,11 +77,11 @@ bool isBVPredicate(TNode node);
  *   - not a THEORY_BV term
  *   - a THEORY_BV \Sigma_core term, where
  *     \Sigma_core = { concat, extract, =, bv constants, bv variables } */
-bool isCoreTerm(TNode term, TNodeBoolMap& cache);
+bool isCoreTerm(Environment* env, TNode term, TNodeBoolMap& cache);
 
 /* Returns true if given term is a THEORY_BV \Sigma_equality term.
  * \Sigma_equality = { =, bv constants, bv variables }  */
-bool isEqualityTerm(TNode term, TNodeBoolMap& cache);
+bool isEqualityTerm(Environment* env, TNode term, TNodeBoolMap& cache);
 
 /* Returns true if given node is an atom that is bit-blasted.  */
 bool isBitblastAtom(Node lit);

@@ -23,6 +23,7 @@
 
 #include "context/cdhashset.h"
 #include "expr/attribute.h"
+#include "smt/environment.h"
 #include "theory/bv/bv_inequality_graph.h"
 #include "theory/bv/bv_subtheory.h"
 
@@ -57,16 +58,21 @@ class InequalitySolver : public SubtheorySolver
   bool isInequalityOnly(TNode node);
   bool addInequality(TNode a, TNode b, bool strict, TNode fact);
   Statistics d_statistics;
-public:
-  InequalitySolver(context::Context* c, context::Context* u, TheoryBV* bv)
-    : SubtheorySolver(c, bv),
-      d_assertionSet(c),
-      d_inequalityGraph(c, u),
-      d_explanations(c),
-      d_isComplete(c, true),
-      d_ineqTerms(),
-      d_statistics()
-  {}
+
+ public:
+  InequalitySolver(Environment* env,
+                   context::Context* c,
+                   context::Context* u,
+                   TheoryBV* bv)
+      : SubtheorySolver(env, c, bv),
+        d_assertionSet(c),
+        d_inequalityGraph(c, u),
+        d_explanations(c),
+        d_isComplete(c, true),
+        d_ineqTerms(),
+        d_statistics()
+  {
+  }
 
   bool check(Theory::Effort e) override;
   void propagate(Theory::Effort e) override;

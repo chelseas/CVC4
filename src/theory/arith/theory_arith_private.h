@@ -17,9 +17,10 @@
 
 #pragma once
 
+#include <stdint.h>
+
 #include <map>
 #include <queue>
-#include <stdint.h>
 #include <vector>
 
 #include "context/cdhashset.h"
@@ -32,9 +33,9 @@
 #include "expr/node.h"
 #include "expr/node_builder.h"
 #include "options/arith_options.h"
+#include "smt/environment.h"
 #include "smt/logic_exception.h"
 #include "smt_util/boolean_simplification.h"
-#include "theory/arith/arith_rewriter.h"
 #include "theory/arith/arith_rewriter.h"
 #include "theory/arith/arith_static_learner.h"
 #include "theory/arith/arith_utilities.h"
@@ -42,8 +43,6 @@
 #include "theory/arith/attempt_solution_simplex.h"
 #include "theory/arith/congruence_manager.h"
 #include "theory/arith/constraint.h"
-#include "theory/arith/constraint.h"
-#include "theory/arith/delta_rational.h"
 #include "theory/arith/delta_rational.h"
 #include "theory/arith/dio_solver.h"
 #include "theory/arith/dual_simplex.h"
@@ -51,9 +50,7 @@
 #include "theory/arith/infer_bounds.h"
 #include "theory/arith/linear_equality.h"
 #include "theory/arith/matrix.h"
-#include "theory/arith/matrix.h"
 #include "theory/arith/normal_form.h"
-#include "theory/arith/partial_model.h"
 #include "theory/arith/partial_model.h"
 #include "theory/arith/simplex.h"
 #include "theory/arith/soi_simplex.h"
@@ -91,9 +88,10 @@ class NonlinearExtension;
  * http://research.microsoft.com/en-us/um/people/leonardo/cav06.pdf
  */
 class TheoryArithPrivate {
-private:
-
+ private:
   static const uint32_t RESET_START = 2;
+
+  Environment* d_env;
 
   TheoryArith& d_containing;
 
@@ -423,47 +421,57 @@ private:
   Node ppRewriteTerms(TNode atom);
 
 public:
-  TheoryArithPrivate(TheoryArith& containing, context::Context* c, context::UserContext* u, OutputChannel& out, Valuation valuation, const LogicInfo& logicInfo);
-  ~TheoryArithPrivate();
+ TheoryArithPrivate(Environment* env,
+                    TheoryArith& containing,
+                    context::Context* c,
+                    context::UserContext* u,
+                    OutputChannel& out,
+                    Valuation valuation,
+                    const LogicInfo& logicInfo);
+ ~TheoryArithPrivate();
 
-  /**
-   * Does non-context dependent setup for a node connected to a theory.
-   */
-  void preRegisterTerm(TNode n);
-  Node expandDefinition(LogicRequest &logicRequest, Node node);
+ /**
+  * Does non-context dependent setup for a node connected to a theory.
+  */
+ void preRegisterTerm(TNode n);
+ Node expandDefinition(LogicRequest& logicRequest, Node node);
 
-  void setMasterEqualityEngine(eq::EqualityEngine* eq);
+ void setMasterEqualityEngine(eq::EqualityEngine* eq);
 
-  void check(Theory::Effort e);
-  bool needsCheckLastEffort();
-  void propagate(Theory::Effort e);
-  Node explain(TNode n);
-  bool getCurrentSubstitution( int effort, std::vector< Node >& vars, std::vector< Node >& subs, std::map< Node, std::vector< Node > >& exp );
-  bool isExtfReduced( int effort, Node n, Node on, std::vector< Node >& exp );
+ void check(Theory::Effort e);
+ bool needsCheckLastEffort();
+ void propagate(Theory::Effort e);
+ Node explain(TNode n);
+ bool getCurrentSubstitution(int effort,
+                             std::vector<Node>& vars,
+                             std::vector<Node>& subs,
+                             std::map<Node, std::vector<Node> >& exp);
+ bool isExtfReduced(int effort, Node n, Node on, std::vector<Node>& exp);
 
-  Rational deltaValueForTotalOrder() const;
+ Rational deltaValueForTotalOrder() const;
 
-  bool collectModelInfo(TheoryModel* m);
+ bool collectModelInfo(TheoryModel* m);
 
-  void shutdown(){ }
+ void shutdown() {}
 
-  void presolve();
-  void notifyRestart();
-  Theory::PPAssertStatus ppAssert(TNode in, SubstitutionMap& outSubstitutions);
-  Node ppRewrite(TNode atom);
-  void ppStaticLearn(TNode in, NodeBuilder<>& learned);
+ void presolve();
+ void notifyRestart();
+ Theory::PPAssertStatus ppAssert(TNode in, SubstitutionMap& outSubstitutions);
+ Node ppRewrite(TNode atom);
+ void ppStaticLearn(TNode in, NodeBuilder<>& learned);
 
-  std::string identify() const { return std::string("TheoryArith"); }
+ std::string identify() const { return std::string("TheoryArith"); }
 
-  EqualityStatus getEqualityStatus(TNode a, TNode b);
+ EqualityStatus getEqualityStatus(TNode a, TNode b);
 
-  void addSharedTerm(TNode n);
+ void addSharedTerm(TNode n);
 
-  Node getModelValue(TNode var);
+ Node getModelValue(TNode var);
 
-
-  std::pair<bool, Node> entailmentCheck(TNode lit, const ArithEntailmentCheckParameters& params, ArithEntailmentCheckSideEffects& out);
-
+ std::pair<bool, Node> entailmentCheck(
+     TNode lit,
+     const ArithEntailmentCheckParameters& params,
+     ArithEntailmentCheckSideEffects& out);
 
 private:
 

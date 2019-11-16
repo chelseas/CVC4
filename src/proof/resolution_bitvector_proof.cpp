@@ -42,8 +42,8 @@ namespace CVC4 {
 namespace proof {
 
 ResolutionBitVectorProof::ResolutionBitVectorProof(
-    theory::bv::TheoryBV* bv, TheoryProofEngine* proofEngine)
-    : BitVectorProof(bv, proofEngine),
+    Environment* env, theory::bv::TheoryBV* bv, TheoryProofEngine* proofEngine)
+    : BitVectorProof(env, bv, proofEngine),
       d_resolutionProof(),
       d_isAssumptionConflict(false)
 {

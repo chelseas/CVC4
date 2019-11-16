@@ -26,11 +26,16 @@ namespace theory {
 namespace builtin {
 
 class TheoryBuiltin : public Theory {
-public:
-  TheoryBuiltin(context::Context* c, context::UserContext* u,
-                OutputChannel& out, Valuation valuation,
+ public:
+  TheoryBuiltin(Environment* env,
+                context::Context* c,
+                context::UserContext* u,
+                OutputChannel& out,
+                Valuation valuation,
                 const LogicInfo& logicInfo)
-      : Theory(THEORY_BUILTIN, c, u, out, valuation, logicInfo) {}
+      : Theory(THEORY_BUILTIN, env, c, u, out, valuation, logicInfo)
+  {
+  }
   std::string identify() const override { return std::string("TheoryBuiltin"); }
 };/* class TheoryBuiltin */
 

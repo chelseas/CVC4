@@ -654,8 +654,10 @@ Node ProofArith::toStreamRecLFSC(std::ostream& out,
   }
 }
 
-ArithProof::ArithProof(theory::arith::TheoryArith* arith, TheoryProofEngine* pe)
-  : TheoryProof(arith, pe), d_recorder(), d_realMode(false)
+ArithProof::ArithProof(Environment* env,
+                       theory::arith::TheoryArith* arith,
+                       TheoryProofEngine* pe)
+    : TheoryProof(env, arith, pe), d_recorder(), d_realMode(false)
 {
   arith->setProofRecorder(&d_recorder);
 }
@@ -688,7 +690,7 @@ void LFSCArithProof::printOwnedTerm(Expr term, std::ostream& os, const ProofLetM
 
   // !d_realMode <--> term.getType().isInteger()
 
-  Assert(theory::Theory::theoryOf(term) == theory::THEORY_ARITH);
+  Assert(d_env->theoryOf(term) == theory::THEORY_ARITH);
   switch (term.getKind())
   {
     case kind::CONST_RATIONAL:

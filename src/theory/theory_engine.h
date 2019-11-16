@@ -23,8 +23,8 @@
 #include <memory>
 #include <set>
 #include <unordered_map>
-#include <vector>
 #include <utility>
+#include <vector>
 
 #include "base/check.h"
 #include "context/cdhashset.h"
@@ -33,6 +33,7 @@
 #include "options/smt_options.h"
 #include "prop/prop_engine.h"
 #include "smt/command.h"
+#include "smt/environment.h"
 #include "smt_util/lemma_channels.h"
 #include "theory/atom_requests.h"
 #include "theory/decision_manager.h"
@@ -113,6 +114,8 @@ class TheoryEngine {
   friend class SharedTermsDatabase;
   friend class theory::quantifiers::TermDb;
 
+  Environment* d_env;
+
   /** Associated PropEngine engine */
   prop::PropEngine* d_propEngine;
 
@@ -130,6 +133,11 @@ class TheoryEngine {
    * directly, use theoryOf() instead.
    */
   theory::Theory* d_theoryTable[theory::THEORY_LAST];
+
+  /**
+   * The theory that owns the uninterpreted sort.
+   */
+  theory::TheoryId d_uninterpretedSortOwner;
 
   /**
    * A collection of theories that are "active" for the current run.
@@ -467,11 +475,13 @@ class TheoryEngine {
   /** Container for lemma input and output channels. */
   LemmaChannels* d_channels;
 
-public:
-
+ public:
   /** Constructs a theory engine */
-  TheoryEngine(context::Context* context, context::UserContext* userContext,
-               RemoveTermFormulas& iteRemover, const LogicInfo& logic,
+  TheoryEngine(Environment* env,
+               context::Context* context,
+               context::UserContext* userContext,
+               RemoveTermFormulas& iteRemover,
+               const LogicInfo& logic,
                LemmaChannels* channels);
 
   /** Destroys a theory engine */
@@ -487,12 +497,16 @@ public:
    * there is another theory it will be deleted.
    */
   template <class TheoryClass>
-  inline void addTheory(theory::TheoryId theoryId) {
+  inline void addTheory(theory::TheoryId theoryId)
+  {
     Assert(d_theoryTable[theoryId] == NULL && d_theoryOut[theoryId] == NULL);
     d_theoryOut[theoryId] = new EngineOutputChannel(this, theoryId);
-    d_theoryTable[theoryId] =
-        new TheoryClass(d_context, d_userContext, *d_theoryOut[theoryId],
-                        theory::Valuation(this), d_logicInfo);
+    d_theoryTable[theoryId] = new TheoryClass(d_env,
+                                              d_context,
+                                              d_userContext,
+                                              *d_theoryOut[theoryId],
+                                              theory::Valuation(this),
+                                              d_logicInfo);
   }
 
   inline void setPropEngine(prop::PropEngine* propEngine) {
@@ -507,6 +521,22 @@ public:
 
   /** Called when all initialization of options/logic is done */
   void finishInit();
+
+  /**
+   * Set the owner of the uninterpreted sort.
+   */
+  void setUninterpretedSortOwner(theory::TheoryId theory)
+  {
+    d_uninterpretedSortOwner = theory;
+  }
+
+  /**
+   * Get the owner of the uninterpreted sort.
+   */
+  theory::TheoryId getUninterpretedSortOwner()
+  {
+    return d_uninterpretedSortOwner;
+  }
 
   /**
    * Get a pointer to the underlying propositional engine.
@@ -793,7 +823,7 @@ public:
    * of built-in type.
    */
   inline theory::Theory* theoryOf(TNode node) const {
-    return d_theoryTable[theory::Theory::theoryOf(node)];
+    return d_theoryTable[theoryIdOf(node)];
   }
 
   /**
@@ -804,6 +834,24 @@ public:
   inline theory::Theory* theoryOf(theory::TheoryId theoryId) const {
     Assert(theoryId < theory::THEORY_LAST);
     return d_theoryTable[theoryId];
+  }
+
+  /**
+   * Return the ID of the theory responsible for the given type.
+   */
+  theory::TheoryId theoryIdOf(TypeNode typeNode) const;
+
+  /**
+   * Returns the ID of the theory responsible for the given node.
+   */
+  theory::TheoryId theoryIdOf(theory::TheoryOfMode mode, TNode node) const;
+
+  /**
+   * Returns the ID of the theory responsible for the given node.
+   */
+  theory::TheoryId theoryIdOf(TNode node) const
+  {
+    return theoryIdOf(options::theoryOfMode(), node);
   }
 
   inline bool isTheoryEnabled(theory::TheoryId theoryId) const {

@@ -56,13 +56,14 @@ const bool d_solveWrite2 = false;
   //bool d_lazyRIntro1 = true;
   //bool d_eagerIndexSplitting = false;
 
-TheoryArrays::TheoryArrays(context::Context* c,
+TheoryArrays::TheoryArrays(Environment* env,
+                           context::Context* c,
                            context::UserContext* u,
                            OutputChannel& out,
                            Valuation valuation,
                            const LogicInfo& logicInfo,
                            std::string name)
-    : Theory(THEORY_ARRAYS, c, u, out, valuation, logicInfo, name),
+    : Theory(THEORY_ARRAYS, env, c, u, out, valuation, logicInfo, name),
       d_numRow(name + "theory::arrays::number of Row lemmas", 0),
       d_numExt(name + "theory::arrays::number of Ext lemmas", 0),
       d_numProp(name + "theory::arrays::number of propagations", 0),

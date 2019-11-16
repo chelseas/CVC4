@@ -29,8 +29,10 @@ namespace CVC4 {
 namespace theory {
 namespace bv {
 
-EagerBitblaster::EagerBitblaster(TheoryBV* theory_bv, context::Context* c)
-    : TBitblaster<Node>(),
+EagerBitblaster::EagerBitblaster(Environment* env,
+                                 TheoryBV* theory_bv,
+                                 context::Context* c)
+    : TBitblaster<Node>(env),
       d_context(c),
       d_satSolver(),
       d_bitblastingRegistrar(new BitblastingRegistrar(this)),
@@ -63,12 +65,12 @@ EagerBitblaster::EagerBitblaster(TheoryBV* theory_bv, context::Context* c)
     default: Unreachable() << "Unknown SAT solver type";
   }
   d_satSolver.reset(solver);
-  d_cnfStream.reset(
-      new prop::TseitinCnfStream(d_satSolver.get(),
-                                 d_bitblastingRegistrar.get(),
-                                 d_nullContext.get(),
-                                 options::proof(),
-                                 "EagerBitblaster"));
+  d_cnfStream.reset(new prop::TseitinCnfStream(d_env,
+                                               d_satSolver.get(),
+                                               d_bitblastingRegistrar.get(),
+                                               d_nullContext.get(),
+                                               options::proof(),
+                                               "EagerBitblaster"));
 }
 
 EagerBitblaster::~EagerBitblaster() {}

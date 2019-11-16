@@ -74,7 +74,9 @@ typedef std::unordered_map<Expr, std::string, ExprHashFunction> ExprToString;
 class BitVectorProof : public TheoryProof
 {
  protected:
-  BitVectorProof(theory::bv::TheoryBV* bv, TheoryProofEngine* proofEngine);
+  BitVectorProof(Environment* env,
+                 theory::bv::TheoryBV* bv,
+                 TheoryProofEngine* proofEngine);
   virtual ~BitVectorProof(){};
 
   // Set of BV variables in the input. (e.g. "a" in [ a = 000 ] ^ [ a == 001 ])

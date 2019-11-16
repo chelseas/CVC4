@@ -58,11 +58,12 @@ uint64_t numNodes(TNode node, utils::NodeSet& seen)
 }
 }
 
-TLazyBitblaster::TLazyBitblaster(context::Context* c,
+TLazyBitblaster::TLazyBitblaster(Environment* env,
+                                 context::Context* c,
                                  bv::TheoryBV* bv,
                                  const std::string name,
                                  bool emptyNotify)
-    : TBitblaster<Node>(),
+    : TBitblaster<Node>(env),
       d_bv(bv),
       d_ctx(c),
       d_nullRegistrar(new prop::NullRegistrar()),
@@ -79,12 +80,12 @@ TLazyBitblaster::TLazyBitblaster(context::Context* c,
   d_satSolver.reset(
       prop::SatSolverFactory::createMinisat(c, smtStatisticsRegistry(), name));
 
-  d_cnfStream.reset(
-      new prop::TseitinCnfStream(d_satSolver.get(),
-                                 d_nullRegistrar.get(),
-                                 d_nullContext.get(),
-                                 options::proof(),
-                                 "LazyBitblaster"));
+  d_cnfStream.reset(new prop::TseitinCnfStream(d_env,
+                                               d_satSolver.get(),
+                                               d_nullRegistrar.get(),
+                                               d_nullContext.get(),
+                                               options::proof(),
+                                               "LazyBitblaster"));
 
   d_satSolverNotify.reset(
       d_emptyNotify
@@ -545,7 +546,7 @@ bool TLazyBitblaster::collectModelInfo(TheoryModel* m, bool fullModel)
     if (d_variables.find(var) == d_variables.end())
       continue;
 
-    Assert(Theory::theoryOf(var) == theory::THEORY_BV || isSharedTerm(var));
+    Assert(d_env->theoryOf(var) == theory::THEORY_BV || isSharedTerm(var));
     // only shared terms could not have been bit-blasted
     Assert(hasBBTerm(var) || isSharedTerm(var));
 
@@ -579,7 +580,7 @@ void TLazyBitblaster::clearSolver() {
   d_satSolver.reset(
       prop::SatSolverFactory::createMinisat(d_ctx, smtStatisticsRegistry()));
   d_cnfStream.reset(new prop::TseitinCnfStream(
-      d_satSolver.get(), d_nullRegistrar.get(), d_nullContext.get()));
+      d_env, d_satSolver.get(), d_nullRegistrar.get(), d_nullContext.get()));
   d_satSolverNotify.reset(
       d_emptyNotify
           ? (prop::BVSatSolverNotify*)new MinisatEmptyNotify()

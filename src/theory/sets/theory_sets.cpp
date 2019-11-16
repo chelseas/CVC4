@@ -21,12 +21,13 @@ namespace CVC4 {
 namespace theory {
 namespace sets {
 
-TheorySets::TheorySets(context::Context* c,
+TheorySets::TheorySets(Environment* env,
+                       context::Context* c,
                        context::UserContext* u,
                        OutputChannel& out,
                        Valuation valuation,
                        const LogicInfo& logicInfo)
-    : Theory(THEORY_SETS, c, u, out, valuation, logicInfo),
+    : Theory(THEORY_SETS, env, c, u, out, valuation, logicInfo),
       d_internal(new TheorySetsPrivate(*this, c, u))
 {
   // Do not move me to the header.

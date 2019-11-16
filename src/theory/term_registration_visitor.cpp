@@ -47,8 +47,8 @@ bool PreRegisterVisitor::alreadyVisited(TNode current, TNode parent) {
     return true;
   }
 
-  TheoryId currentTheoryId = Theory::theoryOf(current);
-  TheoryId parentTheoryId = Theory::theoryOf(parent);
+  TheoryId currentTheoryId = d_engine->theoryIdOf(current);
+  TheoryId parentTheoryId = d_engine->theoryIdOf(parent);
 
   d_theories = Theory::setInsert(currentTheoryId, d_theories);
   d_theories = Theory::setInsert(parentTheoryId, d_theories);
@@ -62,10 +62,10 @@ bool PreRegisterVisitor::alreadyVisited(TNode current, TNode parent) {
       // If enclosed by different theories it's shared -- in read(a, f(a)) f(a) should be shared with integers
       TypeNode type = current.getType();
       useType = true;
-      typeTheoryId = Theory::theoryOf(type);
+      typeTheoryId = d_engine->theoryIdOf(type);
     } else {
       TypeNode type = current.getType();
-      typeTheoryId = Theory::theoryOf(type);
+      typeTheoryId = d_engine->theoryIdOf(type);
       if (typeTheoryId != currentTheoryId) {
         if (type.isInterpretedFinite()) {
           useType = true;
@@ -88,7 +88,7 @@ bool PreRegisterVisitor::alreadyVisited(TNode current, TNode parent) {
     // The current theory has already visited it, so now it depends on the parent and the type
     if (Theory::setContains(parentTheoryId, visitedTheories)) {
       if (useType) {
-        TheoryId typeTheoryId = Theory::theoryOf(current.getType());
+        TheoryId typeTheoryId = d_engine->theoryIdOf(current.getType());
         d_theories = Theory::setInsert(typeTheoryId, d_theories);
         return Theory::setContains(typeTheoryId, visitedTheories);
       } else {
@@ -110,8 +110,8 @@ void PreRegisterVisitor::visit(TNode current, TNode parent) {
   }
 
   // Get the theories of the terms
-  TheoryId currentTheoryId = Theory::theoryOf(current);
-  TheoryId parentTheoryId  = Theory::theoryOf(parent);
+  TheoryId currentTheoryId = d_engine->theoryIdOf(current);
+  TheoryId parentTheoryId = d_engine->theoryIdOf(parent);
 
   // Should we use the theory of the type
   bool useType = false;
@@ -122,10 +122,10 @@ void PreRegisterVisitor::visit(TNode current, TNode parent) {
       // If enclosed by different theories it's shared -- in read(a, f(a)) f(a) should be shared with integers
       TypeNode type = current.getType();
       useType = true;
-      typeTheoryId = Theory::theoryOf(type);
+      typeTheoryId = d_engine->theoryIdOf(type);
     } else {
       TypeNode type = current.getType();
-      typeTheoryId = Theory::theoryOf(type);
+      typeTheoryId = d_engine->theoryIdOf(type);
       if (typeTheoryId != currentTheoryId) {
         if (type.isInterpretedFinite()) {
           useType = true;
@@ -199,8 +199,8 @@ bool SharedTermsVisitor::alreadyVisited(TNode current, TNode parent) const {
 
   Theory::Set theories = (*find).second;
 
-  TheoryId currentTheoryId = Theory::theoryOf(current);
-  TheoryId parentTheoryId  = Theory::theoryOf(parent);
+  TheoryId currentTheoryId = d_engine->theoryIdOf(current);
+  TheoryId parentTheoryId = d_engine->theoryIdOf(parent);
 
   // Should we use the theory of the type
   bool useType = false;
@@ -211,10 +211,10 @@ bool SharedTermsVisitor::alreadyVisited(TNode current, TNode parent) const {
       // If enclosed by different theories it's shared -- in read(a, f(a)) f(a) should be shared with integers
       TypeNode type = current.getType();
       useType = true;
-      typeTheoryId = Theory::theoryOf(type);
+      typeTheoryId = d_engine->theoryIdOf(type);
     } else {
       TypeNode type = current.getType();
-      typeTheoryId = Theory::theoryOf(type);
+      typeTheoryId = d_engine->theoryIdOf(type);
       if (typeTheoryId != currentTheoryId) {
         if (type.isInterpretedFinite()) {
           useType = true;
@@ -227,10 +227,10 @@ bool SharedTermsVisitor::alreadyVisited(TNode current, TNode parent) const {
       // If enclosed by different theories it's shared -- in read(a, f(a)) f(a) should be shared with integers
       TypeNode type = current.getType();
       useType = true;
-      typeTheoryId = Theory::theoryOf(type);
+      typeTheoryId = d_engine->theoryIdOf(type);
     } else {
       TypeNode type = current.getType();
-      typeTheoryId = Theory::theoryOf(type);
+      typeTheoryId = d_engine->theoryIdOf(type);
       if (typeTheoryId != currentTheoryId) {
         if (type.isInterpretedFinite()) {
           useType = true;
@@ -262,8 +262,8 @@ void SharedTermsVisitor::visit(TNode current, TNode parent) {
   }
 
   // Get the theories of the terms
-  TheoryId currentTheoryId = Theory::theoryOf(current);
-  TheoryId parentTheoryId  = Theory::theoryOf(parent);
+  TheoryId currentTheoryId = d_engine->theoryIdOf(current);
+  TheoryId parentTheoryId = d_engine->theoryIdOf(parent);
 
   // Should we use the theory of the type
   bool useType = false;
@@ -274,10 +274,10 @@ void SharedTermsVisitor::visit(TNode current, TNode parent) {
       // If enclosed by different theories it's shared -- in read(a, f(a)) f(a) should be shared with integers
       TypeNode type = current.getType();
       useType = true;
-      typeTheoryId = Theory::theoryOf(type);
+      typeTheoryId = d_engine->theoryIdOf(type);
     } else {
       TypeNode type = current.getType();
-      typeTheoryId = Theory::theoryOf(type);
+      typeTheoryId = d_engine->theoryIdOf(type);
       if (typeTheoryId != currentTheoryId) {
         if (type.isInterpretedFinite()) {
           useType = true;

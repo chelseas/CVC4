@@ -28,6 +28,7 @@
 #include "expr/node.h"
 #include "options/options.h"
 #include "proof/proof_manager.h"
+#include "smt/environment.h"
 #include "smt_util/lemma_channels.h"
 #include "util/result.h"
 #include "util/unsafe_interrupt_exception.h"
@@ -54,6 +55,7 @@ class PropEngine;
  * solving the SAT problem and conversion to CNF (via the CnfStream).
  */
 class PropEngine {
+  Environment* d_env;
 
   /**
    * Indicates that the SAT solver is currently solving something and we should
@@ -93,14 +95,18 @@ class PropEngine {
   /** Dump out the satisfying assignment (after SAT result) */
   void printSatisfyingAssignment();
 
-public:
-
+ public:
   /**
    * Create a PropEngine with a particular decision and theory engine.
    */
-  PropEngine(TheoryEngine*, DecisionEngine*, context::Context* satContext,
-             context::Context* userContext, std::ostream* replayLog,
-             ExprStream* replayStream, LemmaChannels* channels);
+  PropEngine(Environment* env,
+             TheoryEngine*,
+             DecisionEngine*,
+             context::Context* satContext,
+             context::Context* userContext,
+             std::ostream* replayLog,
+             ExprStream* replayStream,
+             LemmaChannels* channels);
 
   /**
    * Destructor.
@@ -114,7 +120,7 @@ public:
    * PropEngine and Theory).  For now, there's nothing to do here in
    * the PropEngine.
    */
-  void shutdown() { }
+  void shutdown() {}
 
   /**
    * Converts the given formula to CNF and assert the CNF to the SAT solver.
@@ -134,7 +140,11 @@ public:
    * @param removable whether this lemma can be quietly removed based
    * on an activity heuristic (or not)
    */
-  void assertLemma(TNode node, bool negated, bool removable, ProofRule rule, TNode from = TNode::null());
+  void assertLemma(TNode node,
+                   bool negated,
+                   bool removable,
+                   ProofRule rule,
+                   TNode from = TNode::null());
 
   /**
    * If ever n is decided upon, it must be in the given phase.  This

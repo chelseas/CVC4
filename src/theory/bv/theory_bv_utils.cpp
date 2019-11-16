@@ -134,7 +134,10 @@ bool isBVPredicate(TNode node)
          || k == kind::BITVECTOR_REDAND;
 }
 
-static bool isCoreEqTerm(bool iseq, TNode term, TNodeBoolMap& cache)
+static bool isCoreEqTerm(Environment* env,
+                         bool iseq,
+                         TNode term,
+                         TNodeBoolMap& cache)
 {
   TNode t = term.getKind() == kind::NOT ? term[0] : term;
 
@@ -156,8 +159,7 @@ static bool isCoreEqTerm(bool iseq, TNode term, TNodeBoolMap& cache)
       continue;
     }
 
-    if (theory::Theory::theoryOf(theory::THEORY_OF_TERM_BASED, n)
-        == theory::THEORY_BV)
+    if (env->theoryOf(theory::THEORY_OF_TERM_BASED, n) == theory::THEORY_BV)
     {
       Kind k = n.getKind();
       Assert(k != kind::CONST_BITVECTOR);
@@ -196,14 +198,14 @@ static bool isCoreEqTerm(bool iseq, TNode term, TNodeBoolMap& cache)
   return cache[t];
 }
 
-bool isCoreTerm(TNode term, TNodeBoolMap& cache)
+bool isCoreTerm(Environment* env, TNode term, TNodeBoolMap& cache)
 {
-  return isCoreEqTerm(false, term, cache);
+  return isCoreEqTerm(env, false, term, cache);
 }
 
-bool isEqualityTerm(TNode term, TNodeBoolMap& cache)
+bool isEqualityTerm(Environment* env, TNode term, TNodeBoolMap& cache)
 {
-  return isCoreEqTerm(true, term, cache);
+  return isCoreEqTerm(env, true, term, cache);
 }
 
 bool isBitblastAtom(Node lit)

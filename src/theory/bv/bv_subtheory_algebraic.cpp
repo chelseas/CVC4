@@ -227,10 +227,12 @@ void SubstitutionEx::storeCache(TNode from, TNode to, Node reason) {
   d_cache[from] = SubstitutionElement(to, reason);
 }
 
-AlgebraicSolver::AlgebraicSolver(context::Context* c, TheoryBV* bv)
-    : SubtheorySolver(c, bv),
+AlgebraicSolver::AlgebraicSolver(Environment* env,
+                                 context::Context* c,
+                                 TheoryBV* bv)
+    : SubtheorySolver(env, c, bv),
       d_modelMap(),
-      d_quickSolver(new BVQuickCheck("theory::bv::algebraic", bv)),
+      d_quickSolver(new BVQuickCheck(env, "theory::bv::algebraic", bv)),
       d_isComplete(c, false),
       d_isDifficult(c, false),
       d_budget(options::bitvectorAlgebraicBudget()),
@@ -723,9 +725,10 @@ bool AlgebraicSolver::collectModelInfo(TheoryModel* model, bool fullModel)
   std::vector<Node> values;
   for (set<Node>::const_iterator it = termSet.begin(); it != termSet.end(); ++it) {
     TNode term = *it;
-    if (term.getType().isBitVector() &&
-        (term.getMetaKind() == kind::metakind::VARIABLE ||
-         Theory::theoryOf(term) != THEORY_BV)) {
+    if (term.getType().isBitVector()
+        && (term.getMetaKind() == kind::metakind::VARIABLE
+            || d_env->theoryOf(term) != THEORY_BV))
+    {
       variables.push_back(term);
       values.push_back(term);
     }

@@ -19,12 +19,13 @@
 #ifndef CVC4__BV_QUICK_CHECK_H
 #define CVC4__BV_QUICK_CHECK_H
 
-#include <vector>
 #include <unordered_set>
+#include <vector>
 
 #include "context/cdo.h"
 #include "expr/node.h"
 #include "prop/sat_solver_types.h"
+#include "smt/environment.h"
 #include "theory/bv/theory_bv_utils.h"
 #include "util/statistics_registry.h"
 
@@ -45,34 +46,36 @@ class BVQuickCheck {
   context::CDO<bool> d_inConflict;
   void setConflict();
 
-public:
-  BVQuickCheck(const std::string& name, theory::bv::TheoryBV* bv);
+ public:
+  BVQuickCheck(Environment* env,
+               const std::string& name,
+               theory::bv::TheoryBV* bv);
   ~BVQuickCheck();
   bool inConflict();
   Node getConflict() { return d_conflict; }
-  /** 
+  /**
    * Checks the satisfiability for a given set of assumptions.
-   * 
+   *
    * @param assumptions literals assumed true
    * @param budget max number of conflicts
-   * 
-   * @return 
+   *
+   * @return
    */
   prop::SatValue checkSat(std::vector<Node>& assumptions, unsigned long budget);
-  /** 
+  /**
    * Checks the satisfiability of given assertions.
-   * 
+   *
    * @param budget max number of conflicts
-   * 
-   * @return 
+   *
+   * @return
    */
   prop::SatValue checkSat(unsigned long budget);
-  
-  /** 
+
+  /**
    * Convert to CNF and assert the given literal.
-   * 
+   *
    * @param assumption bv literal
-   * 
+   *
    * @return false if a conflict has been found via bcp.
    */
   bool addAssertion(TNode assumption);
@@ -80,31 +83,31 @@ public:
   void push();
   void pop();
   void popToZero();
-  /** 
+  /**
    * Deletes the SAT solver and CNF stream, but maintains the
-   * bit-blasting term cache. 
-   * 
+   * bit-blasting term cache.
+   *
    */
-  void clearSolver(); 
+  void clearSolver();
 
-  /** 
+  /**
    * Computes the size of the circuit required to bit-blast
-   * atom, by not recounting the nodes in seen. 
-   * 
-   * @param node 
-   * @param seen 
-   * 
-   * @return 
+   * atom, by not recounting the nodes in seen.
+   *
+   * @param node
+   * @param seen
+   *
+   * @return
    */
   uint64_t computeAtomWeight(TNode atom, NodeSet& seen);
   bool collectModelInfo(theory::TheoryModel* model, bool fullModel);
 
-  typedef std::unordered_set<TNode, TNodeHashFunction>::const_iterator vars_iterator;
-  vars_iterator beginVars(); 
-  vars_iterator endVars(); 
+  typedef std::unordered_set<TNode, TNodeHashFunction>::const_iterator
+      vars_iterator;
+  vars_iterator beginVars();
+  vars_iterator endVars();
 
-  Node getVarValue(TNode var, bool fullModel); 
-
+  Node getVarValue(TNode var, bool fullModel);
 };
 
 

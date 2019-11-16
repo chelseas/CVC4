@@ -26,8 +26,11 @@ namespace CVC4 {
 namespace theory {
 namespace bv {
 
-EagerBitblastSolver::EagerBitblastSolver(context::Context* c, TheoryBV* bv)
-    : d_assertionSet(c),
+EagerBitblastSolver::EagerBitblastSolver(Environment* env,
+                                         context::Context* c,
+                                         TheoryBV* bv)
+    : d_env(env),
+      d_assertionSet(c),
       d_assumptionSet(c),
       d_context(c),
       d_bitblaster(),
@@ -49,12 +52,12 @@ void EagerBitblastSolver::initialize() {
   Assert(!isInitialized());
   if (d_useAig) {
 #ifdef CVC4_USE_ABC
-    d_aigBitblaster.reset(new AigBitblaster());
+    d_aigBitblaster.reset(new AigBitblaster(d_env));
 #else
     Unreachable();
 #endif
   } else {
-    d_bitblaster.reset(new EagerBitblaster(d_bv, d_context));
+    d_bitblaster.reset(new EagerBitblaster(d_env, d_bv, d_context));
     THEORY_PROOF(if (d_bvp) {
       d_bitblaster->setProofLog(d_bvp);
       d_bvp->setBitblaster(d_bitblaster.get());

@@ -139,7 +139,7 @@ private:
   ExtTheory* d_extTheory;
 
  protected:
-
+  Environment* d_env;
 
   // === STATISTICS ===
   /** time spent in check calls */
@@ -196,6 +196,7 @@ private:
    * w.r.t. the SmtEngine.
    */
   Theory(TheoryId id,
+         Environment* env,
          context::Context* satContext,
          context::UserContext* userContext,
          OutputChannel& out,

@@ -30,12 +30,15 @@ namespace CVC4 {
 namespace theory {
 namespace idl {
 
-TheoryIdl::TheoryIdl(context::Context* c, context::UserContext* u,
-                     OutputChannel& out, Valuation valuation,
+TheoryIdl::TheoryIdl(Environment* env,
+                     context::Context* c,
+                     context::UserContext* u,
+                     OutputChannel& out,
+                     Valuation valuation,
                      const LogicInfo& logicInfo)
-    : Theory(THEORY_ARITH, c, u, out, valuation, logicInfo)
-    , d_model(c)
-    , d_assertionsDB(c)
+    : Theory(THEORY_ARITH, env, c, u, out, valuation, logicInfo),
+      d_model(c),
+      d_assertionsDB(c)
 {}
 
 Node TheoryIdl::ppRewrite(TNode atom) {

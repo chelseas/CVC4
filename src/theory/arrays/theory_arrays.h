@@ -138,9 +138,12 @@ class TheoryArrays : public Theory {
   unsigned d_reasonExt;
 
  public:
-
-  TheoryArrays(context::Context* c, context::UserContext* u, OutputChannel& out,
-               Valuation valuation, const LogicInfo& logicInfo,
+  TheoryArrays(Environment* env,
+               context::Context* c,
+               context::UserContext* u,
+               OutputChannel& out,
+               Valuation valuation,
+               const LogicInfo& logicInfo,
                std::string name = "");
   ~TheoryArrays();
 

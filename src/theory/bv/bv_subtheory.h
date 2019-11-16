@@ -69,12 +69,15 @@ using AssertionQueue = context::CDQueue<Node>;
  */
 class SubtheorySolver {
  public:
-  SubtheorySolver(context::Context* c, TheoryBV* bv)
-      : d_context(c),
+  SubtheorySolver(Environment* env, context::Context* c, TheoryBV* bv)
+      : d_env(env),
+        d_context(c),
         d_bv(bv),
         d_bvp(nullptr),
         d_assertionQueue(c),
-        d_assertionIndex(c, 0) {}
+        d_assertionIndex(c, 0)
+  {
+  }
   virtual ~SubtheorySolver() {}
   virtual bool check(Theory::Effort e) = 0;
   virtual void explain(TNode literal, std::vector<TNode>& assumptions) = 0;
@@ -102,6 +105,8 @@ class SubtheorySolver {
   }
 
  protected:
+  Environment* d_env;
+
   /** The context we are using */
   context::Context* d_context;
 

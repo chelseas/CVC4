@@ -28,6 +28,7 @@
 #include "proof/clause_id.h"
 #include "proof/proof_utils.h"
 #include "prop/sat_solver_types.h"
+#include "smt/environment.h"
 #include "theory/uf/equality_engine.h"
 #include "util/proof.h"
 namespace CVC4 {
@@ -47,19 +48,8 @@ typedef std::set<theory::TheoryId> TheoryIdSet;
 typedef std::map<Expr, TheoryIdSet> ExprToTheoryIds;
 
 class TheoryProofEngine {
-protected:
-  ExprSet d_registrationCache;
-  TheoryProofTable d_theoryProofTable;
-  ExprToTheoryIds d_exprToTheoryIds;
-
-  /**
-   * Returns whether the theory is currently supported in proof
-   * production mode.
-   */
-  bool supportedTheory(theory::TheoryId id);
-public:
-
-  TheoryProofEngine();
+ public:
+  TheoryProofEngine(Environment* env);
   virtual ~TheoryProofEngine();
 
   /**
@@ -155,13 +145,25 @@ public:
   virtual void printTheoryTerm(Expr term, std::ostream& os, const ProofLetMap& map) = 0;
 
   bool printsAsBool(const Node &n);
+
+ protected:
+  Environment* d_env;
+  ExprSet d_registrationCache;
+  TheoryProofTable d_theoryProofTable;
+  ExprToTheoryIds d_exprToTheoryIds;
+
+  /**
+   * Returns whether the theory is currently supported in proof
+   * production mode.
+   */
+  bool supportedTheory(theory::TheoryId id);
 };
 
 class LFSCTheoryProofEngine : public TheoryProofEngine {
   void bind(Expr term, ProofLetMap& map, Bindings& let_order);
-public:
-  LFSCTheoryProofEngine()
-    : TheoryProofEngine() {}
+
+ public:
+  LFSCTheoryProofEngine(Environment* env) : TheoryProofEngine(env) {}
 
   void printTheoryTerm(Expr term,
                        std::ostream& os,
@@ -194,7 +196,7 @@ public:
 
   void finalizeBvConflicts(const IdToSatClause& lemmas, std::ostream& os);
 
-private:
+ private:
   static void dumpTheoryLemmas(const IdToSatClause& lemmas);
 
   // TODO: this function should be moved into the BV prover.
@@ -203,17 +205,20 @@ private:
 };
 
 class TheoryProof {
-protected:
+ protected:
+  Environment* d_env;
   // Pointer to the theory for this proof
   theory::Theory* d_theory;
   TheoryProofEngine* d_proofEngine;
   virtual theory::TheoryId getTheoryId() = 0;
 
  public:
-  TheoryProof(theory::Theory* th, TheoryProofEngine* proofEngine)
-    : d_theory(th)
-    , d_proofEngine(proofEngine)
-  {}
+  TheoryProof(Environment* env,
+              theory::Theory* th,
+              TheoryProofEngine* proofEngine)
+      : d_env(env), d_theory(th), d_proofEngine(proofEngine)
+  {
+  }
   virtual ~TheoryProof() {};
   /**
    * Print a term belonging some theory, not necessarily this one.
@@ -366,16 +371,17 @@ protected:
   theory::TheoryId getTheoryId() override;
 
  public:
-  BooleanProof(TheoryProofEngine* proofEngine);
+  BooleanProof(Environment* env, TheoryProofEngine* proofEngine);
 
   void registerTerm(Expr term) override;
 };
 
 class LFSCBooleanProof : public BooleanProof {
 public:
-  LFSCBooleanProof(TheoryProofEngine* proofEngine)
-    : BooleanProof(proofEngine)
-  {}
+ LFSCBooleanProof(Environment* env, TheoryProofEngine* proofEngine)
+     : BooleanProof(env, proofEngine)
+ {
+ }
   void printOwnedTerm(Expr term,
                       std::ostream& os,
                       const ProofLetMap& map) override;

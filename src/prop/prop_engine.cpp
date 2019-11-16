@@ -74,19 +74,25 @@ public:
   }
 };
 
-PropEngine::PropEngine(TheoryEngine* te, DecisionEngine *de, Context* satContext,
-                       Context* userContext, std::ostream* replayLog,
-                       ExprStream* replayStream, LemmaChannels* channels) :
-  d_inCheckSat(false),
-  d_theoryEngine(te),
-  d_decisionEngine(de),
-  d_context(satContext),
-  d_theoryProxy(NULL),
-  d_satSolver(NULL),
-  d_registrar(NULL),
-  d_cnfStream(NULL),
-  d_interrupted(false),
-  d_resourceManager(NodeManager::currentResourceManager())
+PropEngine::PropEngine(Environment* env,
+                       TheoryEngine* te,
+                       DecisionEngine* de,
+                       Context* satContext,
+                       Context* userContext,
+                       std::ostream* replayLog,
+                       ExprStream* replayStream,
+                       LemmaChannels* channels)
+    : d_env(env),
+      d_inCheckSat(false),
+      d_theoryEngine(te),
+      d_decisionEngine(de),
+      d_context(satContext),
+      d_theoryProxy(NULL),
+      d_satSolver(NULL),
+      d_registrar(NULL),
+      d_cnfStream(NULL),
+      d_interrupted(false),
+      d_resourceManager(NodeManager::currentResourceManager())
 {
 
   Debug("prop") << "Constructing the PropEngine" << endl;
@@ -95,7 +101,7 @@ PropEngine::PropEngine(TheoryEngine* te, DecisionEngine *de, Context* satContext
 
   d_registrar = new theory::TheoryRegistrar(d_theoryEngine);
   d_cnfStream = new CVC4::prop::TseitinCnfStream(
-      d_satSolver, d_registrar, userContext, true);
+      d_env, d_satSolver, d_registrar, userContext, true);
 
   d_theoryProxy = new TheoryProxy(
       this, d_theoryEngine, d_decisionEngine, d_context, d_cnfStream, replayLog,

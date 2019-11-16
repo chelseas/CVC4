@@ -65,16 +65,21 @@ protected:
   theory::TheoryId getTheoryId() override;
 
  public:
-  UFProof(theory::uf::TheoryUF* uf, TheoryProofEngine* proofEngine);
+  UFProof(Environment* env,
+          theory::uf::TheoryUF* uf,
+          TheoryProofEngine* proofEngine);
 
   void registerTerm(Expr term) override;
 };
 
 class LFSCUFProof : public UFProof {
 public:
-  LFSCUFProof(theory::uf::TheoryUF* uf, TheoryProofEngine* proofEngine)
-    : UFProof(uf, proofEngine)
-  {}
+ LFSCUFProof(Environment* env,
+             theory::uf::TheoryUF* uf,
+             TheoryProofEngine* proofEngine)
+     : UFProof(env, uf, proofEngine)
+ {
+ }
   void printOwnedTerm(Expr term,
                       std::ostream& os,
                       const ProofLetMap& map) override;

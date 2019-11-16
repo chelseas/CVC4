@@ -35,7 +35,8 @@ class TheorySets : public Theory
 {
  public:
   /** Constructs a new instance of TheorySets w.r.t. the provided contexts. */
-  TheorySets(context::Context* c,
+  TheorySets(Environment* env,
+             context::Context* c,
              context::UserContext* u,
              OutputChannel& out,
              Valuation valuation,

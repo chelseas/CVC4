@@ -98,32 +98,13 @@ public:
  * been visited already, we need to visit it again, since we need to associate it with both atoms.
  */
 class SharedTermsVisitor {
-
-  /** The shared terms database */
-  SharedTermsDatabase& d_sharedTerms;
-
-  /**
-   * Cache from preprocessing of atoms.
-   */
-  typedef std::unordered_map<TNode, theory::Theory::Set, TNodeHashFunction> TNodeVisitedMap;
-  TNodeVisitedMap d_visited;
-
-  /**
-   * String representation of the visited map, for debugging purposes.
-   */
-  std::string toString() const;
-
-  /** 
-   * The initial atom.
-   */
-  TNode d_atom; 
-    
 public:
-
   typedef void return_type;
 
-  SharedTermsVisitor(SharedTermsDatabase& sharedTerms)
-  : d_sharedTerms(sharedTerms) {}
+  SharedTermsVisitor(TheoryEngine* engine, SharedTermsDatabase& sharedTerms)
+      : d_engine(engine), d_sharedTerms(sharedTerms)
+  {
+  }
 
   /**
    * Returns true is current has already been pre-registered with both current and parent theories.
@@ -149,7 +130,29 @@ public:
    * Clears the internal state.
    */   
   void clear();
+
+ private:
+  /** The engine */
+  TheoryEngine* d_engine;
+
+  /** The shared terms database */
+  SharedTermsDatabase& d_sharedTerms;
+
+  /**
+   * Cache from preprocessing of atoms.
+   */
+  typedef std::unordered_map<TNode, theory::Theory::Set, TNodeHashFunction>
+      TNodeVisitedMap;
+  TNodeVisitedMap d_visited;
+
+  /**
+   * String representation of the visited map, for debugging purposes.
+   */
+  std::string toString() const;
+
+  /**
+   * The initial atom.
+   */
+  TNode d_atom;
 };
-
-
 }

@@ -100,11 +100,12 @@ class CoreSolver : public SubtheorySolver {
   Node getBaseDecomposition(TNode a);
   bool isCompleteForTerm(TNode term, TNodeBoolMap& seen);
   Statistics d_statistics;
-public:
-  CoreSolver(context::Context* c, TheoryBV* bv);
+
+ public:
+  CoreSolver(Environment* env, context::Context* c, TheoryBV* bv);
   ~CoreSolver();
   bool isComplete() override { return d_isComplete; }
-  void  setMasterEqualityEngine(eq::EqualityEngine* eq);
+  void setMasterEqualityEngine(eq::EqualityEngine* eq);
   void preRegister(TNode node) override;
   bool check(Theory::Effort e) override;
   void explain(TNode literal, std::vector<TNode>& assumptions) override;

@@ -97,8 +97,11 @@ class TheoryStrings : public Theory {
   typedef context::CDHashSet<Node, NodeHashFunction> NodeSet;
 
  public:
-  TheoryStrings(context::Context* c, context::UserContext* u,
-                OutputChannel& out, Valuation valuation,
+  TheoryStrings(Environment* env,
+                context::Context* c,
+                context::UserContext* u,
+                OutputChannel& out,
+                Valuation valuation,
                 const LogicInfo& logicInfo);
   ~TheoryStrings();
 

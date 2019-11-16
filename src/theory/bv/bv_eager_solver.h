@@ -24,6 +24,7 @@
 
 #include "expr/node.h"
 #include "proof/resolution_bitvector_proof.h"
+#include "smt/environment.h"
 #include "theory/bv/theory_bv.h"
 #include "theory/theory_model.h"
 
@@ -39,7 +40,9 @@ class AigBitblaster;
  */
 class EagerBitblastSolver {
  public:
-  EagerBitblastSolver(context::Context* c, theory::bv::TheoryBV* bv);
+  EagerBitblastSolver(Environment* env,
+                      context::Context* c,
+                      theory::bv::TheoryBV* bv);
   ~EagerBitblastSolver();
   bool checkSat();
   void assertFormula(TNode formula);
@@ -51,6 +54,8 @@ class EagerBitblastSolver {
   void setProofLog(proof::BitVectorProof* bvp);
 
  private:
+  Environment* d_env;
+
   context::CDHashSet<Node, NodeHashFunction> d_assertionSet;
   context::CDHashSet<Node, NodeHashFunction> d_assumptionSet;
   context::Context* d_context;

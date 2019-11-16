@@ -135,8 +135,8 @@ Abc_Aig_t* AigBitblaster::currentAigM() {
   return (Abc_Aig_t*)(currentAigNtk()->pManFunc);
 }
 
-AigBitblaster::AigBitblaster()
-    : TBitblaster<Abc_Obj_t*>(),
+AigBitblaster::AigBitblaster(Environment* env)
+    : TBitblaster<Abc_Obj_t*>(env),
       d_nullContext(new context::Context()),
       d_aigCache(),
       d_bbAtoms(),

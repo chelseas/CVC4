@@ -40,13 +40,14 @@ namespace theory {
 namespace uf {
 
 /** Constructs a new instance of TheoryUF w.r.t. the provided context.*/
-TheoryUF::TheoryUF(context::Context* c,
+TheoryUF::TheoryUF(Environment* env,
+                   context::Context* c,
                    context::UserContext* u,
                    OutputChannel& out,
                    Valuation valuation,
                    const LogicInfo& logicInfo,
                    std::string instanceName)
-    : Theory(THEORY_UF, c, u, out, valuation, logicInfo, instanceName),
+    : Theory(THEORY_UF, env, c, u, out, valuation, logicInfo, instanceName),
       d_notify(*this),
       /* The strong theory solver can be notified by EqualityEngine::init(),
        * so make sure it's initialized first. */
@@ -127,7 +128,8 @@ void TheoryUF::check(Effort level) {
     TNode fact = assertion.assertion;
 
     Debug("uf") << "TheoryUF::check(): processing " << fact << std::endl;
-    Debug("uf") << "Term's theory: " << theory::Theory::theoryOf(fact.toExpr()) << std::endl;
+    Debug("uf") << "Term's theory: " << d_env->theoryOf(fact.toExpr())
+                << std::endl;
 
     if (d_thss != NULL) {
       bool isDecision = d_valuation.isSatLiteral(fact) && d_valuation.isDecision(fact);

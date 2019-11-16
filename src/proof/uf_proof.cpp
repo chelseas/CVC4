@@ -581,8 +581,10 @@ Node ProofUF::toStreamRecLFSC(std::ostream& out,
   }
 }
 
-UFProof::UFProof(theory::uf::TheoryUF* uf, TheoryProofEngine* pe)
-  : TheoryProof(uf, pe)
+UFProof::UFProof(Environment* env,
+                 theory::uf::TheoryUF* uf,
+                 TheoryProofEngine* pe)
+    : TheoryProof(env, uf, pe)
 {}
 
 theory::TheoryId UFProof::getTheoryId() { return theory::THEORY_UF; }
@@ -626,7 +628,7 @@ void UFProof::registerTerm(Expr term) {
 void LFSCUFProof::printOwnedTerm(Expr term, std::ostream& os, const ProofLetMap& map) {
   Debug("pf::uf") << std::endl << "(pf::uf) LFSCUfProof::printOwnedTerm: term = " << term << std::endl;
 
-  Assert(theory::Theory::theoryOf(term) == theory::THEORY_UF);
+  Assert(d_env->theoryOf(term) == theory::THEORY_UF);
 
   if (term.getKind() == kind::VARIABLE ||
       term.getKind() == kind::SKOLEM ||

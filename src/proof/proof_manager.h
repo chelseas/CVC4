@@ -31,6 +31,7 @@
 #include "proof/proof.h"
 #include "proof/proof_utils.h"
 #include "proof/skolemization_manager.h"
+#include "smt/environment.h"
 #include "theory/logic_info.h"
 #include "theory/substitutions.h"
 #include "util/proof.h"
@@ -141,6 +142,8 @@ private:
 };
 
 class ProofManager {
+  Environment* d_env;
+
   context::Context* d_context;
 
   CoreSatProof*  d_satProof;
@@ -172,36 +175,39 @@ class ProofManager {
 protected:
   LogicInfo d_logic;
 
-public:
-  ProofManager(context::Context* context, ProofFormat format = LFSC);
+ public:
+  ProofManager(Environment* env,
+               context::Context* context,
+               ProofFormat format = LFSC);
   ~ProofManager();
 
   static ProofManager* currentPM();
 
   // initialization
-  void         initSatProof(Minisat::Solver* solver);
-  static void         initCnfProof(CVC4::prop::CnfStream* cnfStream,
-                                   context::Context* ctx);
-  static void         initTheoryProofEngine();
+  void initSatProof(Minisat::Solver* solver);
+  static void initCnfProof(CVC4::prop::CnfStream* cnfStream,
+                           context::Context* ctx);
+  static void initTheoryProofEngine();
 
   // getting various proofs
   static const Proof& getProof(SmtEngine* smt);
-  static CoreSatProof*  getSatProof();
-  static CnfProof*      getCnfProof();
+  static CoreSatProof* getSatProof();
+  static CnfProof* getCnfProof();
   static TheoryProofEngine* getTheoryProofEngine();
-  static TheoryProof* getTheoryProof( theory::TheoryId id );
+  static TheoryProof* getTheoryProof(theory::TheoryId id);
   static UFProof* getUfProof();
   static proof::ResolutionBitVectorProof* getBitVectorProof();
   static ArrayProof* getArrayProof();
   static ArithProof* getArithProof();
 
-  static SkolemizationManager *getSkolemizationManager();
+  static SkolemizationManager* getSkolemizationManager();
 
   // iterators over data shared by proofs
   typedef ExprSet::const_iterator assertions_iterator;
 
   // iterate over the assertions (these are arbitrary boolean formulas)
-  assertions_iterator begin_assertions() const {
+  assertions_iterator begin_assertions() const
+  {
     return d_inputFormulas.begin();
   }
   assertions_iterator end_assertions() const { return d_inputFormulas.end(); }
@@ -350,7 +356,8 @@ public:
 class LFSCProof : public Proof
 {
  public:
-  LFSCProof(SmtEngine* smtEngine,
+  LFSCProof(Environment* env,
+            SmtEngine* smtEngine,
             CoreSatProof* sat,
             LFSCCnfProof* cnf,
             LFSCTheoryProofEngine* theory);
@@ -367,6 +374,7 @@ class LFSCProof : public Proof
 
   void checkUnrewrittenAssertion(const NodeSet& assertions) const;
 
+  Environment* d_env;
   CoreSatProof* d_satProof;
   LFSCCnfProof* d_cnfProof;
   LFSCTheoryProofEngine* d_theoryProof;

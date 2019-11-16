@@ -31,6 +31,7 @@
 #include "proof/proof_manager.h"
 #include "prop/registrar.h"
 #include "prop/theory_proxy.h"
+#include "smt/environment.h"
 #include "smt_util/lemma_channels.h"
 
 namespace CVC4 {
@@ -54,6 +55,8 @@ class CnfStream {
       NodeToLiteralMap;
 
  protected:
+  Environment* d_env;
+
   /** The SAT solver we will be using */
   SatSolver* d_satSolver;
 
@@ -171,8 +174,11 @@ class CnfStream {
    * @param name string identifier to distinguish between different instances
    * even for non-theory literals.
    */
-  CnfStream(SatSolver* satSolver, Registrar* registrar,
-            context::Context* context, bool fullLitToNodeMap = false,
+  CnfStream(Environment* env,
+            SatSolver* satSolver,
+            Registrar* registrar,
+            context::Context* context,
+            bool fullLitToNodeMap = false,
             std::string name = "");
 
   /**
@@ -257,8 +263,11 @@ class TseitinCnfStream : public CnfStream {
    * @param fullLitToNodeMap maintain a full SAT-literal-to-Node mapping,
    * even for non-theory literals
    */
-  TseitinCnfStream(SatSolver* satSolver, Registrar* registrar,
-                   context::Context* context, bool fullLitToNodeMap = false,
+  TseitinCnfStream(Environment* env,
+                   SatSolver* satSolver,
+                   Registrar* registrar,
+                   context::Context* context,
+                   bool fullLitToNodeMap = false,
                    std::string name = "");
 
   /**

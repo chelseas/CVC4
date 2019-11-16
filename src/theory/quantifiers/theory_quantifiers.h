@@ -34,8 +34,11 @@ namespace quantifiers {
 
 class TheoryQuantifiers : public Theory {
  public:
-  TheoryQuantifiers(context::Context* c, context::UserContext* u,
-                    OutputChannel& out, Valuation valuation,
+  TheoryQuantifiers(Environment* env,
+                    context::Context* c,
+                    context::UserContext* u,
+                    OutputChannel& out,
+                    Valuation valuation,
                     const LogicInfo& logicInfo);
   ~TheoryQuantifiers();
 

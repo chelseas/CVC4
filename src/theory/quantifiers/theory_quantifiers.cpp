@@ -34,8 +34,13 @@ using namespace CVC4::context;
 using namespace CVC4::theory;
 using namespace CVC4::theory::quantifiers;
 
-TheoryQuantifiers::TheoryQuantifiers(Context* c, context::UserContext* u, OutputChannel& out, Valuation valuation, const LogicInfo& logicInfo) :
-    Theory(THEORY_QUANTIFIERS, c, u, out, valuation, logicInfo)
+TheoryQuantifiers::TheoryQuantifiers(Environment* env,
+                                     Context* c,
+                                     context::UserContext* u,
+                                     OutputChannel& out,
+                                     Valuation valuation,
+                                     const LogicInfo& logicInfo)
+    : Theory(THEORY_QUANTIFIERS, env, c, u, out, valuation, logicInfo)
 {
   out.handleUserAttribute( "axiom", this );
   out.handleUserAttribute( "conjecture", this );

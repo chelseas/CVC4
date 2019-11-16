@@ -421,6 +421,8 @@ class SmtEnginePrivate : public NodeManagerListener {
   typedef unordered_map<Node, Node, NodeHashFunction> NodeToNodeHashMap;
   typedef unordered_map<Node, bool, NodeHashFunction> NodeToBoolHashMap;
 
+  Environment d_env;
+
   /**
    * Manager for limiting time and abstract resource usage.
    */
@@ -650,6 +652,8 @@ class SmtEnginePrivate : public NodeManagerListener {
     }
     d_smt.d_nodeManager->unsubscribeEvents(this);
   }
+
+  Environment* getEnvironment() { return &d_env; }
 
   void cleanupPreprocessingPasses() { d_passes.clear(); }
 
@@ -893,7 +897,7 @@ SmtEngine::SmtEngine(ExprManager* em)
   // being parsed from the input file. Because of this, we cannot trust
   // that options::proof() is set correctly yet.
 #ifdef CVC4_PROOF
-  d_proofManager = new ProofManager(d_userContext);
+  d_proofManager = new ProofManager(d_private->getEnvironment(), d_userContext);
 #endif
 
   d_definedFunctions = new (true) DefinedFunctionMap(d_userContext);
@@ -906,11 +910,13 @@ void SmtEngine::finishInit()
   Trace("smt-debug") << "SmtEngine::finishInit" << std::endl;
   // We have mutual dependency here, so we add the prop engine to the theory
   // engine later (it is non-essential there)
-  d_theoryEngine = new TheoryEngine(d_context,
+  d_theoryEngine = new TheoryEngine(d_private->getEnvironment(),
+                                    d_context,
                                     d_userContext,
                                     d_private->d_iteRemover,
                                     const_cast<const LogicInfo&>(d_logic),
                                     d_channels);
+  d_private->getEnvironment()->d_te = d_theoryEngine;
 
   // Add the theories
   for(TheoryId id = theory::THEORY_FIRST; id < theory::THEORY_LAST; ++id) {
@@ -937,9 +943,14 @@ void SmtEngine::finishInit()
   d_decisionEngine->init();   // enable appropriate strategies
 
   Trace("smt-debug") << "Making prop engine..." << std::endl;
-  d_propEngine = new PropEngine(d_theoryEngine, d_decisionEngine, d_context,
-                                d_userContext, d_private->getReplayLog(),
-                                d_replayStream, d_channels);
+  d_propEngine = new PropEngine(d_private->getEnvironment(),
+                                d_theoryEngine,
+                                d_decisionEngine,
+                                d_context,
+                                d_userContext,
+                                d_private->getReplayLog(),
+                                d_replayStream,
+                                d_channels);
 
   Trace("smt-debug") << "Setting up theory engine..." << std::endl;
   d_theoryEngine->setPropEngine(d_propEngine);
@@ -1569,8 +1580,10 @@ void SmtEngine::setDefaults() {
   if(d_logic.isTheoryEnabled(THEORY_ARRAYS) && ( !d_logic.isQuantified() ||
      (d_logic.isQuantified() && !d_logic.isTheoryEnabled(THEORY_UF)))) {
     Theory::setUninterpretedSortOwner(THEORY_ARRAYS);
+    d_theoryEngine->setUninterpretedSortOwner(THEORY_ARRAYS);
   } else {
     Theory::setUninterpretedSortOwner(THEORY_UF);
+    d_theoryEngine->setUninterpretedSortOwner(THEORY_UF);
   }
 
   // Turn on ite simplification for QF_LIA and QF_AUFBV

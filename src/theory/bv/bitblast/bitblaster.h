@@ -27,11 +27,11 @@
 #include "proof/bitvector_proof.h"
 #include "prop/bv_sat_solver_notify.h"
 #include "prop/sat_solver_types.h"
+#include "smt/environment.h"
 #include "theory/bv/bitblast/bitblast_strategies_template.h"
 #include "theory/theory_registrar.h"
 #include "theory/valuation.h"
 #include "util/resource_manager.h"
-
 
 namespace CVC4 {
 namespace theory {
@@ -58,6 +58,8 @@ class TBitblaster
   typedef void (*TermBBStrategy)(TNode, Bits&, TBitblaster<T>*);
   typedef T (*AtomBBStrategy)(TNode, TBitblaster<T>*);
 
+  Environment* d_env;
+
   // caches and mappings
   TermDefMap d_termCache;
   ModelCache d_modelCache;
@@ -79,7 +81,7 @@ class TBitblaster
 
 
  public:
-  TBitblaster();
+  TBitblaster(Environment* env);
   virtual ~TBitblaster() {}
   virtual void bbAtom(TNode node) = 0;
   virtual void bbTerm(TNode node, Bits& bits) = 0;
@@ -181,8 +183,9 @@ void TBitblaster<T>::initTermBBStrategies()
 }
 
 template <class T>
-TBitblaster<T>::TBitblaster()
-    : d_termCache(),
+TBitblaster<T>::TBitblaster(Environment* env)
+    : d_env(env),
+      d_termCache(),
       d_modelCache(),
       d_nullContext(new context::Context()),
       d_cnfStream(),

@@ -72,16 +72,21 @@ protected:
   theory::TheoryId getTheoryId() override;
 
  public:
-  ArithProof(theory::arith::TheoryArith* arith, TheoryProofEngine* proofEngine);
+  ArithProof(Environment* env,
+             theory::arith::TheoryArith* arith,
+             TheoryProofEngine* proofEngine);
 
   void registerTerm(Expr term) override;
 };
 
 class LFSCArithProof : public ArithProof {
 public:
-  LFSCArithProof(theory::arith::TheoryArith* arith, TheoryProofEngine* proofEngine)
-    : ArithProof(arith, proofEngine)
-  {}
+ LFSCArithProof(Environment* env,
+                theory::arith::TheoryArith* arith,
+                TheoryProofEngine* proofEngine)
+     : ArithProof(env, arith, proofEngine)
+ {
+ }
   void printOwnedTerm(Expr term,
                       std::ostream& os,
                       const ProofLetMap& map) override;

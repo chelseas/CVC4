@@ -41,9 +41,10 @@ namespace CVC4 {
 
 namespace proof {
 
-ClausalBitVectorProof::ClausalBitVectorProof(theory::bv::TheoryBV* bv,
+ClausalBitVectorProof::ClausalBitVectorProof(Environment* env,
+                                             theory::bv::TheoryBV* bv,
                                              TheoryProofEngine* proofEngine)
-    : BitVectorProof(bv, proofEngine),
+    : BitVectorProof(env, bv, proofEngine),
       d_clauses(),
       d_originalClauseIndices(),
       d_binaryDratProof(),

@@ -310,15 +310,18 @@ void TheoryEngine::eqNotifyNewClass(TNode t){
   }
 }
 
-TheoryEngine::TheoryEngine(context::Context* context,
+TheoryEngine::TheoryEngine(Environment* env,
+                           context::Context* context,
                            context::UserContext* userContext,
                            RemoveTermFormulas& iteRemover,
                            const LogicInfo& logicInfo,
                            LemmaChannels* channels)
-    : d_propEngine(nullptr),
+    : d_env(env),
+      d_propEngine(nullptr),
       d_decisionEngine(nullptr),
       d_context(context),
       d_userContext(userContext),
+      d_uninterpretedSortOwner(THEORY_UF),
       d_logicInfo(logicInfo),
       d_sharedTerms(this, context),
       d_masterEqualityEngine(nullptr),
@@ -352,7 +355,7 @@ TheoryEngine::TheoryEngine(context::Context* context,
       d_inPreregister(false),
       d_factsAsserted(context, false),
       d_preRegistrationVisitor(this, context),
-      d_sharedTermsVisitor(d_sharedTerms),
+      d_sharedTermsVisitor(this, d_sharedTerms),
       d_theoryAlternatives(),
       d_attr_handle(),
       d_arithSubstitutionsAdded("theory::arith::zzz::arith::substitutions", 0)
@@ -432,7 +435,8 @@ void TheoryEngine::preRegister(TNode preprocessed) {
       Theory::Set theories = NodeVisitor<PreRegisterVisitor>::run(d_preRegistrationVisitor, preprocessed);
       theories = Theory::setRemove(THEORY_BOOL, theories);
       // Remove the top theory, if any more that means multiple theories were involved
-      bool multipleTheories = Theory::setRemove(Theory::theoryOf(preprocessed), theories);
+      bool multipleTheories =
+          Theory::setRemove(theoryIdOf(preprocessed), theories);
       TheoryId i;
       // These checks don't work with finite model finding, because it
       // uses Rational constants to represent cardinality constraints,
@@ -1070,11 +1074,12 @@ theory::Theory::PPAssertStatus TheoryEngine::solve(TNode literal, SubstitutionMa
   TNode atom = literal.getKind() == kind::NOT ? literal[0] : literal;
   Trace("theory::solve") << "TheoryEngine::solve(" << literal << "): solving with " << theoryOf(atom)->getId() << endl;
 
-  if(! d_logicInfo.isTheoryEnabled(Theory::theoryOf(atom)) &&
-     Theory::theoryOf(atom) != THEORY_SAT_SOLVER) {
+  if (!d_logicInfo.isTheoryEnabled(theoryIdOf(atom))
+      && theoryIdOf(atom) != THEORY_SAT_SOLVER)
+  {
     stringstream ss;
     ss << "The logic was specified as " << d_logicInfo.getLogicString()
-       << ", which doesn't include " << Theory::theoryOf(atom)
+       << ", which doesn't include " << theoryIdOf(atom)
        << ", but got a preprocessing-time fact for that theory." << endl
        << "The fact:" << endl
        << literal;
@@ -1164,11 +1169,12 @@ Node TheoryEngine::preprocess(TNode assertion) {
       continue;
     }
 
-    if(! d_logicInfo.isTheoryEnabled(Theory::theoryOf(current)) &&
-       Theory::theoryOf(current) != THEORY_SAT_SOLVER) {
+    if (!d_logicInfo.isTheoryEnabled(theoryIdOf(current))
+        && theoryIdOf(current) != THEORY_SAT_SOLVER)
+    {
       stringstream ss;
       ss << "The logic was specified as " << d_logicInfo.getLogicString()
-         << ", which doesn't include " << Theory::theoryOf(current)
+         << ", which doesn't include " << theoryIdOf(current)
          << ", but got a preprocessing-time fact for that theory." << endl
          << "The fact:" << endl
          << current;
@@ -1176,7 +1182,8 @@ Node TheoryEngine::preprocess(TNode assertion) {
     }
 
     // If this is an atom, we preprocess its terms with the theory ppRewriter
-    if (Theory::theoryOf(current) != THEORY_BOOL) {
+    if (theoryIdOf(current) != THEORY_BOOL)
+    {
       Node ppRewritten = ppTheoryRewrite(current);
       d_ppCache[current] = ppRewritten;
       Assert(Rewriter::rewrite(d_ppCache[current]) == d_ppCache[current]);
@@ -1332,7 +1339,8 @@ void TheoryEngine::assertToTheory(TNode assertion, TNode originalAssertion, theo
     // We know that this is normalized, so just send it off to the theory
     if (markPropagation(assertion, originalAssertion, toTheoryId, fromTheoryId)) {
       // Is it preregistered
-      bool preregistered = d_propEngine->isSatLiteral(assertion) && Theory::theoryOf(assertion) == toTheoryId;
+      bool preregistered = d_propEngine->isSatLiteral(assertion)
+                           && theoryIdOf(assertion) == toTheoryId;
       // We assert it
       theoryOf(toTheoryId)->assertFact(assertion, preregistered);
       // Mark that we have more information
@@ -1379,7 +1387,8 @@ void TheoryEngine::assertToTheory(TNode assertion, TNode originalAssertion, theo
   // Try and assert (note that we assert the non-normalized one)
   if (markPropagation(assertion, originalAssertion, toTheoryId, fromTheoryId)) {
     // Check if has been pre-registered with the theory
-    bool preregistered = d_propEngine->isSatLiteral(assertion) && Theory::theoryOf(assertion) == toTheoryId;
+    bool preregistered = d_propEngine->isSatLiteral(assertion)
+                         && theoryIdOf(assertion) == toTheoryId;
     // Assert away
     theoryOf(toTheoryId)->assertFact(assertion, preregistered);
     d_factsAsserted = true;
@@ -1427,7 +1436,10 @@ void TheoryEngine::assertFact(TNode literal)
     // to the assert the equality to the interested theories
     if (atom.getKind() == kind::EQUAL) {
       // Assert it to the the owning theory
-      assertToTheory(literal, literal, /* to */ Theory::theoryOf(atom), /* from */ THEORY_SAT_SOLVER);
+      assertToTheory(literal,
+                     literal,
+                     /* to */ theoryIdOf(atom),
+                     /* from */ THEORY_SAT_SOLVER);
       // Shared terms manager will assert to interested theories directly, as the terms become shared
       assertToTheory(literal, literal, /* to */ THEORY_BUILTIN, /* from */ THEORY_SAT_SOLVER);
 
@@ -1443,11 +1455,17 @@ void TheoryEngine::assertFact(TNode literal)
 
     } else {
       // Not an equality, just assert to the appropriate theory
-      assertToTheory(literal, literal, /* to */ Theory::theoryOf(atom), /* from */ THEORY_SAT_SOLVER);
+      assertToTheory(literal,
+                     literal,
+                     /* to */ theoryIdOf(atom),
+                     /* from */ THEORY_SAT_SOLVER);
     }
   } else {
     // Assert the fact to the appropriate theory directly
-    assertToTheory(literal, literal, /* to */ Theory::theoryOf(atom), /* from */ THEORY_SAT_SOLVER);
+    assertToTheory(literal,
+                   literal,
+                   /* to */ theoryIdOf(atom),
+                   /* from */ THEORY_SAT_SOLVER);
   }
 }
 
@@ -1504,6 +1522,159 @@ bool TheoryEngine::propagate(TNode literal, theory::TheoryId theory) {
   return !d_inConflict;
 }
 
+theory::TheoryId TheoryEngine::theoryIdOf(TypeNode typeNode) const
+{
+  Trace("theory::internal") << "theoryOf(" << typeNode << ")" << std::endl;
+  TheoryId id;
+  if (typeNode.getKind() == kind::TYPE_CONSTANT)
+  {
+    id = typeConstantToTheoryId(typeNode.getConst<TypeConstant>());
+  }
+  else
+  {
+    id = kindToTheoryId(typeNode.getKind());
+  }
+  if (id == THEORY_BUILTIN)
+  {
+    Trace("theory::internal")
+        << "theoryOf(" << typeNode << ") == " << d_uninterpretedSortOwner
+        << std::endl;
+    return d_uninterpretedSortOwner;
+  }
+  return id;
+}
+
+TheoryId TheoryEngine::theoryIdOf(TheoryOfMode mode, TNode node) const
+{
+  TheoryId tid = THEORY_BUILTIN;
+  switch (mode)
+  {
+    case THEORY_OF_TYPE_BASED:
+      // Constants, variables, 0-ary constructors
+      if (node.isVar())
+      {
+        if (node.getKind() == kind::BOOLEAN_TERM_VARIABLE)
+        {
+          tid = THEORY_UF;
+        }
+        else
+        {
+          tid = theoryIdOf(node.getType());
+        }
+      }
+      else if (node.isConst())
+      {
+        tid = theoryIdOf(node.getType());
+      }
+      else if (node.getKind() == kind::EQUAL)
+      {
+        // Equality is owned by the theory that owns the domain
+        tid = theoryIdOf(node[0].getType());
+      }
+      else
+      {
+        // Regular nodes are owned by the kind
+        tid = kindToTheoryId(node.getKind());
+      }
+      break;
+    case THEORY_OF_TERM_BASED:
+      // Variables
+      if (node.isVar())
+      {
+        if (theoryIdOf(node.getType()) != theory::THEORY_BOOL)
+        {
+          // We treat the variables as uninterpreted
+          tid = d_uninterpretedSortOwner;
+        }
+        else
+        {
+          if (node.getKind() == kind::BOOLEAN_TERM_VARIABLE)
+          {
+            // Boolean vars go to UF
+            tid = THEORY_UF;
+          }
+          else
+          {
+            // Except for the Boolean ones
+            tid = THEORY_BOOL;
+          }
+        }
+      }
+      else if (node.isConst())
+      {
+        // Constants go to the theory of the type
+        tid = theoryIdOf(node.getType());
+      }
+      else if (node.getKind() == kind::EQUAL)
+      {  // Equality
+        // If one of them is an ITE, it's irelevant, since they will get
+        // replaced out anyhow
+        if (node[0].getKind() == kind::ITE)
+        {
+          tid = theoryIdOf(node[0].getType());
+        }
+        else if (node[1].getKind() == kind::ITE)
+        {
+          tid = theoryIdOf(node[1].getType());
+        }
+        else
+        {
+          TNode l = node[0];
+          TNode r = node[1];
+          TypeNode ltype = l.getType();
+          TypeNode rtype = r.getType();
+          if (ltype != rtype)
+          {
+            tid = theoryIdOf(l.getType());
+          }
+          else
+          {
+            // If both sides belong to the same theory the choice is easy
+            TheoryId T1 = theoryIdOf(l);
+            TheoryId T2 = theoryIdOf(r);
+            if (T1 == T2)
+            {
+              tid = T1;
+            }
+            else
+            {
+              TheoryId T3 = theoryIdOf(ltype);
+              // This is a case of
+              // * x*y = f(z) -> UF
+              // * x = c      -> UF
+              // * f(x) = read(a, y) -> either UF or ARRAY
+              // at least one of the theories has to be parametric, i.e. theory
+              // of the type is different from the theory of the term
+              if (T1 == T3)
+              {
+                tid = T2;
+              }
+              else if (T2 == T3)
+              {
+                tid = T1;
+              }
+              else
+              {
+                // If both are parametric, we take the smaller one (arbitrary)
+                tid = T1 < T2 ? T1 : T2;
+              }
+            }
+          }
+        }
+      }
+      else
+      {
+        // Regular nodes are owned by the kind
+        tid = kindToTheoryId(node.getKind());
+      }
+      break;
+    default: Unreachable();
+  }
+  Trace("theory::internal")
+      << "theoryIdOf(" << mode << ", " << node << ") -> " << tid << std::endl;
+  return tid;
+}
+
 const LogicInfo& TheoryEngine::getLogicInfo() const { return d_logicInfo; }
 
 theory::EqualityStatus TheoryEngine::getEqualityStatus(TNode a, TNode b) {
@@ -1516,7 +1687,7 @@ theory::EqualityStatus TheoryEngine::getEqualityStatus(TNode a, TNode b) {
       return EQUALITY_FALSE_AND_PROPAGATED;
     }
   }
-  return theoryOf(Theory::theoryOf(a.getType()))->getEqualityStatus(a, b);
+  return theoryOf(theoryIdOf(a.getType()))->getEqualityStatus(a, b);
 }
 
 Node TheoryEngine::getModelValue(TNode var) {
@@ -1526,7 +1697,7 @@ Node TheoryEngine::getModelValue(TNode var) {
     return var;
   }
   Assert(d_sharedTerms.isShared(var));
-  return theoryOf(Theory::theoryOf(var.getType()))->getModelValue(var);
+  return theoryOf(theoryIdOf(var.getType()))->getModelValue(var);
 }
 
 
@@ -1733,25 +1904,28 @@ Node TheoryEngine::getExplanation(TNode node) {
 }
 
 struct AtomsCollect {
-
+  const TheoryEngine* d_te;
   std::vector<TNode> d_atoms;
   std::unordered_set<TNode, TNodeHashFunction> d_visited;
 
 public:
+ AtomsCollect(const TheoryEngine* te) : d_te(te) {}
 
-  typedef void return_type;
+ typedef void return_type;
 
-  bool alreadyVisited(TNode current, TNode parent) {
-    // Check if already visited
-    if (d_visited.find(current) != d_visited.end()) return true;
-    // Don't visit non-boolean
-    if (!current.getType().isBoolean()) return true;
-    // New node
-    return false;
-  }
+ bool alreadyVisited(TNode current, TNode parent)
+ {
+   // Check if already visited
+   if (d_visited.find(current) != d_visited.end()) return true;
+   // Don't visit non-boolean
+   if (!current.getType().isBoolean()) return true;
+   // New node
+   return false;
+ }
 
   void visit(TNode current, TNode parent) {
-    if (Theory::theoryOf(current) != theory::THEORY_BOOL) {
+    if (d_te->theoryIdOf(current) != theory::THEORY_BOOL)
+    {
       d_atoms.push_back(current);
     }
     d_visited.insert(current);
@@ -1823,7 +1997,8 @@ void TheoryEngine::ensureLemmaAtoms(const std::vector<TNode>& atoms, theory::The
 
     // If the theory is asking about a different form, or the form is ok but if will go to a different theory
     // then we must figure it out
-    if (eqNormalized != eq || Theory::theoryOf(eq) != atomsTo) {
+    if (eqNormalized != eq || theoryIdOf(eq) != atomsTo)
+    {
       // If you get eqNormalized, send atoms[i] to atomsTo
       d_atomRequests.add(eqNormalized, eq, atomsTo);
     }
@@ -1842,7 +2017,7 @@ theory::LemmaStatus TheoryEngine::lemma(TNode node,
   // Do we need to check atoms
   if (atomsTo != theory::THEORY_LAST) {
     Debug("theory::atoms") << "TheoryEngine::lemma(" << node << ", " << atomsTo << ")" << endl;
-    AtomsCollect collectAtoms;
+    AtomsCollect collectAtoms(this);
     NodeVisitor<AtomsCollect>::run(collectAtoms, node);
     ensureLemmaAtoms(collectAtoms.getAtoms(), atomsTo);
   }
@@ -2026,7 +2201,8 @@ void TheoryEngine::staticInitializeBVOptions(
     bv::utils::TNodeBoolMap cache;
     for (unsigned i = 0; i < assertions.size(); ++i)
     {
-      useSlicer = useSlicer && bv::utils::isCoreTerm(assertions[i], cache);
+      useSlicer =
+          useSlicer && bv::utils::isCoreTerm(d_env, assertions[i], cache);
     }
   }
 
@@ -2290,7 +2466,7 @@ std::pair<bool, Node> TheoryEngine::entailmentCheck(theory::TheoryOfMode mode, T
     return std::pair<bool, Node>(false, Node::null());
   }else{
     //it is a theory atom
-    theory::TheoryId tid = theory::Theory::theoryOf(mode, atom);
+    theory::TheoryId tid = theoryIdOf(mode, atom);
     theory::Theory* th = theoryOf(tid);
 
     Assert(th != NULL);

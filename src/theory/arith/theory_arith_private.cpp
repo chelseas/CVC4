@@ -81,13 +81,15 @@ namespace arith {
 static Node toSumNode(const ArithVariables& vars, const DenseMap<Rational>& sum);
 static bool complexityBelow(const DenseMap<Rational>& row, uint32_t cap);
 
-TheoryArithPrivate::TheoryArithPrivate(TheoryArith& containing,
+TheoryArithPrivate::TheoryArithPrivate(Environment* env,
+                                       TheoryArith& containing,
                                        context::Context* c,
                                        context::UserContext* u,
                                        OutputChannel& out,
                                        Valuation valuation,
                                        const LogicInfo& logicInfo)
-    : d_containing(containing),
+    : d_env(env),
+      d_containing(containing),
       d_nlIncomplete(false),
       d_rowTracking(),
       d_constraintDatabase(
@@ -1173,7 +1175,8 @@ Node TheoryArithPrivate::getModelValue(TNode term) {
 }
 
 Node TheoryArithPrivate::ppRewriteTerms(TNode n) {
-  if(Theory::theoryOf(n) != THEORY_ARITH) {
+  if (d_env->theoryOf(n) != THEORY_ARITH)
+  {
     return n;
   }
 

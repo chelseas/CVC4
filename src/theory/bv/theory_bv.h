@@ -64,10 +64,13 @@ class TheoryBV : public Theory {
   std::vector<std::unique_ptr<SubtheorySolver>> d_subtheories;
   std::unordered_map<SubTheory, SubtheorySolver*, std::hash<int> > d_subtheoryMap;
 
-public:
-
-  TheoryBV(context::Context* c, context::UserContext* u, OutputChannel& out,
-           Valuation valuation, const LogicInfo& logicInfo,
+ public:
+  TheoryBV(Environment* env,
+           context::Context* c,
+           context::UserContext* u,
+           OutputChannel& out,
+           Valuation valuation,
+           const LogicInfo& logicInfo,
            std::string name = "");
 
   ~TheoryBV();
@@ -97,7 +100,7 @@ public:
   bool getCurrentSubstitution(int effort,
                               std::vector<Node>& vars,
                               std::vector<Node>& subs,
-                              std::map<Node, std::vector<Node> >& exp) override;
+                              std::map<Node, std::vector<Node>>& exp) override;
   int getReduction(int effort, Node n, Node& nr) override;
 
   PPAssertStatus ppAssert(TNode in, SubstitutionMap& outSubstitutions) override;
@@ -110,14 +113,15 @@ public:
 
   void presolve() override;
 
-  bool applyAbstraction(const std::vector<Node>& assertions, std::vector<Node>& new_assertions);
+  bool applyAbstraction(const std::vector<Node>& assertions,
+                        std::vector<Node>& new_assertions);
 
   void setProofLog(proof::BitVectorProof* bvp);
 
  private:
-
-  class Statistics {
-  public:
+  class Statistics
+  {
+   public:
     AverageStat d_avgConflictSize;
     IntStat     d_solveSubstitutions;
     TimerStat   d_solveTimer;

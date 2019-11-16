@@ -220,8 +220,8 @@ class AlgebraicSolver : public SubtheorySolver {
    */
   bool quickCheck(std::vector<Node>& facts);
 
-public:
-  AlgebraicSolver(context::Context* c, TheoryBV* bv);
+ public:
+  AlgebraicSolver(Environment* env, context::Context* c, TheoryBV* bv);
   ~AlgebraicSolver();
 
   void preRegister(TNode node) override {}

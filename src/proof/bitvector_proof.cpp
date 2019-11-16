@@ -25,9 +25,10 @@
 namespace CVC4 {
 
 namespace proof {
-BitVectorProof::BitVectorProof(theory::bv::TheoryBV* bv,
+BitVectorProof::BitVectorProof(Environment* env,
+                               theory::bv::TheoryBV* bv,
                                TheoryProofEngine* proofEngine)
-    : TheoryProof(bv, proofEngine),
+    : TheoryProof(env, bv, proofEngine),
       d_declarations(),
       d_seenBBTerms(),
       d_bbTerms(),
@@ -59,7 +60,7 @@ void BitVectorProof::registerTermBB(Expr term)
   // sees it, if it belongs to another theory, it won't register it with this
   // proof. So, we need to tell the engine to inform us.
 
-  if (theory::Theory::theoryOf(term) != theory::THEORY_BV)
+  if (d_env->theoryOf(term) != theory::THEORY_BV)
   {
     Debug("pf::bv") << "\tMarking term " << term
                     << " for future BV registration" << std::endl;
@@ -127,10 +128,9 @@ void BitVectorProof::printOwnedTerm(Expr term,
 {
   Debug("pf::bv") << std::endl
                   << "(pf::bv) BitVectorProof::printOwnedTerm( " << term
-                  << " ), theory is: " << theory::Theory::theoryOf(term)
-                  << std::endl;
+                  << " ), theory is: " << d_env->theoryOf(term) << std::endl;
 
-  Assert(theory::Theory::theoryOf(term) == theory::THEORY_BV);
+  Assert(d_env->theoryOf(term) == theory::THEORY_BV);
 
   // peel off eager bit-blasting trick
   if (term.getKind() == kind::BITVECTOR_EAGER_ATOM) {

@@ -41,11 +41,14 @@ class TheoryIdl : public Theory {
   /** Process a new assertion, returns false if in conflict */
   bool processAssertion(const IDLAssertion& assertion);
 
-public:
-
+ public:
   /** Theory constructor. */
-  TheoryIdl(context::Context* c, context::UserContext* u, OutputChannel& out,
-            Valuation valuation, const LogicInfo& logicInfo);
+  TheoryIdl(Environment* env,
+            context::Context* c,
+            context::UserContext* u,
+            OutputChannel& out,
+            Valuation valuation,
+            const LogicInfo& logicInfo);
 
   /** Pre-processing of input atoms */
   Node ppRewrite(TNode atom) override;

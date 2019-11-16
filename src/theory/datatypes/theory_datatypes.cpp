@@ -39,12 +39,13 @@ namespace CVC4 {
 namespace theory {
 namespace datatypes {
 
-TheoryDatatypes::TheoryDatatypes(Context* c,
+TheoryDatatypes::TheoryDatatypes(Environment* env,
+                                 Context* c,
                                  UserContext* u,
                                  OutputChannel& out,
                                  Valuation valuation,
                                  const LogicInfo& logicInfo)
-    : Theory(THEORY_DATATYPES, c, u, out, valuation, logicInfo),
+    : Theory(THEORY_DATATYPES, env, c, u, out, valuation, logicInfo),
       d_infer(c),
       d_infer_exp(c),
       d_term_sk(u),

@@ -85,12 +85,13 @@ Node TheoryStrings::TermIndex::add(TNode n,
   }
 }
 
-TheoryStrings::TheoryStrings(context::Context* c,
+TheoryStrings::TheoryStrings(Environment* env,
+                             context::Context* c,
                              context::UserContext* u,
                              OutputChannel& out,
                              Valuation valuation,
                              const LogicInfo& logicInfo)
-    : Theory(THEORY_STRINGS, c, u, out, valuation, logicInfo),
+    : Theory(THEORY_STRINGS, env, c, u, out, valuation, logicInfo),
       d_notify(*this),
       d_equalityEngine(d_notify, c, "theory::strings", true),
       d_state(c, d_equalityEngine, d_valuation),

@@ -43,7 +43,7 @@ namespace bv {
 class AigBitblaster : public TBitblaster<Abc_Obj_t*>
 {
  public:
-  AigBitblaster();
+  AigBitblaster(Environment* env);
   ~AigBitblaster();
 
   void makeVariable(TNode node, Bits& bits) override;

@@ -32,17 +32,17 @@ using namespace CVC4::theory;
 using namespace CVC4::theory::bv;
 using namespace CVC4::theory::bv::utils;
 
-CoreSolver::CoreSolver(context::Context* c, TheoryBV* bv)
-  : SubtheorySolver(c, bv),
-    d_notify(*this),
-    d_equalityEngine(d_notify, c, "theory::bv::ee", true),
-    d_slicer(new Slicer()),
-    d_isComplete(c, true),
-    d_lemmaThreshold(16),
-    d_useSlicer(false),
-    d_preregisterCalled(false),
-    d_checkCalled(false),
-    d_reasons(c)
+CoreSolver::CoreSolver(Environment* env, context::Context* c, TheoryBV* bv)
+    : SubtheorySolver(env, c, bv),
+      d_notify(*this),
+      d_equalityEngine(d_notify, c, "theory::bv::ee", true),
+      d_slicer(new Slicer()),
+      d_isComplete(c, true),
+      d_lemmaThreshold(16),
+      d_useSlicer(false),
+      d_preregisterCalled(false),
+      d_checkCalled(false),
+      d_reasons(c)
 {
   // The kinds we are treating as function application in congruence
   d_equalityEngine.addFunctionKind(kind::BITVECTOR_CONCAT, true);
@@ -417,10 +417,9 @@ void CoreSolver::eqNotifyNewClass(TNode t) {
 }
 
 bool CoreSolver::isCompleteForTerm(TNode term, TNodeBoolMap& seen) {
-  if (d_useSlicer)
-    return utils::isCoreTerm(term, seen);
-  
-  return utils::isEqualityTerm(term, seen); 
+  if (d_useSlicer) return utils::isCoreTerm(d_env, term, seen);
+
+  return utils::isEqualityTerm(d_env, term, seen);
 }
 
 bool CoreSolver::collectModelInfo(TheoryModel* m, bool fullModel)

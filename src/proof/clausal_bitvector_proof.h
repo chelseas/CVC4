@@ -42,7 +42,8 @@ namespace proof {
 class ClausalBitVectorProof : public BitVectorProof
 {
  public:
-  ClausalBitVectorProof(theory::bv::TheoryBV* bv,
+  ClausalBitVectorProof(Environment* env,
+                        theory::bv::TheoryBV* bv,
                         TheoryProofEngine* proofEngine);
 
   ~ClausalBitVectorProof() = default;
@@ -123,9 +124,10 @@ class ClausalBitVectorProof : public BitVectorProof
 class LfscClausalBitVectorProof : public ClausalBitVectorProof
 {
  public:
-  LfscClausalBitVectorProof(theory::bv::TheoryBV* bv,
+  LfscClausalBitVectorProof(Environment* env,
+                            theory::bv::TheoryBV* bv,
                             TheoryProofEngine* proofEngine)
-      : ClausalBitVectorProof(bv, proofEngine)
+      : ClausalBitVectorProof(env, bv, proofEngine)
   {
   }
 
@@ -144,9 +146,10 @@ class LfscClausalBitVectorProof : public ClausalBitVectorProof
 class LfscDratBitVectorProof : public LfscClausalBitVectorProof
 {
  public:
-  LfscDratBitVectorProof(theory::bv::TheoryBV* bv,
+  LfscDratBitVectorProof(Environment* env,
+                         theory::bv::TheoryBV* bv,
                          TheoryProofEngine* proofEngine)
-      : LfscClausalBitVectorProof(bv, proofEngine)
+      : LfscClausalBitVectorProof(env, bv, proofEngine)
   {
   }
 
@@ -159,9 +162,10 @@ class LfscDratBitVectorProof : public LfscClausalBitVectorProof
 class LfscLratBitVectorProof : public LfscClausalBitVectorProof
 {
  public:
-  LfscLratBitVectorProof(theory::bv::TheoryBV* bv,
+  LfscLratBitVectorProof(Environment* env,
+                         theory::bv::TheoryBV* bv,
                          TheoryProofEngine* proofEngine)
-      : LfscClausalBitVectorProof(bv, proofEngine)
+      : LfscClausalBitVectorProof(env, bv, proofEngine)
   {
   }
 
@@ -174,8 +178,10 @@ class LfscLratBitVectorProof : public LfscClausalBitVectorProof
 class LfscErBitVectorProof : public LfscClausalBitVectorProof
 {
  public:
-  LfscErBitVectorProof(theory::bv::TheoryBV* bv, TheoryProofEngine* proofEngine)
-      : LfscClausalBitVectorProof(bv, proofEngine)
+  LfscErBitVectorProof(Environment* env,
+                       theory::bv::TheoryBV* bv,
+                       TheoryProofEngine* proofEngine)
+      : LfscClausalBitVectorProof(env, bv, proofEngine)
   {
   }
 

@@ -45,7 +45,8 @@ class TLazyBitblaster : public TBitblaster<Node>
   void storeBBTerm(TNode node, const Bits& bits) override;
   bool hasBBAtom(TNode atom) const override;
 
-  TLazyBitblaster(context::Context* c,
+  TLazyBitblaster(Environment* env,
+                  context::Context* c,
                   TheoryBV* bv,
                   const std::string name = "",
                   bool emptyNotify = false);

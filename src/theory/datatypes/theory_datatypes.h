@@ -26,6 +26,7 @@
 #include "expr/attribute.h"
 #include "expr/datatype.h"
 #include "expr/node_trie.h"
+#include "smt/environment.h"
 #include "theory/datatypes/sygus_extension.h"
 #include "theory/theory.h"
 #include "theory/uf/equality_engine.h"
@@ -266,8 +267,11 @@ private:
   void computeCareGraph() override;
 
  public:
-  TheoryDatatypes(context::Context* c, context::UserContext* u,
-                  OutputChannel& out, Valuation valuation,
+  TheoryDatatypes(Environment* env,
+                  context::Context* c,
+                  context::UserContext* u,
+                  OutputChannel& out,
+                  Valuation valuation,
                   const LogicInfo& logicInfo);
   ~TheoryDatatypes();
 

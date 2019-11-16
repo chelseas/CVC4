@@ -53,11 +53,10 @@ using proof::ResolutionBitVectorProof;
 unsigned CVC4::ProofLetCount::counter = 0;
 static unsigned LET_COUNT = 1;
 
-TheoryProofEngine::TheoryProofEngine()
-  : d_registrationCache()
-  , d_theoryProofTable()
+TheoryProofEngine::TheoryProofEngine(Environment* env)
+    : d_env(env), d_registrationCache(), d_theoryProofTable()
 {
-  d_theoryProofTable[theory::THEORY_BOOL] = new LFSCBooleanProof(this);
+  d_theoryProofTable[theory::THEORY_BOOL] = new LFSCBooleanProof(d_env, this);
 }
 
 TheoryProofEngine::~TheoryProofEngine() {
@@ -76,7 +75,8 @@ void TheoryProofEngine::registerTheory(theory::Theory* th) {
       Trace("pf::tp") << "TheoryProofEngine::registerTheory: " << id << std::endl;
 
       if (id == theory::THEORY_UF) {
-        d_theoryProofTable[id] = new LFSCUFProof((theory::uf::TheoryUF*)th, this);
+        d_theoryProofTable[id] =
+            new LFSCUFProof(d_env, (theory::uf::TheoryUF*)th, this);
         return;
       }
 
@@ -90,17 +90,17 @@ void TheoryProofEngine::registerTheory(theory::Theory* th) {
           {
             case theory::bv::BvProofFormat::BITVECTOR_PROOF_DRAT:
             {
-              bvp = new proof::LfscDratBitVectorProof(thBv, this);
+              bvp = new proof::LfscDratBitVectorProof(d_env, thBv, this);
               break;
             }
             case theory::bv::BvProofFormat::BITVECTOR_PROOF_LRAT:
             {
-              bvp = new proof::LfscLratBitVectorProof(thBv, this);
+              bvp = new proof::LfscLratBitVectorProof(d_env, thBv, this);
               break;
             }
             case theory::bv::BvProofFormat::BITVECTOR_PROOF_ER:
             {
-              bvp = new proof::LfscErBitVectorProof(thBv, this);
+              bvp = new proof::LfscErBitVectorProof(d_env, thBv, this);
               break;
             }
             default:
@@ -113,19 +113,21 @@ void TheoryProofEngine::registerTheory(theory::Theory* th) {
         else
         {
           proof::BitVectorProof* bvp =
-              new proof::LfscResolutionBitVectorProof(thBv, this);
+              new proof::LfscResolutionBitVectorProof(d_env, thBv, this);
           d_theoryProofTable[id] = bvp;
         }
         return;
       }
 
       if (id == theory::THEORY_ARRAYS) {
-        d_theoryProofTable[id] = new LFSCArrayProof((theory::arrays::TheoryArrays*)th, this);
+        d_theoryProofTable[id] =
+            new LFSCArrayProof(d_env, (theory::arrays::TheoryArrays*)th, this);
         return;
       }
 
       if (id == theory::THEORY_ARITH) {
-        d_theoryProofTable[id] = new LFSCArithProof((theory::arith::TheoryArith*)th, this);
+        d_theoryProofTable[id] =
+            new LFSCArithProof(d_env, (theory::arith::TheoryArith*)th, this);
         return;
       }
 
@@ -172,8 +174,9 @@ void TheoryProofEngine::printConstantDisequalityProof(std::ostream& os, Expr c1,
   Assert(c1.isConst());
   Assert(c2.isConst());
 
-  Assert(theory::Theory::theoryOf(c1) == theory::Theory::theoryOf(c2));
-  getTheoryProof(theory::Theory::theoryOf(c1))->printConstantDisequalityProof(os, c1, c2, globalLetMap);
+  Assert(d_env->theoryOf(c1) == d_env->theoryOf(c2));
+  getTheoryProof(d_env->theoryOf(c1))
+      ->printConstantDisequalityProof(os, c1, c2, globalLetMap);
 }
 
 void TheoryProofEngine::registerTerm(Expr term) {
@@ -185,7 +188,7 @@ void TheoryProofEngine::registerTerm(Expr term) {
 
   Debug("pf::tp::register") << "TheoryProofEngine::registerTerm: registering NEW term: " << term << std::endl;
 
-  theory::TheoryId theory_id = theory::Theory::theoryOf(term);
+  theory::TheoryId theory_id = d_env->theoryOf(term);
 
   Debug("pf::tp::register") << "Term's theory( " << term << " ) = " << theory_id << std::endl;
 
@@ -284,7 +287,7 @@ void LFSCTheoryProofEngine::printLetTerm(Expr term, std::ostream& os) {
 }
 
 void LFSCTheoryProofEngine::printTheoryTerm(Expr term, std::ostream& os, const ProofLetMap& map) {
-  theory::TheoryId theory_id = theory::Theory::theoryOf(term);
+  theory::TheoryId theory_id = d_env->theoryOf(term);
 
   // boolean terms and ITEs are special because they
   // are common to all theories
@@ -390,13 +393,13 @@ void LFSCTheoryProofEngine::printLemmaRewrites(NodePairSet& rewrites,
     Node n1 = it->first;
     Node n2 = it->second;
     Assert(n1.toExpr() == utils::mkFalse()
-           || theory::Theory::theoryOf(n1) == theory::Theory::theoryOf(n2));
+           || d_env->theoryOf(n1) == d_env->theoryOf(n2));
 
     std::ostringstream rewriteRule;
     rewriteRule << ".lrr" << d_assertionToRewrite.size();
 
     os << "(th_let_pf _ ";
-    getTheoryProof(theory::Theory::theoryOf(n1))->printRewriteProof(os, n1, n2);
+    getTheoryProof(d_env->theoryOf(n1))->printRewriteProof(os, n1, n2);
     os << "(\\ " << rewriteRule.str() << "\n";
 
     d_assertionToRewrite[it->first] = rewriteRule.str();
@@ -1021,13 +1024,22 @@ void TheoryProof::printTheoryLemmaProof(std::vector<Expr>& lemma,
   Trace("pf::tp") << ";; Print theory lemma proof, theory id = " << d_theory->getId() << std::endl;
 
   if (d_theory->getId()==theory::THEORY_UF) {
-    th = new theory::uf::TheoryUF(&fakeContext, &fakeContext, oc, v,
+    th = new theory::uf::TheoryUF(d_env,
+                                  &fakeContext,
+                                  &fakeContext,
+                                  oc,
+                                  v,
                                   ProofManager::currentPM()->getLogicInfo(),
                                   "replay::");
   } else if (d_theory->getId()==theory::THEORY_ARRAYS) {
-    th = new theory::arrays::TheoryArrays(&fakeContext, &fakeContext, oc, v,
-                                          ProofManager::currentPM()->getLogicInfo(),
-                                          "replay::");
+    th = new theory::arrays::TheoryArrays(
+        d_env,
+        &fakeContext,
+        &fakeContext,
+        oc,
+        v,
+        ProofManager::currentPM()->getLogicInfo(),
+        "replay::");
   } else if (d_theory->getId() == theory::THEORY_ARITH) {
     Trace("theory-proof-debug") << "Arith proofs currently not supported. Use 'trust'" << std::endl;
     os << " (clausify_false trust)";
@@ -1044,8 +1056,9 @@ void TheoryProof::printTheoryLemmaProof(std::vector<Expr>& lemma,
   MyPreRegisterVisitor preRegVisitor(th);
   for (unsigned i=0; i<lemma.size(); i++) {
     Node strippedLit = (lemma[i].getKind() == kind::NOT) ? lemma[i][0] : lemma[i];
-    if (strippedLit.getKind() == kind::EQUAL ||
-        d_theory->getId() == theory::Theory::theoryOf(strippedLit)) {
+    if (strippedLit.getKind() == kind::EQUAL
+        || d_theory->getId() == d_env->theoryOf(strippedLit))
+    {
       Node lit = Node::fromExpr( lemma[i] ).negate();
       Trace("pf::tp") << "; preregistering and asserting " << lit << std::endl;
       NodeVisitor<MyPreRegisterVisitor>::run(preRegVisitor, lit);
@@ -1115,12 +1128,12 @@ bool TheoryProofEngine::printsAsBool(const Node &n) {
     return false;
   }
 
-  theory::TheoryId theory_id = theory::Theory::theoryOf(n);
+  theory::TheoryId theory_id = d_env->theoryOf(n);
   return getTheoryProof(theory_id)->printsAsBool(n);
 }
 
-BooleanProof::BooleanProof(TheoryProofEngine* proofEngine)
-  : TheoryProof(NULL, proofEngine)
+BooleanProof::BooleanProof(Environment* env, TheoryProofEngine* proofEngine)
+    : TheoryProof(env, NULL, proofEngine)
 {}
 
 void BooleanProof::registerTerm(Expr term) {

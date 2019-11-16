@@ -42,10 +42,14 @@ using namespace CVC4::kind;
 namespace CVC4 {
 namespace prop {
 
-CnfStream::CnfStream(SatSolver* satSolver, Registrar* registrar,
-                     context::Context* context, bool fullLitToNodeMap,
+CnfStream::CnfStream(Environment* env,
+                     SatSolver* satSolver,
+                     Registrar* registrar,
+                     context::Context* context,
+                     bool fullLitToNodeMap,
                      std::string name)
-    : d_satSolver(satSolver),
+    : d_env(env),
+      d_satSolver(satSolver),
       d_booleanVariables(context),
       d_nodeToLiteralMap(context),
       d_literalToNodeMap(context),
@@ -54,13 +58,17 @@ CnfStream::CnfStream(SatSolver* satSolver, Registrar* registrar,
       d_registrar(registrar),
       d_name(name),
       d_cnfProof(NULL),
-      d_removable(false) {
+      d_removable(false)
+{
 }
 
-TseitinCnfStream::TseitinCnfStream(SatSolver* satSolver, Registrar* registrar,
+TseitinCnfStream::TseitinCnfStream(Environment* env,
+                                   SatSolver* satSolver,
+                                   Registrar* registrar,
                                    context::Context* context,
-                                   bool fullLitToNodeMap, std::string name)
-  : CnfStream(satSolver, registrar, context, fullLitToNodeMap, name)
+                                   bool fullLitToNodeMap,
+                                   std::string name)
+    : CnfStream(env, satSolver, registrar, context, fullLitToNodeMap, name)
 {}
 
 void CnfStream::assertClause(TNode node, SatClause& c) {
@@ -155,8 +163,8 @@ void TseitinCnfStream::ensureLiteral(TNode n, bool noPreregistration) {
     n = n[0];
   }
 
-  if( theory::Theory::theoryOf(n) == theory::THEORY_BOOL &&
-      !n.isVar() ) {
+  if (d_env->theoryOf(n) == theory::THEORY_BOOL && !n.isVar())
+  {
     // If we were called with something other than a theory atom (or
     // Boolean variable), we get a SatLiteral that is definitionally
     // equal to it.
@@ -166,7 +174,9 @@ void TseitinCnfStream::ensureLiteral(TNode n, bool noPreregistration) {
     // These may already exist
     d_literalToNodeMap.insert_safe(lit, n);
     d_literalToNodeMap.insert_safe(~lit, n.notNode());
-  } else {
+  }
+  else
+  {
     // We have a theory atom or variable.
     lit = convertAtom(n, noPreregistration);
   }

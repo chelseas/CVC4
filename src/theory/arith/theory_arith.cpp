@@ -30,13 +30,17 @@ namespace CVC4 {
 namespace theory {
 namespace arith {
 
-TheoryArith::TheoryArith(context::Context* c, context::UserContext* u,
-                         OutputChannel& out, Valuation valuation,
+TheoryArith::TheoryArith(Environment* env,
+                         context::Context* c,
+                         context::UserContext* u,
+                         OutputChannel& out,
+                         Valuation valuation,
                          const LogicInfo& logicInfo)
-    : Theory(THEORY_ARITH, c, u, out, valuation, logicInfo)
-    , d_internal(new TheoryArithPrivate(*this, c, u, out, valuation, logicInfo))
-    , d_ppRewriteTimer("theory::arith::ppRewriteTimer")
-    , d_proofRecorder(nullptr)
+    : Theory(THEORY_ARITH, env, c, u, out, valuation, logicInfo),
+      d_internal(
+          new TheoryArithPrivate(env, *this, c, u, out, valuation, logicInfo)),
+      d_ppRewriteTimer("theory::arith::ppRewriteTimer"),
+      d_proofRecorder(nullptr)
 {
   smtStatisticsRegistry()->registerStat(&d_ppRewriteTimer);
   if (options::nlExt()) {

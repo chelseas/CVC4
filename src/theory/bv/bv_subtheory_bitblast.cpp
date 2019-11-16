@@ -33,9 +33,11 @@ namespace CVC4 {
 namespace theory {
 namespace bv {
 
-BitblastSolver::BitblastSolver(context::Context* c, TheoryBV* bv)
-    : SubtheorySolver(c, bv),
-      d_bitblaster(new TLazyBitblaster(c, bv, "theory::bv::lazy")),
+BitblastSolver::BitblastSolver(Environment* env,
+                               context::Context* c,
+                               TheoryBV* bv)
+    : SubtheorySolver(env, c, bv),
+      d_bitblaster(new TLazyBitblaster(env, c, bv, "theory::bv::lazy")),
       d_bitblastQueue(c),
       d_statistics(),
       d_validModelCache(c, true),
@@ -47,7 +49,7 @@ BitblastSolver::BitblastSolver(context::Context* c, TheoryBV* bv)
 {
   if (options::bitvectorQuickXplain())
   {
-    d_quickCheck.reset(new BVQuickCheck("bb", bv));
+    d_quickCheck.reset(new BVQuickCheck(env, "bb", bv));
     d_quickXplain.reset(new QuickXPlain("bb", d_quickCheck.get()));
   }
 }

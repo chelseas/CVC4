@@ -58,8 +58,11 @@ std::string append(const std::string& str, uint64_t num) {
   return os.str();
 }
 
-ProofManager::ProofManager(context::Context* context, ProofFormat format)
-    : d_context(context),
+ProofManager::ProofManager(Environment* env,
+                           context::Context* context,
+                           ProofFormat format)
+    : d_env(env),
+      d_context(context),
       d_satProof(NULL),
       d_cnfProof(NULL),
       d_theoryProof(NULL),
@@ -88,6 +91,7 @@ const Proof& ProofManager::getProof(SmtEngine* smt)
   {
     Assert(currentPM()->d_format == LFSC);
     currentPM()->d_fullProof.reset(new LFSCProof(
+        currentPM()->d_env,
         smt,
         static_cast<CoreSatProof*>(getSatProof()),
         static_cast<LFSCCnfProof*>(getCnfProof()),
@@ -177,7 +181,7 @@ void ProofManager::initCnfProof(prop::CnfStream* cnfStream,
 void ProofManager::initTheoryProofEngine() {
   Assert(currentPM()->d_theoryProof == NULL);
   Assert(currentPM()->d_format == LFSC);
-  currentPM()->d_theoryProof = new LFSCTheoryProofEngine();
+  currentPM()->d_theoryProof = new LFSCTheoryProofEngine(currentPM()->d_env);
 }
 
 std::string ProofManager::getInputClauseName(ClauseId id,
@@ -549,11 +553,13 @@ void ProofManager::setLogic(const LogicInfo& logic) {
   d_logic = logic;
 }
 
-LFSCProof::LFSCProof(SmtEngine* smtEngine,
+LFSCProof::LFSCProof(Environment* env,
+                     SmtEngine* smtEngine,
                      CoreSatProof* sat,
                      LFSCCnfProof* cnf,
                      LFSCTheoryProofEngine* theory)
-    : d_satProof(sat),
+    : d_env(env),
+      d_satProof(sat),
       d_cnfProof(cnf),
       d_theoryProof(theory),
       d_smtEngine(smtEngine)
@@ -658,7 +664,7 @@ void LFSCProof::toStream(std::ostream& out) const
       {
         // For arithmetic: these literals are not normalized, causing an error
         // in Arith.
-        if (theory::Theory::theoryOf(*it) == theory::THEORY_ARITH)
+        if (d_env->theoryOf(*it) == theory::THEORY_ARITH)
         {
           d_cnfProof->ensureLiteral(
               *it,
@@ -680,7 +686,7 @@ void LFSCProof::toStream(std::ostream& out) const
          it != used_assertions.end();
          ++it)
     {
-      utils::collectAtoms(*it, atoms);
+      utils::collectAtoms(d_env, *it, atoms);
     }
 
     std::set<Node>::iterator atomIt;

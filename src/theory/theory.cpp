@@ -53,6 +53,7 @@ std::ostream& operator<<(std::ostream& os, Theory::Effort level){
 }/* ostream& operator<<(ostream&, Theory::Effort) */
 
 Theory::Theory(TheoryId id,
+               Environment* env,
                context::Context* satContext,
                context::UserContext* userContext,
                OutputChannel& out,
@@ -71,6 +72,7 @@ Theory::Theory(TheoryId id,
       d_quantEngine(NULL),
       d_decManager(nullptr),
       d_extTheory(NULL),
+      d_env(env),
       d_checkTime(getStatsPrefix(id) + name + "::checkTime"),
       d_computeCareGraphTime(getStatsPrefix(id) + name
                              + "::computeCareGraphTime"),

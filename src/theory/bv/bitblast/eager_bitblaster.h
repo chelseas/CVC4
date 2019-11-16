@@ -38,7 +38,9 @@ class TheoryBV;
 class EagerBitblaster : public TBitblaster<Node>
 {
  public:
-  EagerBitblaster(TheoryBV* theory_bv, context::Context* context);
+  EagerBitblaster(Environment* env,
+                  TheoryBV* theory_bv,
+                  context::Context* context);
   ~EagerBitblaster();
 
   void addAtom(TNode atom);

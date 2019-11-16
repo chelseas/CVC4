@@ -82,7 +82,9 @@ protected:
   theory::TheoryId getTheoryId() override;
 
  public:
-  ArrayProof(theory::arrays::TheoryArrays* arrays, TheoryProofEngine* proofEngine);
+  ArrayProof(Environment* env,
+             theory::arrays::TheoryArrays* arrays,
+             TheoryProofEngine* proofEngine);
 
   std::string skolemToLiteral(Expr skolem);
 
@@ -91,9 +93,12 @@ protected:
 
 class LFSCArrayProof : public ArrayProof {
 public:
-  LFSCArrayProof(theory::arrays::TheoryArrays* arrays, TheoryProofEngine* proofEngine)
-    : ArrayProof(arrays, proofEngine)
-  {}
+ LFSCArrayProof(Environment* env,
+                theory::arrays::TheoryArrays* arrays,
+                TheoryProofEngine* proofEngine)
+     : ArrayProof(env, arrays, proofEngine)
+ {
+ }
 
   void printOwnedTerm(Expr term,
                       std::ostream& os,

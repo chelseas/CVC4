@@ -25,6 +25,7 @@
 #include <vector>
 
 #include "expr/node_manager.h"
+#include "smt/environment.h"
 
 namespace CVC4 {
 
@@ -225,8 +226,6 @@ inline const bool getBit(Expr expr, unsigned i) {
   return (bit == 1u);
 }
 
-void collectAtoms(TNode node, std::set<Node>& seen);
-
-
+void collectAtoms(Environment* env, TNode node, std::set<Node>& seen);
 }
 }

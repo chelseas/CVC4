@@ -44,13 +44,14 @@ namespace CVC4 {
 namespace theory {
 namespace bv {
 
-TheoryBV::TheoryBV(context::Context* c,
+TheoryBV::TheoryBV(Environment* env,
+                   context::Context* c,
                    context::UserContext* u,
                    OutputChannel& out,
                    Valuation valuation,
                    const LogicInfo& logicInfo,
                    std::string name)
-    : Theory(THEORY_BV, c, u, out, valuation, logicInfo, name),
+    : Theory(THEORY_BV, env, c, u, out, valuation, logicInfo, name),
       d_context(c),
       d_alreadyPropagatedSet(c),
       d_sharedTermsSet(c),
@@ -78,29 +79,29 @@ TheoryBV::TheoryBV(context::Context* c,
   getExtTheory()->addFunctionKind(kind::BITVECTOR_TO_NAT);
   getExtTheory()->addFunctionKind(kind::INT_TO_BITVECTOR);
   if (options::bitblastMode() == theory::bv::BITBLAST_MODE_EAGER) {
-    d_eagerSolver.reset(new EagerBitblastSolver(c, this));
+    d_eagerSolver.reset(new EagerBitblastSolver(env, c, this));
     return;
   }
 
   if (options::bitvectorEqualitySolver() && !options::proof())
   {
-    d_subtheories.emplace_back(new CoreSolver(c, this));
+    d_subtheories.emplace_back(new CoreSolver(env, c, this));
     d_subtheoryMap[SUB_CORE] = d_subtheories.back().get();
   }
 
   if (options::bitvectorInequalitySolver() && !options::proof())
   {
-    d_subtheories.emplace_back(new InequalitySolver(c, u, this));
+    d_subtheories.emplace_back(new InequalitySolver(env, c, u, this));
     d_subtheoryMap[SUB_INEQUALITY] = d_subtheories.back().get();
   }
 
   if (options::bitvectorAlgebraicSolver() && !options::proof())
   {
-    d_subtheories.emplace_back(new AlgebraicSolver(c, this));
+    d_subtheories.emplace_back(new AlgebraicSolver(env, c, this));
     d_subtheoryMap[SUB_ALGEBRAIC] = d_subtheories.back().get();
   }
 
-  BitblastSolver* bb_solver = new BitblastSolver(c, this);
+  BitblastSolver* bb_solver = new BitblastSolver(env, c, this);
   if (options::bvAbstraction())
   {
     bb_solver->setAbstraction(d_abstractionModule.get());

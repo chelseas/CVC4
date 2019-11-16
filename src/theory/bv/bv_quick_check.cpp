@@ -26,11 +26,13 @@ namespace CVC4 {
 namespace theory {
 namespace bv {
 
-BVQuickCheck::BVQuickCheck(const std::string& name, theory::bv::TheoryBV* bv)
-  : d_ctx()
-  , d_bitblaster(new TLazyBitblaster(&d_ctx, bv, name, true))
-  , d_conflict()
-  , d_inConflict(&d_ctx, false)
+BVQuickCheck::BVQuickCheck(Environment* env,
+                           const std::string& name,
+                           theory::bv::TheoryBV* bv)
+    : d_ctx(),
+      d_bitblaster(new TLazyBitblaster(env, &d_ctx, bv, name, true)),
+      d_conflict(),
+      d_inConflict(&d_ctx, false)
 {}
 
 

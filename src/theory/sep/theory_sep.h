@@ -63,7 +63,12 @@ class TheorySep : public Theory {
                         bool pol, bool hasPol, bool underSpatial );
 
  public:
-  TheorySep(context::Context* c, context::UserContext* u, OutputChannel& out, Valuation valuation, const LogicInfo& logicInfo);
+  TheorySep(Environment* env,
+            context::Context* c,
+            context::UserContext* u,
+            OutputChannel& out,
+            Valuation valuation,
+            const LogicInfo& logicInfo);
   ~TheorySep();
 
   void setMasterEqualityEngine(eq::EqualityEngine* eq) override;

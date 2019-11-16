@@ -48,7 +48,8 @@ namespace proof {
 class ResolutionBitVectorProof : public BitVectorProof
 {
  public:
-  ResolutionBitVectorProof(theory::bv::TheoryBV* bv,
+  ResolutionBitVectorProof(Environment* env,
+                           theory::bv::TheoryBV* bv,
                            TheoryProofEngine* proofEngine);
 
   /**
@@ -90,9 +91,10 @@ class ResolutionBitVectorProof : public BitVectorProof
 class LfscResolutionBitVectorProof : public ResolutionBitVectorProof
 {
  public:
-  LfscResolutionBitVectorProof(theory::bv::TheoryBV* bv,
+  LfscResolutionBitVectorProof(Environment* env,
+                               theory::bv::TheoryBV* bv,
                                TheoryProofEngine* proofEngine)
-      : ResolutionBitVectorProof(bv, proofEngine)
+      : ResolutionBitVectorProof(env, bv, proofEngine)
   {
   }
   void printTheoryLemmaProof(std::vector<Expr>& lemma,
