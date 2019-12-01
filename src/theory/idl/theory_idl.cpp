@@ -77,6 +77,24 @@ Node TheoryIdl::ppRewrite(TNode atom) {
   Debug("theory::idl::rewrite")
       << "TheoryIdl::ppRewrite(): processing " << atom << std::endl;
   NodeManager* nm = NodeManager::currentNM();
+
+  // handle the case of (op n (- x y)) [where we want (op (- x y) n)]
+  if(atom[1].getKind() == kind::MINUS)
+    {
+      Node negated_right = nm->mkNode(kind::MINUS, atom[1][1], atom[1][0]);
+      const Rational& left = atom[0].getConst<Rational>();
+      Node negated_left = nm->mkConst(-left);
+      return ppRewrite(nm->mkNode(atom.getKind(), negated_right, negated_left));
+    };
+   // and the case of (op (x y))
+  else if ((atom[0].getKind() != kind::MINUS) && (atom[1].getKind() != kind::MINUS) 
+            && (atom.getKind() != kind::AND) && (atom.getKind() != kind::OR))// aka (op x y)
+    {
+      Node left = nm->mkNode(kind::MINUS, atom[0], atom[1]);
+      Node right = nm->mkConst(Rational(0));
+      return ppRewrite(nm->mkNode(atom.getKind(), left, right));
+    }
+  
   switch (atom.getKind())
   {
     case kind::EQUAL:
@@ -94,9 +112,27 @@ Node TheoryIdl::ppRewrite(TNode atom) {
     // TODO: Handle these cases.
     // -------------------------------------------------------------------------
     case kind::LT:
+    {
+      Assert(atom[0].getKind() == kind::MINUS);
+      Node right_minus_1 = nm->mkConst(atom[1].getConst<Rational>() - Rational(1));
+      return nm->mkNode(kind::LEQ, atom[0], right_minus_1);
+    }
     case kind::LEQ:
+    {
+      Assert(atom[0].getKind() == kind::MINUS);
+      return nm->mkNode(kind::LEQ, atom[0], atom[1]);
+    }
     case kind::GT:
+    {
+      Assert(atom[1].getKind() == kind::MINUS);
+      Node left_minus_1 = nm->mkConst(atom[0].getConst<Rational>() - Rational(1));
+      return nm->mkNode(kind::LEQ, atom[1], left_minus_1);
+    }
     case kind::GEQ:
+    {
+      Assert(atom[1].getKind() == kind::MINUS);
+      return nm->mkNode(kind::LEQ, atom[1], atom[0]);
+    }
     case kind::NOT:
     // -------------------------------------------------------------------------
 
@@ -197,7 +233,56 @@ bool TheoryIdl::negativeCycle()
 {
   // --------------------------------------------------------------------------
   // TODO: write the code to detect a negative cycle.
+  // Plan: Simple implementation of Bellman-Ford algo
+  // adopted from wikipedia pseudo-code: https://en.wikipedia.org/wiki/Bellman%E2%80%93Ford_algorithm#Finding_negative_cycles
   // --------------------------------------------------------------------------
+  Rational distance[d_numVars];
+  distance[0] = 0;
+  for (int v = 1; v <= d_numVars - 1; ++v)
+  {
+    // set the distance to "infinity" 9,999,999
+    // note: this may not produce correct behavior if the sum
+    // of weights for a cycle could possibly approach 9999999
+    distance[v] =  9999999;
+  }
+  // measure distance from vertex 0 ("source")
+
+  // Next, "relax" edges |V| - 1 times
+  for (int i = 0; i <= d_numVars - 2; ++i)
+  {
+    for (int v1 = 0; v1 <= d_numVars - 1; ++v1)
+    {
+      for (int v2 = 0; v2 <= d_numVars - 1; ++v2)
+      {
+        if (d_valid[v1][v2])
+        {
+          Rational w = d_matrix[v1][v2];
+          if (distance[v1] + w < distance[v2])
+          {
+            distance[v2] = distance[v1] + w;
+          }
+        }
+      }
+    }
+  }
+
+  // Check for negative weight cycles by trying to "relax" 
+  // edges once more
+  for (int v1 = 0; v1 <= d_numVars - 1; ++v1)
+    {
+      for (int v2 = 0; v2 <= d_numVars - 1; ++v2)
+      {
+        if (d_valid[v1][v2])
+        {
+          Rational w = d_matrix[v1][v2];
+          if (distance[v1] + w < distance[v2])
+          {
+            // Then the graph contains a negative cycle
+            return true;
+          }
+        }
+      }
+    }
 
   return false;
 }
