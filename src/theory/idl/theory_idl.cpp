@@ -78,23 +78,36 @@ Node TheoryIdl::ppRewrite(TNode atom) {
       << "TheoryIdl::ppRewrite(): processing " << atom << std::endl;
   NodeManager* nm = NodeManager::currentNM();
 
-  // handle the case of (op n (- x y)) [where we want (op (- x y) n)]
-  if(atom[1].getKind() == kind::MINUS)
+  // handle the case of (op (x y))
+  if ((atom[0].getKind() != kind::MINUS) && (atom[1].getKind() != kind::MINUS) 
+            && (atom.getKind() != kind::AND) && (atom.getKind() != kind::OR)) 
+    {
+      Node left = nm->mkNode(kind::MINUS, atom[0], atom[1]);
+      Node right = nm->mkConst(Rational(0));
+      atom = nm->mkNode(atom.getKind(), left, right);
+    }
+
+  // handle the case of (op n (- x y)) [where we want (op (- x y) n)] (LT, LTE)
+  if((atom[1].getKind() == kind::MINUS) && ((atom.getKind() == kind::LT) || 
+                                            (atom.getKind() == kind::LEQ) || 
+                                            (atom.getKind() == kind::EQUAL) 
+                                           )
+    )
     {
       Node negated_right = nm->mkNode(kind::MINUS, atom[1][1], atom[1][0]);
       const Rational& left = atom[0].getConst<Rational>();
       Node negated_left = nm->mkConst(-left);
-      return ppRewrite(nm->mkNode(atom.getKind(), negated_right, negated_left));
-    };
-   // and the case of (op (x y))
-  else if ((atom[0].getKind() != kind::MINUS) && (atom[1].getKind() != kind::MINUS) 
-            && (atom.getKind() != kind::AND) && (atom.getKind() != kind::OR))// aka (op x y)
-    {
-      Node left = nm->mkNode(kind::MINUS, atom[0], atom[1]);
-      Node right = nm->mkConst(Rational(0));
-      return ppRewrite(nm->mkNode(atom.getKind(), left, right));
+      atom = nm->mkNode(atom.getKind(), negated_right, negated_left);
     }
-  
+  // handle the case of (op (- x y) n) where we want (op n (- x y)) (GT, GTE)
+  else if((atom[0].getKind() == kind::MINUS) && ((atom.getKind() == kind::GT) || (atom.getKind() == kind::GEQ)))
+    {
+      Node negated_left = nm->mkNode(kind::MINUS, atom[0][1], atom[0][0]);
+      const Rational& right = atom[1].getConst<Rational>();
+      Node negated_right = nm->mkConst(-right);
+      atom = nm->mkNode(atom.getKind(), negated_right, negated_left);
+    }
+   
   switch (atom.getKind())
   {
     case kind::EQUAL:
@@ -108,9 +121,6 @@ Node TheoryIdl::ppRewrite(TNode atom) {
       return nm->mkNode(kind::AND, l_le_r, r_le_l);
     }
 
-    // -------------------------------------------------------------------------
-    // TODO: Handle these cases.
-    // -------------------------------------------------------------------------
     case kind::LT:
     {
       Assert(atom[0].getKind() == kind::MINUS);
@@ -233,7 +243,7 @@ bool TheoryIdl::negativeCycle()
 {
   // --------------------------------------------------------------------------
   // TODO: write the code to detect a negative cycle.
-  // Plan: Simple implementation of Bellman-Ford algo
+  // Simple implementation of Bellman-Ford algo
   // adopted from wikipedia pseudo-code: https://en.wikipedia.org/wiki/Bellman%E2%80%93Ford_algorithm#Finding_negative_cycles
   // --------------------------------------------------------------------------
   Rational distance[d_numVars];
