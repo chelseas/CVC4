@@ -296,11 +296,6 @@ void TheoryIdl::check(Effort level) {
 bool TheoryIdl::collectModelInfo(TheoryModel* m)
 {
   std::vector<Rational> distance(d_numVars, Rational(0));
-  //  cout << d_numVars << endl;
-  //  cout << distance[0] << endl;
-  //  cout << distance[1] << endl;
-  //  cout << distance[2] << endl;
-  //  cout << distance[3] << endl;
   // ---------------------------------------------------------------------------
   // implement model generation by computing the single-source shortest
   // path from a node that has distance zero to all other nodes
