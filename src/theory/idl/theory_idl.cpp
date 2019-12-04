@@ -96,23 +96,34 @@ Node TheoryIdl::ppRewrite(TNode atom) {
     {
       if(atom[0].getKind() == kind::MINUS)
       {
-        // if(atom[1].getKind() == kind::UMINUS)
-        // {
-        //   const Rational& neg_n = atom[1][0].getConst<Rational>()
-        //   Node n_minus_1 = -neg_n - Rational(1));
-        // }
-        // else // assume constant
-        // {
-          Node n_minus_1 = nm->mkConst(atom[1].getConst<Rational>() - Rational(1));
-        // }
-        return nm->mkNode(kind::LEQ, atom[0], n_minus_1);
+        if(atom[1].getKind() == kind::UMINUS)
+        {
+          const Rational& n = - atom[1][0].getConst<Rational>();
+          Node n_minus_1 = nm->mkConst(n - Rational(1));
+          return nm->mkNode(kind::LEQ, atom[0], n_minus_1);
+        }
+        else // assume constant
+        {
+          const Rational& n = atom[1].getConst<Rational>();
+          Node n_minus_1 = nm->mkConst(n - Rational(1));
+          return nm->mkNode(kind::LEQ, atom[0], n_minus_1);
+        }
       }
       else if (atom[1].getKind() == kind::MINUS)
       {
         Node negated_diff = nm->mkNode(kind::MINUS, atom[1][1], atom[1][0]);
-        const Rational& n = atom[0].getConst<Rational>();
-        Node negated_n_minus1 = nm->mkConst(-n - Rational(1));
-        return nm->mkNode(kind::LEQ, negated_diff, negated_n_minus1);
+        if(atom[0].getKind() == kind::UMINUS)
+        {
+          const Rational& n = - atom[0][0].getConst<Rational>();
+          Node negated_n_minus1 = nm->mkConst(-n - Rational(1));
+          return nm->mkNode(kind::LEQ, negated_diff, negated_n_minus1);
+        }
+        else // assume constant
+        {
+          const Rational& n = atom[0].getConst<Rational>();
+          Node negated_n_minus1 = nm->mkConst(-n - Rational(1));
+          return nm->mkNode(kind::LEQ, negated_diff, negated_n_minus1);
+        }
       }
       else // neither side is a difference, assume we are dealing with the case of (< (x y))
       {
