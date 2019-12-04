@@ -82,7 +82,7 @@ Node TheoryIdl::ppRewrite(TNode atom) {
   switch (atom.getKind())
   {
     case kind::EQUAL:
-    {
+    { //note: did not add functionality to deal with unary minus, unlike other cases
       Node l_le_r = nm->mkNode(kind::LEQ, atom[0], atom[1]);
       Assert(atom[0].getKind() == kind::MINUS);
       Node negated_left = nm->mkNode(kind::MINUS, atom[0][1], atom[0][0]);
@@ -96,6 +96,8 @@ Node TheoryIdl::ppRewrite(TNode atom) {
     { // apologies to the grader: I'm not comfortable with C++ and 
       // therefore didn't design a better abstraction because 
       // I was afraid of breaking things.
+      // handles the cases of (op (- x y) n), (op (- x y) (- n)), (op n (- x y)), (op (-n) (- x y))
+      // (op x y),
       if(atom[0].getKind() == kind::MINUS)
       {
         if(atom[1].getKind() == kind::UMINUS)
@@ -300,7 +302,7 @@ bool TheoryIdl::collectModelInfo(TheoryModel* m)
   //  cout << distance[2] << endl;
   //  cout << distance[3] << endl;
   // ---------------------------------------------------------------------------
-  // TODO: implement model generation by computing the single-source shortest
+  // implement model generation by computing the single-source shortest
   // path from a node that has distance zero to all other nodes
   // ---------------------------------------------------------------------------
     // Ford-Bellman, "relax" edges at least |V| - 1 times
@@ -361,8 +363,17 @@ void TheoryIdl::processAssertion(TNode assertion)
   size_t index1 = d_varMap[var1];
   size_t index2 = d_varMap[var2];
 
-  d_valid[index1][index2] = true;
-  d_matrix[index1][index2] = value;
+    // If there already exists an edge between these two variables,
+  // take the minimum
+  if(d_valid[index1][index2])
+  {
+    d_matrix[index1][index2] = min(value, d_matrix[index1][index2]);
+  }
+  else
+  {
+    d_valid[index1][index2] = true;
+    d_matrix[index1][index2] = value;
+  }
 }
 
 bool TheoryIdl::negativeCycle()
