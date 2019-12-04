@@ -78,36 +78,38 @@ Node TheoryIdl::ppRewrite(TNode atom) {
       << "TheoryIdl::ppRewrite(): processing " << atom << std::endl;
   NodeManager* nm = NodeManager::currentNM();
 
-  // handle the case of (op (x y))
-  if ((atom[0].getKind() != kind::MINUS) && (atom[1].getKind() != kind::MINUS) 
-            && (atom.getKind() != kind::AND) && (atom.getKind() != kind::OR)) 
-    {
-      Node left = nm->mkNode(kind::MINUS, atom[0], atom[1]);
-      Node right = nm->mkConst(Rational(0));
-      atom = nm->mkNode(atom.getKind(), left, right);
-    }
+  // // handle the case of (op (x y))
+  // if ((atom[0].getKind() != kind::MINUS) && (atom[1].getKind() != kind::MINUS) 
+  //           && (atom.getKind() != kind::AND) && (atom.getKind() != kind::OR)) 
+  //   {
+  //     Node left = nm->mkNode(kind::MINUS, atom[0], atom[1]);
+  //     Node right = nm->mkConst(Rational(0));
+  //     atom = nm->mkTNode(atom.getKind(), left, right);
+  //   }
 
-  // handle the case of (op n (- x y)) [where we want (op (- x y) n)] (LT, LTE)
-  if((atom[1].getKind() == kind::MINUS) && ((atom.getKind() == kind::LT) || 
-                                            (atom.getKind() == kind::LEQ) || 
-                                            (atom.getKind() == kind::EQUAL) 
-                                           )
-    )
-    {
-      Node negated_right = nm->mkNode(kind::MINUS, atom[1][1], atom[1][0]);
-      const Rational& left = atom[0].getConst<Rational>();
-      Node negated_left = nm->mkConst(-left);
-      atom = nm->mkNode(atom.getKind(), negated_right, negated_left);
-    }
-  // handle the case of (op (- x y) n) where we want (op n (- x y)) (GT, GTE)
-  else if((atom[0].getKind() == kind::MINUS) && ((atom.getKind() == kind::GT) || (atom.getKind() == kind::GEQ)))
-    {
-      Node negated_left = nm->mkNode(kind::MINUS, atom[0][1], atom[0][0]);
-      const Rational& right = atom[1].getConst<Rational>();
-      Node negated_right = nm->mkConst(-right);
-      atom = nm->mkNode(atom.getKind(), negated_right, negated_left);
-    }
+  // // handle the case of (op n (- x y)) [where we want (op (- x y) n)] (LT, LTE)
+  // if((atom[1].getKind() == kind::MINUS) && ((atom.getKind() == kind::LT) || 
+  //                                           (atom.getKind() == kind::LEQ) || 
+  //                                           (atom.getKind() == kind::EQUAL) 
+  //                                          )
+  //   )
+  //   {
+  //     Node negated_right = nm->mkNode(kind::MINUS, atom[1][1], atom[1][0]);
+  //     const Rational& left = atom[0].getConst<Rational>();
+  //     Node negated_left = nm->mkConst(-left);
+  //     atom = nm->mkNode(atom.getKind(), negated_right, negated_left);
+  //   }
+  // // handle the case of (op (- x y) n) where we want (op n (- x y)) (GT, GTE)
+  // else if((atom[0].getKind() == kind::MINUS) && ((atom.getKind() == kind::GT) || (atom.getKind() == kind::GEQ)))
+  //   {
+  //     Node negated_left = nm->mkNode(kind::MINUS, atom[0][1], atom[0][0]);
+  //     const Rational& right = atom[1].getConst<Rational>();
+  //     Node negated_right = nm->mkConst(-right);
+  //     atom = nm->mkNode(atom.getKind(), negated_right, negated_left);
+  //   }
    
+  // printf(atom)
+
   switch (atom.getKind())
   {
     case kind::EQUAL:
@@ -123,25 +125,92 @@ Node TheoryIdl::ppRewrite(TNode atom) {
 
     case kind::LT:
     {
-      Assert(atom[0].getKind() == kind::MINUS);
-      Node right_minus_1 = nm->mkConst(atom[1].getConst<Rational>() - Rational(1));
-      return nm->mkNode(kind::LEQ, atom[0], right_minus_1);
+      if(atom[0].getKind() == kind::MINUS)
+      {
+        Node right_minus_1 = nm->mkConst(atom[1].getConst<Rational>() - Rational(1));
+        return nm->mkNode(kind::LEQ, atom[0], right_minus_1);
+      }
+      else if (atom[1].getKind() == kind::MINUS)
+      {
+        Node negated_diff = nm->mkNode(kind::MINUS, atom[1][1], atom[1][0]);
+        const Rational& n = atom[0].getConst<Rational>();
+        Node negated_n_minus1 = nm->mkConst(-n - Rational(1));
+        return nm->mkNode(kind::LEQ, negated_diff, negated_n_minus1);
+      }
+      else // neither side is a difference, assume we are dealing with the case of (< (x y))
+      {
+        // (x < y) -> (x - y < 0) -> (x - y <= -1)
+        Node diff = nm->mkNode(kind::MINUS, atom[0], atom[1]);
+        Node n = nm->mkConst(Rational(-1));
+        return nm->mkNode(kind::LEQ, diff, n);
+      }
+      
     }
     case kind::LEQ:
     {
-      Assert(atom[0].getKind() == kind::MINUS);
-      return nm->mkNode(kind::LEQ, atom[0], atom[1]);
+      if(atom[0].getKind() == kind::MINUS)
+      {
+        return nm->mkNode(kind::LEQ, atom[0], atom[1]);
+      }
+      else if(atom[1].getKind() == kind::MINUS)
+      {
+        Node negated_diff = nm->mkNode(kind::MINUS, atom[1][1], atom[1][0]);
+        const Rational& n = atom[0].getConst<Rational>();
+        Node negated_n = nm->mkConst(-n); 
+        return nm->mkNode(kind::LEQ, negated_diff, negated_n);
+      }
+      else // neither side is a difference, assume we are dealing with the case of (<= (x y))
+      {
+        // (x <= y) -> (x - y <= 0) 
+        Node diff = nm->mkNode(kind::MINUS, atom[0], atom[1]);
+        Node n = nm->mkConst(Rational(0));
+        return nm->mkNode(kind::LEQ, diff, n);
+      }
     }
     case kind::GT:
     {
-      Assert(atom[1].getKind() == kind::MINUS);
-      Node left_minus_1 = nm->mkConst(atom[0].getConst<Rational>() - Rational(1));
-      return nm->mkNode(kind::LEQ, atom[1], left_minus_1);
+      if(atom[0].getKind() == kind::MINUS) 
+      {
+        Node negated_diff = nm->mkNode(kind::MINUS, atom[0][1], atom[0][0]);
+        const Rational& n = atom[1].getConst<Rational>();
+        Node negated_n_minus1 = nm->mkConst(- n - Rational(1)); 
+        return nm->mkNode(kind::LEQ, negated_diff, negated_n_minus1);
+      }
+      else if(atom[1].getKind() == kind::MINUS) 
+      {
+        // n > x - y  ->  x - y < n  ->  x -  y <= n - 1
+        Node n_minus_1 = nm->mkConst(atom[0].getConst<Rational>() - Rational(1));
+        return nm->mkNode(kind::LEQ, atom[1], n_minus_1);
+      }
+      else // neither side is a difference, assume we are dealing with the case of (> (x y))
+      {
+        // x > y  ->  0 > y - x  ->  y - x < 0  ->  y - x <= -1
+        Node negated_diff = nm->mkNode(kind::MINUS, atom[1], atom[0]);
+        Node n = nm->mkConst(Rational(-1));
+        return nm->mkNode(kind::LEQ, negated_diff, n);
+      }
     }
     case kind::GEQ:
     {
-      Assert(atom[1].getKind() == kind::MINUS);
-      return nm->mkNode(kind::LEQ, atom[1], atom[0]);
+      if(atom[0].getKind() == kind::MINUS)
+      {
+        // x - y >= n  ->  -n >= y - x  ->  y - x <= -n
+        Node negated_diff = nm->mkNode(kind::MINUS, atom[0][1], atom[0][0]);
+        const Rational& n = atom[1].getConst<Rational>();
+        Node negated_n = nm->mkConst(- n); 
+        return nm->mkNode(kind::LEQ, negated_diff, negated_n);
+      }
+      else if(atom[1].getKind() == kind::MINUS)
+      {
+        return nm->mkNode(kind::LEQ, atom[1], atom[0]);
+      }
+      else // neither side is a difference, assume we are dealing with the case of (>= (x y))
+      {
+        // x >= y  ->  0 >= y - x  ->  y - x <= 0 
+        Node negated_diff = nm->mkNode(kind::MINUS, atom[1], atom[0]);
+        Node n = nm->mkConst(Rational(0));
+        return nm->mkNode(kind::LEQ, negated_diff, n);
+      }
     }
     case kind::NOT:
     // -------------------------------------------------------------------------
@@ -202,6 +271,26 @@ bool TheoryIdl::collectModelInfo(TheoryModel* m)
   // TODO: implement model generation by computing the single-source shortest
   // path from a node that has distance zero to all other nodes
   // ---------------------------------------------------------------------------
+    // Ford-Bellman, "relax" edges |V| - 1 times
+    // Should |V| count the new vertex, s, or not?
+  for (int i = 0; i <= d_numVars - 2; ++i)
+  {
+    for (int v1 = 0; v1 <= d_numVars - 1; ++v1)
+    {
+      for (int v2 = 0; v2 <= d_numVars - 1; ++v2)
+      {
+        if (d_valid[v1][v2])
+        {
+          Rational w = d_matrix[v1][v2];
+          if (distance[v1] + w < distance[v2])
+          {
+            distance[v2] = distance[v1] + w;
+          }
+        }
+      }
+    }
+  }
+
 
   NodeManager* nm = NodeManager::currentNM();
   for (size_t i = 0; i < d_numVars; i++)
@@ -242,8 +331,8 @@ void TheoryIdl::processAssertion(TNode assertion)
 bool TheoryIdl::negativeCycle()
 {
   // --------------------------------------------------------------------------
-  // TODO: write the code to detect a negative cycle.
-  // Simple implementation of Bellman-Ford algo
+  // Code to detect a negative cycle.
+  // Simple implementation of Bellman-Ford algorithm
   // adopted from wikipedia pseudo-code: https://en.wikipedia.org/wiki/Bellman%E2%80%93Ford_algorithm#Finding_negative_cycles
   // --------------------------------------------------------------------------
   Rational distance[d_numVars];
